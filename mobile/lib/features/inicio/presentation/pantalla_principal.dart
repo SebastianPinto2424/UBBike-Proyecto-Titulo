@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/core/providers/conexion_provider.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,9 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/core/servicios/fcm_service.dart';
 import 'package:ubbike/core/servicios/tiempo_real_service.dart';
 import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
+import 'package:ubbike/features/admin/application/gestion_usuarios_vm.dart';
+import 'package:ubbike/features/historial/application/movimientos_vm.dart';
+import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
 import 'package:ubbike/features/inicio/application/controlador_notificaciones_inicio.dart';
 import 'package:ubbike/features/notificaciones/presentation/pantalla_notificaciones.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
@@ -21,6 +26,9 @@ import 'package:ubbike/features/qr/presentation/vista_qr_usuario.dart';
 import 'package:ubbike/features/inicio/presentation/vista_inicio_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_ingreso_guardia.dart';
 import 'package:ubbike/features/inicio/presentation/vista_dashboard_central.dart';
+import 'package:ubbike/features/inicio/presentation/vista_dashboard_administrador.dart';
+import 'package:ubbike/features/admin/presentation/vista_gestion_usuarios.dart';
+import 'package:ubbike/features/admin/presentation/vista_menu_gestion.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_central.dart';
 import 'package:ubbike/features/acceso/presentation/vista_operaciones_guardias_central.dart';
 import 'package:ubbike/features/incidencias/presentation/vista_soporte.dart';
@@ -33,11 +41,10 @@ class PantallaPrincipal extends ConsumerStatefulWidget {
   ConsumerState<PantallaPrincipal> createState() => _PantallaPrincipalState();
 }
 
-class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
+class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
+    with WidgetsBindingObserver {
   int indice = 0;
   ModoIngresoGuardia modoIngresoGuardia = ModoIngresoGuardia.qr;
-  int tabGestionAdmin = 0;
-  int tabAtencionAdmin = 0;
   int tabSoporte = 0;
   int tabBicicletas = 0;
   RolUsuario? rolPaginas;
@@ -45,6 +52,9 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
   late final ControladorNotificacionesInicio controladorNotificaciones;
   late final TiempoRealService tiempoRealService;
   StreamSubscription<void>? suscripcionSolicitudesTiempoReal;
+  StreamSubscription<void>? suscripcionIncidenciasTiempoReal;
+  StreamSubscription<void>? suscripcionMovimientosTiempoReal;
+  StreamSubscription<void>? suscripcionUsuariosTiempoReal;
 
   void _seleccionarIndice(int nuevoIndice) {
     setState(() {
@@ -64,7 +74,14 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
   @override
   void initState() {
     super.initState();
-    tiempoRealService = TiempoRealService();
+    WidgetsBinding.instance.addObserver(this);
+    RefrescoCoalescido.aplicacionActiva = true;
+    tiempoRealService = TiempoRealService(alCambiarConexion: (estado) {
+      RefrescoCoalescido.socketConectado = estado == EstadoConexion.conectado;
+      Future.microtask(() {
+        if (mounted) ref.read(conexionProvider.notifier).state = estado;
+      });
+    });
     controladorNotificaciones = ControladorNotificacionesInicio(
       notificacionRepository: ref.read(notificacionRepositoryProvider),
       eventosTiempoReal: tiempoRealService.notificaciones,
@@ -79,6 +96,26 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
             version + 1;
       }
     });
+    suscripcionIncidenciasTiempoReal =
+        tiempoRealService.incidencias.listen((_) {
+      if (mounted) {
+        final version = ref.read(incidenciasVersionProvider);
+        ref.read(incidenciasVersionProvider.notifier).state = version + 1;
+      }
+    });
+    suscripcionMovimientosTiempoReal =
+        tiempoRealService.movimientos.listen((_) {
+      if (mounted) {
+        final version = ref.read(movimientosVersionProvider);
+        ref.read(movimientosVersionProvider.notifier).state = version + 1;
+      }
+    });
+    suscripcionUsuariosTiempoReal = tiempoRealService.usuarios.listen((_) {
+      if (mounted) {
+        final version = ref.read(usuariosVersionProvider);
+        ref.read(usuariosVersionProvider.notifier).state = version + 1;
+      }
+    });
     FcmService.instancia.notificacionTocada.addListener(_alTocarPush);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -90,12 +127,46 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controladorNotificaciones.removeListener(_sincronizarNotificaciones);
     controladorNotificaciones.dispose();
     suscripcionSolicitudesTiempoReal?.cancel();
+    suscripcionIncidenciasTiempoReal?.cancel();
+    suscripcionMovimientosTiempoReal?.cancel();
+    suscripcionUsuariosTiempoReal?.cancel();
     FcmService.instancia.notificacionTocada.removeListener(_alTocarPush);
     tiempoRealService.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    final oculta = estado == AppLifecycleState.paused ||
+        estado == AppLifecycleState.hidden;
+    RefrescoCoalescido.aplicacionActiva = !oculta;
+
+    if (estado == AppLifecycleState.resumed) {
+      _sincronizarTiempoRealConSesion(ref.read(sesionProvider).valueOrNull);
+      controladorNotificaciones.actualizar();
+      _forzarRefrescoPantallas();
+    } else if (oculta) {
+      tiempoRealService.desconectar();
+    }
+  }
+
+  void _forzarRefrescoPantallas() {
+    if (!mounted) {
+      return;
+    }
+
+    for (final version in <StateProvider<int>>[
+      solicitudesGuardiaVersionProvider,
+      incidenciasVersionProvider,
+      movimientosVersionProvider,
+      usuariosVersionProvider,
+    ]) {
+      ref.read(version.notifier).state = ref.read(version) + 1;
+    }
   }
 
   void _alTocarPush() {
@@ -182,28 +253,38 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
       } else if (rol == RolUsuario.adminCentral) {
         indice = 3;
       } else if (rol == RolUsuario.administrador) {
-        tabGestionAdmin = 2;
-        tabAtencionAdmin = 1;
         indice = 4;
       } else {
         indice = 3;
       }
       indicesVisitados.add(indice);
     });
+    if (rol == RolUsuario.administrador) {
+      abrirSeccionGestion(
+        context,
+        titulo: 'Atención',
+        pantalla: const VistaSoporteAdministrador(initialIndex: 1),
+      );
+    }
   }
 
   void _abrirDestinoIncidencia(RolUsuario rol) {
     setState(() {
       tabSoporte = 1;
       if (rol == RolUsuario.administrador) {
-        tabGestionAdmin = 2;
-        tabAtencionAdmin = 2;
         indice = 4;
       } else {
         indice = 3;
       }
       indicesVisitados.add(indice);
     });
+    if (rol == RolUsuario.administrador) {
+      abrirSeccionGestion(
+        context,
+        titulo: 'Atención',
+        pantalla: const VistaSoporteAdministrador(initialIndex: 2),
+      );
+    }
   }
 
   void _abrirDestinoMovimiento(RolUsuario rol) {
@@ -211,7 +292,6 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
       if (rol == RolUsuario.guardia || rol == RolUsuario.adminCentral) {
         indice = 1;
       } else if (rol == RolUsuario.administrador) {
-        tabGestionAdmin = 1;
         indice = 4;
       } else {
         tabBicicletas = 1;
@@ -219,6 +299,37 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
       }
       indicesVisitados.add(indice);
     });
+    if (rol == RolUsuario.administrador) {
+      abrirSeccionGestion(
+        context,
+        titulo: 'Movimientos',
+        pantalla: const VistaMovimientosCentral(),
+      );
+    }
+  }
+
+  void _abrirDestinoGuardiasAdmin() {
+    setState(() {
+      indice = 4;
+      indicesVisitados.add(indice);
+    });
+    abrirSeccionGestion(
+      context,
+      titulo: 'Atención',
+      pantalla: const VistaSoporteAdministrador(initialIndex: 0),
+    );
+  }
+
+  void _abrirDestinoUsuariosAdmin() {
+    setState(() {
+      indice = 4;
+      indicesVisitados.add(indice);
+    });
+    abrirSeccionGestion(
+      context,
+      titulo: 'Usuarios y permisos',
+      pantalla: const VistaGestionUsuarios(),
+    );
   }
 
   void _sincronizarNotificaciones() {
@@ -577,7 +688,10 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
         VistaDashboardCentral(
           onAbrirMovimientos: () => _seleccionarIndice(1),
           onAbrirGuardias: () => _seleccionarIndice(2),
-          onAbrirSoporte: () => _seleccionarIndice(3),
+          onAbrirSolicitudes: () =>
+              _abrirDestinoSolicitudGuardia(RolUsuario.adminCentral),
+          onAbrirIncidencias: () =>
+              _abrirDestinoIncidencia(RolUsuario.adminCentral),
         ),
         const VistaMovimientosCentral(),
         const VistaOperacionesGuardiasCentral(),
@@ -591,7 +705,16 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
 
     if (rol == RolUsuario.administrador) {
       return [
-        const VistaInicioUsuario(mostrarSelectorGuardia: true),
+        VistaDashboardAdministrador(
+          onAbrirMovimientos: () =>
+              _abrirDestinoMovimiento(RolUsuario.administrador),
+          onAbrirGuardias: _abrirDestinoGuardiasAdmin,
+          onAbrirSolicitudes: () =>
+              _abrirDestinoSolicitudGuardia(RolUsuario.administrador),
+          onAbrirIncidencias: () =>
+              _abrirDestinoIncidencia(RolUsuario.administrador),
+          onAbrirUsuarios: _abrirDestinoUsuariosAdmin,
+        ),
         VistaBicicletas(
           key: ValueKey('bicicletas-admin-$tabBicicletas'),
           initialIndex: tabBicicletas,
@@ -601,11 +724,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal> {
           key: ValueKey('soporte-admin-propio-$tabSoporte'),
           initialIndex: tabSoporte,
         ),
-        VistaGestionAdmin(
-          key: ValueKey('gestion-admin-$tabGestionAdmin-$tabAtencionAdmin'),
-          initialIndex: tabGestionAdmin,
-          initialSoporteIndex: tabAtencionAdmin,
-        ),
+        const VistaMenuGestionAdmin(),
         const VistaPerfil(rol: RolUsuario.administrador),
       ];
     }
