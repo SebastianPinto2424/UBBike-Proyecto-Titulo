@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/features/historial/data/historial_modelos.dart';
@@ -18,6 +20,7 @@ class HistorialApi {
     String? guardiaId,
     String? origen,
     int? limite,
+    int? pagina,
   }) {
     final parametros = <String>[];
 
@@ -45,6 +48,9 @@ class HistorialApi {
     agregar('origen', origen);
     if (limite != null && limite > 0) {
       parametros.add('limit=$limite');
+    }
+    if (pagina != null && pagina > 1) {
+      parametros.add('page=$pagina');
     }
 
     return parametros.isEmpty ? '' : '?${parametros.join('&')}';
@@ -82,6 +88,37 @@ class HistorialApi {
         .toList();
   }
 
+  Future<PaginaMovimientosApp> listarPagina({
+    String? filtro,
+    String? periodo,
+    DateTime? desde,
+    DateTime? hasta,
+    String? tipo,
+    String? estado,
+    String? bicicleteroId,
+    String? guardiaId,
+    String? origen,
+    int? limite,
+    int pagina = 1,
+  }) async {
+    final query = _crearQuery(
+      filtro: filtro,
+      periodo: periodo,
+      desde: desde,
+      hasta: hasta,
+      tipo: tipo,
+      estado: estado,
+      bicicleteroId: bicicleteroId,
+      guardiaId: guardiaId,
+      origen: origen,
+      limite: limite,
+      pagina: pagina,
+    );
+
+    return PaginaMovimientosApp.desdeJson(
+        await cliente.get('/historial$query'));
+  }
+
   Future<ResumenHistorialApp> resumen({
     String? periodo,
     DateTime? desde,
@@ -113,7 +150,7 @@ class HistorialApi {
     return OpcionesHistorialApp.desdeJson(respuesta);
   }
 
-  Future<String> exportarExcel({
+  Future<Uint8List> exportarExcel({
     String? filtro,
     String? periodo,
     DateTime? desde,
@@ -135,6 +172,6 @@ class HistorialApi {
       guardiaId: guardiaId,
       origen: origen,
     );
-    return cliente.getTexto('/historial/exportar-excel$query');
+    return cliente.getBytes('/historial/exportar-excel$query');
   }
 }

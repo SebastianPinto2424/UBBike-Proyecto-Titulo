@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/repositorios_provider.dart';
 import 'package:ubbike/features/historial/data/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
+import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 
 class FiltrosMovimientosUsuario {
   const FiltrosMovimientosUsuario({
@@ -43,40 +45,109 @@ final filtrosMovimientosUsuarioProvider =
   (ref) => const FiltrosMovimientosUsuario(),
 );
 
-class MovimientosUsuarioVm extends AutoDisposeAsyncNotifier<List<MovimientoApp>> {
+final movimientosVersionProvider = StateProvider<int>((ref) => 0);
+
+class MovimientosUsuarioVm
+    extends AutoDisposeAsyncNotifier<List<MovimientoApp>> {
   Timer? _debounceBusqueda;
+  late RefrescoCoalescido _refresco;
+  int _revision = 0;
+  int _pagina = 1;
+  bool hayMas = false;
+  bool cargandoMas = false;
+  bool desactualizado = false;
 
   @override
   Future<List<MovimientoApp>> build() {
     final filtros = ref.watch(filtrosMovimientosUsuarioProvider);
-    final temporizador = Timer.periodic(
-      const Duration(seconds: 3),
-      (_) => refrescar(),
-    );
+    _revision++;
+    _pagina = 1;
+    hayMas = false;
+    cargandoMas = false;
+    final refresco = RefrescoCoalescido(
+      alRefrescar: _refrescar,
+      detectarFallo: () => desactualizado,
+    )..iniciarRespaldo();
+    _refresco = refresco;
+    ref.listen<int>(
+        movimientosVersionProvider, (_, __) => refresco.solicitar());
     ref.onDispose(() {
-      temporizador.cancel();
+      _revision++;
+      refresco.detener();
       _debounceBusqueda?.cancel();
     });
     return _cargar(filtros);
   }
 
-  Future<List<MovimientoApp>> _cargar(FiltrosMovimientosUsuario filtros) {
-    return ref.read(historialRepositoryProvider).listar(
+  Future<List<MovimientoApp>> _cargar(FiltrosMovimientosUsuario filtros) async {
+    final revision = _revision;
+    final paginas = _pagina;
+    final datos = <MovimientoApp>[];
+    for (var numero = 1; numero <= paginas; numero++) {
+      final pagina = await ref.read(historialRepositoryProvider).listarPagina(
           filtro: filtros.busqueda,
           periodo: filtros.periodo,
           tipo: filtros.tipo,
           estado: filtros.estado,
           origen: filtros.origen,
-        );
+          pagina: numero,
+          limite: 20);
+      datos.addAll(pagina.movimientos);
+      if (revision != _revision) return datos;
+      _pagina = numero;
+      hayMas = pagina.hayMas;
+      if (!hayMas) break;
+    }
+    desactualizado = false;
+    return {for (final item in datos) item.id: item}.values.toList();
   }
 
-  Future<void> refrescar() async {
+  Future<void> cargarMas() async {
+    if (!hayMas || cargandoMas || _refresco.enVuelo) return;
+    final revision = _revision;
+    final filtros = ref.read(filtrosMovimientosUsuarioProvider);
+    cargandoMas = true;
+    state = AsyncData([...?state.valueOrNull]);
+    try {
+      final pagina = await ref.read(historialRepositoryProvider).listarPagina(
+          filtro: filtros.busqueda,
+          periodo: filtros.periodo,
+          tipo: filtros.tipo,
+          estado: filtros.estado,
+          origen: filtros.origen,
+          pagina: _pagina + 1,
+          limite: 20);
+      if (revision != _revision) return;
+      _pagina = pagina.pagina;
+      hayMas = pagina.hayMas;
+      state = AsyncData({
+        for (final item in [...?state.valueOrNull, ...pagina.movimientos])
+          item.id: item
+      }.values.toList());
+    } catch (_) {
+      if (revision == _revision) desactualizado = true;
+    } finally {
+      if (revision == _revision) {
+        cargandoMas = false;
+        state = AsyncData([...?state.valueOrNull]);
+      }
+    }
+  }
+
+  Future<void> refrescar() => _refresco.solicitar();
+
+  Future<void> _refrescar() async {
+    if (cargandoMas) return;
+    final revision = _revision;
     try {
       final datos = await _cargar(ref.read(filtrosMovimientosUsuarioProvider));
-      state = AsyncData(datos);
+      if (revision == _revision) state = AsyncData(datos);
     } catch (error, stackTrace) {
-      if (!state.hasValue) {
-        state = AsyncError(error, stackTrace);
+      if (revision == _revision) {
+        desactualizado = true;
+        state = state.hasValue
+            ? AsyncData([...state.valueOrNull!])
+            : AsyncError(error, stackTrace);
       }
     }
   }
@@ -150,10 +221,37 @@ class MovimientosCentralVm {
             limite: limite,
           );
 
+  Future<PaginaMovimientosApp> listarPagina({
+    String? filtro,
+    String? periodo,
+    DateTime? desde,
+    DateTime? hasta,
+    String? tipo,
+    String? estado,
+    String? bicicleteroId,
+    String? guardiaId,
+    String? origen,
+    int? limite,
+    int pagina = 1,
+  }) =>
+      _ref.read(historialRepositoryProvider).listarPagina(
+            filtro: filtro,
+            periodo: periodo,
+            desde: desde,
+            hasta: hasta,
+            tipo: tipo,
+            estado: estado,
+            bicicleteroId: bicicleteroId,
+            guardiaId: guardiaId,
+            origen: origen,
+            limite: limite,
+            pagina: pagina,
+          );
+
   Future<OpcionesHistorialApp> opciones() =>
       _ref.read(historialRepositoryProvider).opciones();
 
-  Future<String> exportarExcel({
+  Future<Uint8List> exportarExcel({
     String? filtro,
     String? periodo,
     DateTime? desde,

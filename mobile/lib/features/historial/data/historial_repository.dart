@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/features/historial/data/historial_api.dart';
 import 'package:ubbike/features/historial/data/historial_modelos.dart';
@@ -32,6 +34,33 @@ class HistorialRepository {
         limite: limite,
       );
 
+  Future<PaginaMovimientosApp> listarPagina({
+    String? filtro,
+    String? periodo,
+    DateTime? desde,
+    DateTime? hasta,
+    String? tipo,
+    String? estado,
+    String? bicicleteroId,
+    String? guardiaId,
+    String? origen,
+    int? limite,
+    int pagina = 1,
+  }) =>
+      _api.listarPagina(
+        filtro: filtro,
+        periodo: periodo,
+        desde: desde,
+        hasta: hasta,
+        tipo: tipo,
+        estado: estado,
+        bicicleteroId: bicicleteroId,
+        guardiaId: guardiaId,
+        origen: origen,
+        limite: limite,
+        pagina: pagina,
+      );
+
   Future<ResumenHistorialApp> resumen({
     String? periodo,
     DateTime? desde,
@@ -55,7 +84,7 @@ class HistorialRepository {
 
   Future<OpcionesHistorialApp> opciones() => _api.opciones();
 
-  Future<String> exportarExcel({
+  Future<Uint8List> exportarExcel({
     String? filtro,
     String? periodo,
     DateTime? desde,

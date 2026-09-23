@@ -1,5 +1,36 @@
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/modelos/usuario_app.dart';
+
+class PaginaMovimientosApp {
+  const PaginaMovimientosApp({
+    required this.movimientos,
+    required this.pagina,
+    required this.totalPaginas,
+    required this.total,
+  });
+
+  final List<MovimientoApp> movimientos;
+  final int pagina;
+  final int totalPaginas;
+  final int total;
+
+  bool get hayMas => pagina < totalPaginas;
+
+  factory PaginaMovimientosApp.desdeJson(Map<String, dynamic> json) {
+    final datos = (json['movimientos'] ?? json['datos']) as List<dynamic>;
+    final metadatos = json['metadatos'] as Map<String, dynamic>?;
+
+    return PaginaMovimientosApp(
+      movimientos: datos
+          .map((item) => MovimientoApp.desdeJson(item as Map<String, dynamic>))
+          .toList(),
+      pagina: metadatos?['pagina'] as int? ?? 1,
+      totalPaginas: metadatos?['totalPaginas'] as int? ?? 1,
+      total: metadatos?['total'] as int? ?? datos.length,
+    );
+  }
+}
 
 class ResumenHistorialApp {
   const ResumenHistorialApp({
@@ -12,9 +43,19 @@ class ResumenHistorialApp {
     required this.qr,
     required this.operacionesPorGuardia,
     required this.operacionesPorBicicletero,
+    this.incidenciasAbiertas = 0,
+    this.solicitudesAbiertas = 0,
+    this.usuariosActivos = 0,
+    this.usuariosInactivos = 0,
+    this.usuariosSinVerificar = 0,
   });
 
   final int totalMovimientos;
+  final int incidenciasAbiertas;
+  final int solicitudesAbiertas;
+  final int usuariosActivos;
+  final int usuariosInactivos;
+  final int usuariosSinVerificar;
   final int ingresos;
   final int retiros;
   final int confirmados;
@@ -40,6 +81,11 @@ class ResumenHistorialApp {
       qr: json['qr'] as int? ?? 0,
       operacionesPorGuardia: mapa('operacionesPorGuardia'),
       operacionesPorBicicletero: mapa('operacionesPorBicicletero'),
+      incidenciasAbiertas: json['incidenciasAbiertas'] as int? ?? 0,
+      solicitudesAbiertas: json['solicitudesAbiertas'] as int? ?? 0,
+      usuariosActivos: json['usuariosActivos'] as int? ?? 0,
+      usuariosInactivos: json['usuariosInactivos'] as int? ?? 0,
+      usuariosSinVerificar: json['usuariosSinVerificar'] as int? ?? 0,
     );
   }
 }
