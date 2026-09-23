@@ -120,6 +120,12 @@ services:
       dockerfile: Dockerfile
       args:
         API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:3001}
+        MAP_TILE_URL: ${MAP_TILE_URL:-}
+        MAP_SATELLITE_URL: ${MAP_SATELLITE_URL:-}
+        MAP_ATTRIBUTION: ${MAP_ATTRIBUTION:-© OpenStreetMap contributors}
+        MAP_ATTRIBUTION_URL: ${MAP_ATTRIBUTION_URL:-https://www.openstreetmap.org/copyright}
+        MAP_CAMPUS_LAT: ${MAP_CAMPUS_LAT:--36.821728}
+        MAP_CAMPUS_LNG: ${MAP_CAMPUS_LNG:--73.011604}
         CSP_CONNECT_SRC: "'self' ${PUBLIC_API_BASE_URL:-http://localhost:3001} ${PUBLIC_WS_BASE_URL:-ws://localhost:3001} http://127.0.0.1:${BACKEND_PORT:-3001} ws://127.0.0.1:${BACKEND_PORT:-3001}"
         CSP_IMG_SRC: "'self' data: blob: ${PUBLIC_API_BASE_URL:-http://localhost:3001} http://127.0.0.1:${BACKEND_PORT:-3001}"
     container_name: ubbike_taller_frontend
