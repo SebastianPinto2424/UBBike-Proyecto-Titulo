@@ -3,6 +3,8 @@ import { cargarDatosIniciales } from './configuracion/datos-iniciales';
 import { entorno } from './configuracion/entorno';
 import { prisma } from './configuracion/prisma';
 import { inicializarTiempoReal } from './tiempo-real/tiempo-real';
+import { iniciarEntregas } from './modulos/entregas/entrega.worker';
+import { cerrarRedis } from './configuracion/redis';
 
 const iniciarServidor = async (): Promise<void> => {
   try {
@@ -15,13 +17,21 @@ const iniciarServidor = async (): Promise<void> => {
       console.log(`UBBike backend escuchando en puerto ${entorno.puerto}`);
     });
 
-    inicializarTiempoReal(servidor);
+    const tiempoReal = inicializarTiempoReal(servidor);
+    const detenerEntregas = iniciarEntregas();
+    let cerrando = false;
 
     const cerrar = async () => {
-      servidor.close(async () => {
-        await prisma.$disconnect();
-        process.exit(0);
-      });
+      if (cerrando) return;
+      cerrando = true;
+      const limite = setTimeout(() => process.exit(1), 45000);
+      limite.unref();
+      await new Promise<void>((resolve) => tiempoReal.close(() => resolve()));
+      await detenerEntregas();
+      await cerrarRedis();
+      await prisma.$disconnect();
+      clearTimeout(limite);
+      process.exit(0);
     };
 
     process.on('SIGINT', cerrar);
