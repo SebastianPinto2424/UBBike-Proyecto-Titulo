@@ -13,217 +13,201 @@ import 'package:ubbike/shared/modelos/rol_usuario.dart';
 import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 
-class VistaPerfil extends ConsumerWidget {
+class VistaPerfil extends ConsumerStatefulWidget {
   const VistaPerfil({super.key, required this.rol});
-
   final RolUsuario rol;
+  @override
+  ConsumerState<VistaPerfil> createState() => _VistaPerfilState();
+}
+
+class _VistaPerfilState extends ConsumerState<VistaPerfil> {
+  bool _enviando = false;
+  int _espera = 0;
+  Timer? _temporizador;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sesion = ref.watch(sesionProvider).value;
-    final usuarioSesion = sesion is SesionActiva ? sesion.usuario : null;
-    final nombrePerfil = textoNoVacio(usuarioSesion?.nombre, rol.etiqueta);
-    final correoPerfil = textoNoVacio(usuarioSesion?.correo, '—');
-    final rutPerfil = textoNoVacio(usuarioSesion?.rut, 'Sin RUT registrado');
+  void dispose() {
+    _temporizador?.cancel();
+    super.dispose();
+  }
 
-    final tarjetaPerfil = Card(
-      elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 1),
-      ),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Text(
-                nombrePerfil,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: ColoresUbb.azulNoche,
-                    ),
+  Future<void> _cambiarContrasena(String correo) async {
+    if (_enviando || _espera > 0) return;
+    setState(() => _enviando = true);
+    try {
+      final mensaje = await ref
+          .read(autenticacionVmProvider)
+          .solicitarCambioContrasena(correo);
+      if (!mounted) return;
+      context.mostrarExito(mensaje);
+      setState(() => _espera = 60);
+      _temporizador = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() => _espera--);
+        if (_espera == 0) timer.cancel();
+      });
+    } on ExcepcionApi catch (error) {
+      if (mounted) context.mostrarError(error.mensaje);
+    } catch (_) {
+      if (mounted) {
+        context
+            .mostrarError('No pudimos enviar el enlace. Intenta nuevamente.');
+      }
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sesion = ref.watch(sesionProvider).valueOrNull;
+    final usuario = sesion is SesionActiva ? sesion.usuario : null;
+    final nombre = textoNoVacio(usuario?.nombre, widget.rol.etiqueta);
+    final correo = textoNoVacio(usuario?.correo, '—');
+    final iniciales = nombre
+        .trim()
+        .split(RegExp(r'\s+'))
+        .take(2)
+        .map((p) => p.characters.first)
+        .join()
+        .toUpperCase();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                  child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor:
+                            ColoresUbb.azulApp.withValues(alpha: .10),
+                        foregroundColor: ColoresUbb.azulApp,
+                        child:
+                            Text(iniciales, textScaler: TextScaler.noScaling),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(nombre,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: ColoresUbb.azulNoche)),
+                            const SizedBox(height: 8),
+                            ChipEstado(
+                                texto: widget.rol.etiqueta,
+                                color: ColoresUbb.azulApp),
+                          ])),
+                    ]),
+              )),
+              const SizedBox(height: 16),
+              Text('Datos de la cuenta',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Card(
+                  child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _DatoPerfilFila(
+                          etiqueta: 'Correo institucional', valor: correo),
+                      const SizedBox(height: 8),
+                      ChipEstado(
+                          texto: usuario?.correoVerificado == true
+                              ? 'Correo verificado'
+                              : 'Verificación pendiente',
+                          color: usuario?.correoVerificado == true
+                              ? ColoresUbb.exito
+                              : ColoresUbb.amarilloInstitucional),
+                      const Divider(height: 28),
+                      _DatoPerfilFila(
+                          etiqueta: 'RUT',
+                          valor:
+                              textoNoVacio(usuario?.rut, 'Sin RUT registrado')),
+                    ]),
+              )),
+              const SizedBox(height: 16),
+              Text('Seguridad', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Card(
+                  child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading:
+                    const Icon(Icons.lock_outline, color: ColoresUbb.azulApp),
+                title: Text(_enviando
+                    ? 'Enviando enlace…'
+                    : _espera > 0
+                        ? 'Reenviar en ${_espera}s'
+                        : 'Cambiar contraseña'),
+                subtitle: const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text(
+                        'Recibirás un enlace seguro en tu correo institucional.')),
+                trailing: _enviando
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.chevron_right),
+                onTap: usuario == null || _enviando || _espera > 0
+                    ? null
+                    : () => _cambiarContrasena(correo),
+              )),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: ColoresUbb.rojoInstitucional,
+                    padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () => ref.read(sesionProvider.notifier).cerrar(),
+                icon: const Icon(Icons.logout),
+                label: const Text('Cerrar sesión'),
               ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChipEstado(
-                  texto: rol.etiqueta,
-                  color: ColoresUbb.azulApp,
-                ),
-                ChipEstado(
-                  texto: usuarioSesion?.correoVerificado == true
-                      ? 'Correo verificado'
-                      : 'Correo pendiente',
-                  color: usuarioSesion?.correoVerificado == true
-                      ? ColoresUbb.exito
-                      : ColoresUbb.amarilloInstitucional,
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-            _DatoPerfilFila(
-              etiqueta: 'Correo',
-              valor: correoPerfil,
-            ),
-            const Divider(height: 24),
-            _DatoPerfilFila(
-              etiqueta: 'RUT',
-              valor: rutPerfil,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: ColoresUbb.azulApp,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () async {
-                try {
-                  final mensaje = await ref
-                      .read(autenticacionVmProvider)
-                      .solicitarCambioContrasena(correoPerfil);
-                  if (context.mounted) {
-                    context.mostrarExito(mensaje);
-                  }
-                } on ExcepcionApi catch (error) {
-                  if (context.mounted) {
-                    context.mostrarError(error.mensaje);
-                  }
-                }
-              },
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Cambiar contraseña',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Se enviará un correo electrónico con un enlace seguro para cambiar tu contraseña.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: ColoresUbb.textoSecundario,
-                  ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: ColoresUbb.rojoInstitucional,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () {
-                ref.read(sesionProvider.notifier).cerrar();
-              },
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Cerrar sesión',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final altoMinimo =
-            constraints.maxHeight > 32 ? constraints.maxHeight - 32 : 0.0;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: altoMinimo),
-            child: Center(
-              child: SizedBox(
-                width: double.infinity,
-                child: tarjetaPerfil,
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
 
 class _DatoPerfilFila extends StatelessWidget {
-  const _DatoPerfilFila({
-    required this.etiqueta,
-    required this.valor,
-  });
-
+  const _DatoPerfilFila({required this.etiqueta, required this.valor});
   final String etiqueta;
   final String valor;
-
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          etiqueta,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: ColoresUbb.textoSecundario,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-        ),
-        const SizedBox(height: 2),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final estilo = Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: ColoresUbb.azulNoche,
-                );
-
-            return Tooltip(
-              message: valor,
-              child: ClipRect(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                    child: Text(
-                      valor,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: estilo,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(etiqueta,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: ColoresUbb.textoSecundario)),
+          const SizedBox(height: 4),
+          SelectableText(valor,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600, color: ColoresUbb.azulNoche)),
+        ],
+      );
 }
 
 class SelectorBicicleteroGuardiaPerfil extends ConsumerStatefulWidget {

@@ -86,14 +86,6 @@ class _AplicacionUBBikeState extends State<AplicacionUBBike> {
       navigatorKey: _navigatorKey,
       title: 'UBBike',
       debugShowCheckedModeBanner: false,
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.noScaling,
-          ),
-          child: child!,
-        );
-      },
       theme: crearTemaUbb(),
       locale: const Locale('es'),
       supportedLocales: const [Locale('es'), Locale('en')],
@@ -166,7 +158,31 @@ class _EnrutadorRaiz extends ConsumerWidget {
 
     return sesionAsync.when(
       loading: () => const _PantallaCarga(),
-      error: (_, __) => const PantallaLogin(),
+      error: (_, __) => Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 40),
+                const SizedBox(height: 16),
+                const Text(
+                    'No pudimos comprobar tu sesión. Tus credenciales siguen guardadas.',
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(
+                    onPressed: () => ref.invalidate(sesionProvider),
+                    child: const Text('Reintentar')),
+                TextButton(
+                    onPressed: () =>
+                        ref.read(sesionProvider.notifier).olvidar(),
+                    child: const Text('Usar otra cuenta')),
+              ],
+            ),
+          ),
+        ),
+      ),
       data: (sesion) => switch (sesion) {
         SesionCargando() => const _PantallaCarga(),
         SesionVacia() => const PantallaLogin(),

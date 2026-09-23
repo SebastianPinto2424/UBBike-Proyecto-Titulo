@@ -14,7 +14,7 @@ import 'package:ubbike/shared/servicios/ubicacion_servicio.dart';
 import 'package:ubbike/shared/utils/cercania_bicicletero.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/qr/presentation/qr_widgets.dart';
 import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
 
@@ -66,7 +66,7 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
 
         final debeSugerir = bicicleta?.dentroBicicletero != true;
         if (debeSugerir) {
-          _buscarSugerenciaCercania(listaBicicleteros, carga);
+          unawaited(_buscarSugerenciaCercania(listaBicicleteros, carga));
         }
       }
     } catch (_) {
@@ -171,17 +171,18 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
               alignment: Alignment.topCenter,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child: (debeSeleccionarBicicletero && sugerenciaCercania != null)
-                    ? Padding(
-                        key: const ValueKey('banner-sugerencia'),
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _BannerSugerenciaBicicletero(
-                          sugerencia: sugerenciaCercania!,
-                          onAceptar: _aceptarSugerencia,
-                          onDescartar: _descartarSugerencia,
-                        ),
-                      )
-                    : const SizedBox.shrink(key: ValueKey('banner-vacio')),
+                child:
+                    (debeSeleccionarBicicletero && sugerenciaCercania != null)
+                        ? Padding(
+                            key: const ValueKey('banner-sugerencia'),
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _BannerSugerenciaBicicletero(
+                              sugerencia: sugerenciaCercania!,
+                              onAceptar: _aceptarSugerencia,
+                              onDescartar: _descartarSugerencia,
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('banner-vacio')),
               ),
             ),
             if (debeSeleccionarBicicletero)

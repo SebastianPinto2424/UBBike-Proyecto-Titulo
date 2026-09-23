@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/features/notificaciones/application/notificaciones_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
+import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 
 class PantallaNotificaciones extends ConsumerStatefulWidget {
@@ -20,33 +20,83 @@ class PantallaNotificaciones extends ConsumerStatefulWidget {
 class _PantallaNotificacionesState
     extends ConsumerState<PantallaNotificaciones> {
   NotificacionesVm get vm => ref.read(notificacionesVmProvider);
-  late Future<List<NotificacionApp>> futuroNotificaciones;
-  Timer? temporizadorNotificaciones;
+  List<NotificacionApp> _notificaciones = [];
+  String? _cursor;
+  bool _cargando = false;
+  String? _error;
+  late final RefrescoCoalescido refrescoNotificaciones;
 
   @override
   void initState() {
     super.initState();
-    futuroNotificaciones = vm.listar();
-    temporizadorNotificaciones = Timer.periodic(
-      const Duration(seconds: 20),
-      (_) => _recargar(),
-    );
+    _recargar();
+    refrescoNotificaciones = RefrescoCoalescido(alRefrescar: _recargar)
+      ..iniciarRespaldo();
   }
 
   @override
   void dispose() {
-    temporizadorNotificaciones?.cancel();
+    refrescoNotificaciones.detener();
     super.dispose();
   }
 
   Future<void> _recargar() async {
-    if (!mounted) {
+    if (!mounted || _cargando) {
       return;
     }
 
     setState(() {
-      futuroNotificaciones = vm.listar();
+      _cargando = true;
+      _error = null;
     });
+    try {
+      final conservar = _notificaciones.length;
+      var pagina = await vm.listarPagina();
+      final datos = [...pagina.datos];
+      while (datos.length < conservar && pagina.cursor != null && mounted) {
+        pagina = await vm.listarPagina(cursor: pagina.cursor);
+        datos.addAll(pagina.datos);
+      }
+      if (!mounted) return;
+      setState(() {
+        _notificaciones =
+            {for (final item in datos) item.id: item}.values.toList();
+        _cursor = pagina.cursor;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'No se pudo actualizar. Revisa tu conexión.');
+      }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  Future<void> _cargarMas() async {
+    if (_cargando || _cursor == null) return;
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final pagina = await vm.listarPagina(cursor: _cursor);
+      if (!mounted) return;
+      setState(() {
+        final porId = {
+          for (final item in [..._notificaciones, ...pagina.datos])
+            item.id: item
+        };
+        _notificaciones = porId.values.toList();
+        _cursor = pagina.cursor;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(
+            () => _error = 'No se pudo cargar la página. Intenta nuevamente.');
+      }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   @override
@@ -57,32 +107,27 @@ class _PantallaNotificacionesState
       ),
       body: ContenedorResponsivo(
         anchoMaximo: 760,
-        child: FutureBuilder<List<NotificacionApp>>(
-          future: futuroNotificaciones,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+        child: Builder(
+          builder: (context) {
+            if (_cargando && _notificaciones.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (snapshot.hasError) {
-              final mensaje = snapshot.error is ExcepcionApi
-                  ? (snapshot.error! as ExcepcionApi).mensaje
-                  : 'No se pudieron cargar las notificaciones';
-              return _EstadoNotificaciones(
-                icono: Icons.cloud_off_outlined,
-                titulo: 'Sin conexión',
-                mensaje: mensaje,
-              );
-            }
-
-            final notificaciones = snapshot.data ?? [];
+            final notificaciones = _notificaciones;
 
             if (notificaciones.isEmpty) {
-              return const _EstadoNotificaciones(
-                icono: Icons.notifications_none_outlined,
-                titulo: 'Sin notificaciones',
-                mensaje: 'Aquí verás solicitudes, alertas e incidencias.',
-              );
+              return Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                    _error == null
+                        ? Icons.notifications_none_outlined
+                        : Icons.cloud_off_outlined,
+                    size: 36),
+                const SizedBox(height: 12),
+                Text(_error ?? 'Sin notificaciones'),
+                TextButton(
+                    onPressed: _recargar, child: const Text('Actualizar')),
+              ]));
             }
 
             final ordenadas = [...notificaciones]..sort((a, b) {
@@ -94,9 +139,20 @@ class _PantallaNotificacionesState
               onRefresh: _recargar,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: ordenadas.length,
+                itemCount: ordenadas.length + 1,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
+                  if (index == ordenadas.length) {
+                    return Column(children: [
+                      if (_error != null) Text(_error!),
+                      if (_cursor != null)
+                        OutlinedButton(
+                            onPressed: _cargando ? null : _cargarMas,
+                            child: Text(_cargando
+                                ? 'Cargando…'
+                                : 'Cargar más notificaciones')),
+                    ]);
+                  }
                   return _TarjetaNotificacion(
                     notificacion: ordenadas[index],
                     onTap: () => _abrirNotificacion(ordenadas[index]),
@@ -285,44 +341,5 @@ class _TarjetaNotificacion extends StatelessWidget {
       return 'Hace $d ${d == 1 ? 'día' : 'días'}';
     }
     return '${fecha.day}/${fecha.month}/${fecha.year}';
-  }
-}
-
-class _EstadoNotificaciones extends StatelessWidget {
-  const _EstadoNotificaciones({
-    required this.icono,
-    required this.titulo,
-    required this.mensaje,
-  });
-
-  final IconData icono;
-  final String titulo;
-  final String mensaje;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icono, color: ColoresUbb.azulApp, size: 44),
-              const SizedBox(height: 12),
-              Text(
-                titulo,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 6),
-              Text(mensaje, textAlign: TextAlign.center),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

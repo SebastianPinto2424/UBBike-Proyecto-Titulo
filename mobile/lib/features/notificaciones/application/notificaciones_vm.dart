@@ -2,11 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/repositorios_provider.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
+import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 
 class NotificacionesVm {
   const NotificacionesVm(this._ref);
 
   final Ref _ref;
+
+  Future<PaginaCursor<NotificacionApp>> listarPagina({String? cursor}) =>
+      _ref.read(notificacionRepositoryProvider).listarPagina(cursor: cursor);
 
   Future<List<NotificacionApp>> listar() =>
       _ref.read(notificacionRepositoryProvider).listar();

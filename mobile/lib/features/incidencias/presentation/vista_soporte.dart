@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:ubbike/features/admin/presentation/vista_gestion_usuarios.dart';
 import 'package:ubbike/shared/widgets/vista_con_tabs.dart';
 import 'package:ubbike/features/qr/presentation/vista_qr_usuario.dart';
 import 'package:ubbike/features/acceso/presentation/vista_solicitar_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_escaner_qr_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_gestion_manual_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_alertas_guardia.dart';
-import 'package:ubbike/features/historial/presentation/vista_movimientos_central.dart';
 import 'package:ubbike/features/acceso/presentation/vista_operaciones_guardias_central.dart';
 import 'package:ubbike/features/acceso/presentation/vista_solicitudes_central.dart';
 import 'package:ubbike/features/incidencias/presentation/vista_incidencias.dart';
@@ -129,34 +127,6 @@ class VistaQrAdmin extends StatelessWidget {
         VistaQrUsuario(),
         VistaEscanerQrGuardia(),
         VistaGestionManualGuardia(),
-      ],
-    );
-  }
-}
-
-class VistaGestionAdmin extends StatelessWidget {
-  const VistaGestionAdmin({
-    super.key,
-    this.initialIndex = 0,
-    this.initialSoporteIndex = 0,
-  });
-
-  final int initialIndex;
-  final int initialSoporteIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return VistaConTabs(
-      initialIndex: initialIndex,
-      tabs: [
-        tabCompacto(Icons.manage_accounts_outlined, 'Usuarios'),
-        tabCompacto(Icons.manage_search_outlined, 'Movimientos'),
-        tabCompacto(Icons.support_agent_outlined, 'Atención'),
-      ],
-      vistas: [
-        const VistaGestionUsuarios(),
-        const VistaMovimientosCentral(),
-        VistaSoporteAdministrador(initialIndex: initialSoporteIndex),
       ],
     );
   }

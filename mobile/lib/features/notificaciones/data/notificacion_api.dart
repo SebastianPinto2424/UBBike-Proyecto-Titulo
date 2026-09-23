@@ -1,17 +1,28 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
+import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 
 class NotificacionApi {
   const NotificacionApi({required this.cliente});
 
   final ClienteApi cliente;
 
-  Future<List<NotificacionApp>> listar() async {
-    final respuesta = await cliente.get('/notificaciones');
+  Future<List<NotificacionApp>> listar() async => (await listarPagina()).datos;
+
+  Future<PaginaCursor<NotificacionApp>> listarPagina({String? cursor}) async {
+    final consulta = cursor == null
+        ? ''
+        : '?${Uri(queryParameters: {'cursor': cursor}).query}';
+    final respuesta = await cliente.get('/notificaciones$consulta');
     final datos = respuesta['notificaciones'] as List<dynamic>;
-    return datos
-        .map((item) => NotificacionApp.desdeJson(item as Map<String, dynamic>))
-        .toList();
+    return PaginaCursor(
+      cursor: respuesta['nextCursor'] as String?,
+      noLeidas: respuesta['noLeidas'] as int? ?? 0,
+      datos: datos
+          .map(
+              (item) => NotificacionApp.desdeJson(item as Map<String, dynamic>))
+          .toList(),
+    );
   }
 
   Future<void> marcarTodasLeidas() async {
@@ -31,6 +42,7 @@ class NotificacionApi {
   }
 
   Future<void> eliminarDispositivo(String token) async {
-    await cliente.delete('/notificaciones/dispositivos', body: {'token': token});
+    await cliente
+        .delete('/notificaciones/dispositivos', body: {'token': token});
   }
 }
