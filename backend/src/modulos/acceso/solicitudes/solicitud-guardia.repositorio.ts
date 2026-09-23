@@ -2,6 +2,7 @@ import { Prisma } from '../../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../../configuracion/prisma';
 import { EstadoSolicitudGuardia } from './estado-solicitud-guardia';
 import { TipoSolicitudGuardia } from './tipo-solicitud-guardia';
+import { bloquearFila } from '../../../comun/utils/bloqueos';
 
 export const includeSolicitudCompleta = {
   solicitadaPorUsuario: true,
@@ -67,11 +68,13 @@ export const crear = (
   client: ClientePrisma = prisma
 ) => client.solicitudGuardia.create({ data, include: includeSolicitudCompleta });
 
-export const buscarPorId = (id: string, client: ClientePrisma = prisma) =>
-  client.solicitudGuardia.findUnique({
+export const buscarPorId = async (id: string, client: ClientePrisma = prisma) => {
+  if (client !== prisma) await bloquearFila(client, 'solicitudes_guardia', id);
+  return client.solicitudGuardia.findUnique({
     where: { id },
     include: includeSolicitudCompleta
   });
+};
 
 export const buscarPorIdOError = (id: string, client: ClientePrisma = prisma) =>
   client.solicitudGuardia.findUniqueOrThrow({
