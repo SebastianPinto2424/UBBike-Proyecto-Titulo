@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import type { ClientePrisma } from '../../configuracion/prisma';
+import { encolarEntrega } from '../entregas/entrega.repositorio';
 import { entorno } from '../../configuracion/entorno';
 
 type AdjuntoCorreo = {
@@ -8,13 +11,17 @@ type AdjuntoCorreo = {
   cid?: string;
 };
 
-type DatosCorreo = {
+export type DatosCorreo = {
   para: string;
   asunto: string;
   texto: string;
   html: string;
   adjuntos?: AdjuntoCorreo[];
   referencia?: string;
+};
+
+export type CorreoEncolado = Omit<DatosCorreo, 'adjuntos'> & {
+  adjuntos?: Array<{ filename: string; content: string; encoding: string; cid?: string }>;
 };
 
 const CORREO_SOPORTE = 'soporte@ubbike.cl';
@@ -116,7 +123,11 @@ const crearTransporte = () => {
     host: entorno.correo.host,
     port: entorno.correo.puerto,
     secure: entorno.correo.seguro,
-    auth
+    auth,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 30000,
+    disableUrlAccess: true
   });
 };
 
@@ -131,7 +142,21 @@ export const verificarConfiguracionCorreo = async (): Promise<boolean> => {
   return true;
 };
 
-export const enviarCorreo = async (datos: DatosCorreo): Promise<void> => {
+export const enviarCorreo = async (datos: DatosCorreo, db?: ClientePrisma): Promise<void> => {
+  const adjuntos = datos.adjuntos
+    ? await Promise.all(
+        datos.adjuntos.map(async (adjunto) => ({
+          filename: adjunto.filename,
+          cid: adjunto.cid,
+          content: (await readFile(adjunto.path)).toString('base64'),
+          encoding: 'base64'
+        }))
+      )
+    : undefined;
+  await encolarEntrega('CORREO', { ...datos, adjuntos }, db);
+};
+
+export const entregarCorreo = async (datos: CorreoEncolado, entregaId: string): Promise<void> => {
   const transporte = crearTransporte();
 
   if (!transporte) {
@@ -140,14 +165,14 @@ export const enviarCorreo = async (datos: DatosCorreo): Promise<void> => {
     }
 
     console.log('[correo-desarrollo]', {
-      para: datos.para,
-      asunto: datos.asunto,
-      texto: datos.texto
+      entregaId,
+      aviso: 'SMTP no configurado; entrega simulada sin registrar enlaces ni datos personales'
     });
     return;
   }
 
   await transporte.sendMail({
+    messageId: `<${entregaId}@ubbike.local>`,
     from: entorno.correo.remitente,
     to: datos.para,
     subject: datos.asunto,
@@ -471,3 +496,86 @@ export const crearCorreoMovimiento = (datos: DatosCorreoMovimiento) => {
 };
 
 export const crearCorreoMovimientoManual = crearCorreoMovimiento;
+
+type DatosCorreoIncidenciaNueva = {
+  nombreDestinatario: string;
+  tipo: string;
+  bicicletero: string;
+  descripcion: string;
+  reportadaPor: string;
+  fecha: Date;
+  recordatorio?: boolean;
+};
+
+export const crearCorreoIncidenciaNueva = (datos: DatosCorreoIncidenciaNueva) => {
+  const fecha = datos.fecha.toLocaleString('es-CL', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Santiago'
+  });
+  const titulo = datos.recordatorio
+    ? 'Recordatorio: incidencia sin atender'
+    : 'Nueva incidencia reportada';
+  const intro = datos.recordatorio
+    ? 'Este reporte operativo sigue pendiente de revisión.'
+    : 'Hay un reporte operativo pendiente de revisión.';
+
+  return {
+    asunto: `${datos.recordatorio ? 'Recordatorio: incidencia' : 'Nueva incidencia'} en ${datos.bicicletero} · UBBike`,
+    texto: `Hola ${datos.nombreDestinatario}: ${intro}
+Tipo: ${datos.tipo}.
+Bicicletero: ${datos.bicicletero}.
+Reportada por: ${datos.reportadaPor}.
+Fecha: ${fecha}.
+Descripción: ${datos.descripcion}
+${pieTexto()}`,
+    html: envolverHtml(`
+      <h2 style="color: #014898;">${titulo}</h2>
+      <p>Hola ${escaparHtml(datos.nombreDestinatario)},</p>
+      <p>${intro}</p>
+      <ul>
+        <li><strong>Tipo:</strong> ${escaparHtml(datos.tipo)}</li>
+        <li><strong>Bicicletero:</strong> ${escaparHtml(datos.bicicletero)}</li>
+        <li><strong>Reportada por:</strong> ${escaparHtml(datos.reportadaPor)}</li>
+        <li><strong>Fecha:</strong> ${escaparHtml(fecha)}</li>
+      </ul>
+      <p><strong>Descripción:</strong> ${escaparHtml(datos.descripcion)}</p>
+      ${pieHtml()}
+    `)
+  };
+};
+
+type DatosCorreoIncidenciaResuelta = {
+  nombre: string;
+  tipo: string;
+  bicicletero: string;
+  estado: string;
+  respuesta: string;
+  fecha: Date;
+};
+
+export const crearCorreoIncidenciaResuelta = (datos: DatosCorreoIncidenciaResuelta) => {
+  const fecha = datos.fecha.toLocaleString('es-CL', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Santiago'
+  });
+
+  return {
+    asunto: `Tu incidencia en ${datos.bicicletero} quedó ${datos.estado.toLowerCase()} · UBBike`,
+    texto: `Hola ${datos.nombre}: tu reporte en ${datos.bicicletero} quedó ${datos.estado.toLowerCase()} el ${fecha}.
+Tipo: ${datos.tipo}.
+Respuesta: ${datos.respuesta}
+${pieTexto()}`,
+    html: envolverHtml(`
+      <h2 style="color: #014898;">Tu incidencia quedó ${escaparHtml(datos.estado.toLowerCase())}</h2>
+      <p>Hola ${escaparHtml(datos.nombre)},</p>
+      <p>Tu reporte en <strong>${escaparHtml(datos.bicicletero)}</strong> quedó <strong>${escaparHtml(datos.estado.toLowerCase())}</strong> el <strong>${escaparHtml(fecha)}</strong>.</p>
+      <ul>
+        <li><strong>Tipo:</strong> ${escaparHtml(datos.tipo)}</li>
+      </ul>
+      <p><strong>Respuesta:</strong> ${escaparHtml(datos.respuesta)}</p>
+      ${pieHtml()}
+    `)
+  };
+};
