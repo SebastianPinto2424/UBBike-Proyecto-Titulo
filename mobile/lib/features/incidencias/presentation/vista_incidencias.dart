@@ -9,13 +9,14 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/widgets/boton_con_espera.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/central_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/central_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/utiles_comun.dart';
+import 'package:ubbike/shared/utils/utiles_comun.dart';
 import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
 import 'package:ubbike/features/bicicletas/presentation/vista_bicicletas_usuario.dart';
 
@@ -92,12 +93,18 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
         context.mostrarError(error.mensaje);
       }
       return false;
+    } catch (_) {
+      if (mounted) {
+        context.mostrarError('No se pudo conectar con el backend');
+      }
+      return false;
     }
   }
 
   Future<void> _abrirFormulario() async {
-    final datosFormulario =
-        ref.read(datosFormularioIncidenciaProvider(_argsFormulario)).valueOrNull;
+    final datosFormulario = ref
+        .read(datosFormularioIncidenciaProvider(_argsFormulario))
+        .valueOrNull;
     if (datosFormulario == null) {
       return;
     }
@@ -148,6 +155,28 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
       if (mounted) {
         context.mostrarError(error.mensaje);
       }
+    } catch (_) {
+      if (mounted) {
+        context.mostrarError('No se pudo conectar con el backend');
+      }
+    }
+  }
+
+  Future<void> _recordar(IncidenciaApp incidencia) async {
+    try {
+      await vm.recordar(incidenciaId: incidencia.id);
+
+      if (mounted) {
+        context.mostrarExito('Recordatorio enviado');
+      }
+    } on ExcepcionApi catch (error) {
+      if (mounted) {
+        context.mostrarError(error.mensaje);
+      }
+    } catch (_) {
+      if (mounted) {
+        context.mostrarError('No se pudo conectar con el backend');
+      }
     }
   }
 
@@ -162,7 +191,8 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
     return showDialog<String?>(
       context: context,
       builder: (_) => _DialogoRespuestaGestion(
-        titulo: _etiquetaEstadoIncidencia(estado),
+        incidencia: incidencia,
+        estado: estado,
         respuestaInicial: incidencia.respuesta ?? '',
       ),
     );
@@ -170,6 +200,11 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(incidenciasVersionProvider, (_, __) {
+      if (mounted) {
+        vm.recargar();
+      }
+    });
     final estadoIncidencias = ref.watch(incidenciasVmProvider);
     final filtros = ref.watch(filtrosIncidenciasProvider);
     final datosFormulario =
@@ -220,8 +255,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
                         TarjetaAccion(
                           icono: Icons.error_outline,
                           titulo: 'No se pudieron cargar incidencias',
-                          detalle:
-                              '${estadoIncidencias.error}\nToca para reintentar.',
+                          detalle: 'Revisa tu conexión y toca para reintentar.',
                           color: ColoresUbb.rojoInstitucional,
                           onTap: _recargar,
                         ),
@@ -250,6 +284,11 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(bottom: 24),
                     children: [
+                      if (vm.desactualizado)
+                        const ListTile(
+                            leading: Icon(Icons.cloud_off_outlined),
+                            title: Text(
+                                'Datos sin actualizar. Desliza para reintentar.')),
                       ...incidencias.map(
                         (incidencia) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
@@ -258,11 +297,21 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
                             mostrarReportante: widget.mostrarReportante,
                             puedeGestionar: widget.puedeGestionar,
                             gestionGuardia: widget.gestionGuardia,
+                            mostrarRecordar: !widget.mostrarReportante,
                             onActualizarEstado: (estado) =>
                                 _actualizarEstado(incidencia, estado),
+                            onRecordar: () => _recordar(incidencia),
+                            onEsperaCumplida: vm.refrescar,
                           ),
                         ),
                       ),
+                      if (vm.hayMas)
+                        OutlinedButton(
+                          onPressed: vm.cargandoMas ? null : vm.cargarMas,
+                          child: Text(vm.cargandoMas
+                              ? 'Cargando…'
+                              : 'Cargar más incidencias'),
+                        ),
                     ],
                   );
                 },
@@ -403,11 +452,13 @@ class _SheetRegistrarIncidenciaState extends State<_SheetRegistrarIncidencia> {
 
 class _DialogoRespuestaGestion extends StatefulWidget {
   const _DialogoRespuestaGestion({
-    required this.titulo,
+    required this.incidencia,
+    required this.estado,
     required this.respuestaInicial,
   });
 
-  final String titulo;
+  final IncidenciaApp incidencia;
+  final String estado;
   final String respuestaInicial;
 
   @override
@@ -442,30 +493,95 @@ class _DialogoRespuestaGestionState extends State<_DialogoRespuestaGestion> {
 
   @override
   Widget build(BuildContext context) {
+    final descartar = widget.estado == 'DESCARTADA';
+    final color = descartar ? ColoresUbb.rojoInstitucional : ColoresUbb.azulApp;
+    final incidencia = widget.incidencia;
+
     return AlertDialog(
-      title: Text(widget.titulo),
+      scrollable: true,
+      icon: Icon(
+        descartar ? Icons.block_outlined : Icons.check_circle_outline,
+        color: color,
+        size: 44,
+      ),
+      title: Text(
+        descartar ? 'Descartar incidencia' : 'Marcar incidencia como resuelta',
+        textAlign: TextAlign.center,
+      ),
       content: Form(
         key: formKeyRespuestaGestion,
-        child: TextFormField(
-          controller: controller,
-          minLines: 3,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            labelText: 'Respuesta de cierre',
-            hintText: 'Explica la resolución o el motivo del cierre.',
-            alignLabelWithHint: true,
-          ),
-          validator: _validarRespuestaGestionIncidencia,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: controller,
+              minLines: 3,
+              maxLines: 5,
+              maxLength: 1000,
+              decoration: const InputDecoration(
+                labelText: 'Respuesta de cierre',
+                hintText: 'Explica la resolución o el motivo del cierre.',
+                alignLabelWithHint: true,
+              ),
+              validator: _validarRespuestaGestionIncidencia,
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.mark_email_read_outlined,
+                  size: 16,
+                  color: ColoresUbb.textoSecundario,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Esta respuesta le llegará a ${incidencia.reportadaPorUsuario.nombre} por correo y notificación.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: ColoresUbb.textoSecundario,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
+      actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: _guardar,
-          child: const Text('Guardar'),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: ColoresUbb.rojoInstitucional,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () => Navigator.of(context).pop(null),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Cancelar'),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: _guardar,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(descartar ? 'Descartar' : 'Marcar resuelta'),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -825,6 +941,7 @@ class _FiltrosIncidencias extends StatelessWidget {
                 children: [
                   for (final item in [
                     'TODOS',
+                    'ABIERTAS',
                     'PENDIENTE',
                     'EN_REVISION',
                     'RESUELTA'
@@ -874,14 +991,20 @@ class _TarjetaIncidencia extends StatelessWidget {
     required this.mostrarReportante,
     required this.puedeGestionar,
     required this.gestionGuardia,
+    required this.mostrarRecordar,
     required this.onActualizarEstado,
+    required this.onRecordar,
+    required this.onEsperaCumplida,
   });
 
   final IncidenciaApp incidencia;
   final bool mostrarReportante;
   final bool puedeGestionar;
   final bool gestionGuardia;
+  final bool mostrarRecordar;
   final ValueChanged<String> onActualizarEstado;
+  final VoidCallback onRecordar;
+  final VoidCallback onEsperaCumplida;
 
   @override
   Widget build(BuildContext context) {
@@ -957,29 +1080,49 @@ class _TarjetaIncidencia extends StatelessWidget {
                 mensaje: incidencia.respuesta!,
               ),
             ],
-            if (puedeGestionar && !cerrada) ...[
+            if ((puedeGestionar || mostrarRecordar) && !cerrada) ...[
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: incidencia.estado == 'EN_REVISION'
-                        ? null
-                        : () => onActualizarEstado('EN_REVISION'),
-                    icon: const Icon(Icons.manage_search_outlined),
-                    label: const Text('En revisión'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => onActualizarEstado('RESUELTA'),
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Resolver'),
-                  ),
-                  if (!gestionGuardia)
-                    TextButton.icon(
-                      onPressed: () => onActualizarEstado('DESCARTADA'),
-                      icon: const Icon(Icons.block_outlined),
-                      label: const Text('Descartar'),
+                  if (puedeGestionar) ...[
+                    OutlinedButton.icon(
+                      onPressed: incidencia.estado == 'EN_REVISION'
+                          ? null
+                          : () => onActualizarEstado('EN_REVISION'),
+                      icon: const Icon(Icons.manage_search_outlined),
+                      label: const Text('En revisión'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => onActualizarEstado('RESUELTA'),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Resolver'),
+                    ),
+                    if (!gestionGuardia)
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ColoresUbb.rojoInstitucional,
+                          side: const BorderSide(
+                            color: ColoresUbb.rojoInstitucional,
+                          ),
+                        ),
+                        onPressed: () => onActualizarEstado('DESCARTADA'),
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: const Text('Descartar'),
+                      ),
+                  ],
+                  if (mostrarRecordar)
+                    BotonConEspera(
+                      key: ValueKey('recordar-${incidencia.id}'),
+                      segundosRestantes: incidencia.segundosParaRecordar,
+                      prefijoEspera: 'Podrás recordar en',
+                      etiquetaLista: incidencia.recordatorios > 0
+                          ? 'Recordar de nuevo'
+                          : 'Recordar',
+                      icono: Icons.notifications_active_outlined,
+                      onPresionar: onRecordar,
+                      alTerminarEspera: onEsperaCumplida,
                     ),
                 ],
               ),
@@ -1015,6 +1158,7 @@ String _etiquetaTipoIncidencia(String tipo) {
 String _etiquetaEstadoIncidencia(String estado) {
   return switch (estado) {
     'TODOS' => 'Todos',
+    'ABIERTAS' => 'Abiertas',
     'PENDIENTE' => 'Pendiente',
     'EN_REVISION' => 'En revisión',
     'RESUELTA' => 'Resuelta',
