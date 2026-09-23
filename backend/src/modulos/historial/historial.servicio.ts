@@ -1,10 +1,6 @@
 import { ErrorHttp } from '../../comun/errors/error-http';
 import { Prisma } from '../../generated/prisma/client';
-import {
-  construirStatsBicicletero,
-  contarOcupadosPorBicicletero
-} from '../bicicleteros/bicicletero.ocupacion';
-import * as bicicleteroRepositorio from '../bicicleteros/bicicletero.repositorio';
+import { listarBicicleteros } from '../bicicleteros/bicicletero.servicio';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import * as historialRepositorio from './historial.repositorio';
 import type { MovimientoCompleto } from './historial.repositorio';
@@ -88,6 +84,10 @@ const mapearMovimiento = (movimiento: MovimientoCompleto) => ({
   bicicleta: {
     id: movimiento.bicicleta.id,
     descripcion: movimiento.bicicleta.descripcion,
+    marca: movimiento.bicicleta.marca,
+    modelo: movimiento.bicicleta.modelo,
+    color: movimiento.bicicleta.color,
+    aro: movimiento.bicicleta.aro,
     numeroSerie: movimiento.bicicleta.numeroSerie
   },
   bicicletero: {
@@ -189,6 +189,13 @@ export const listarMovimientos = async (filtros: FiltrosHistorial) => {
   };
 };
 
+export const listarMovimientosParaExportar = async (filtros: FiltrosHistorial) => {
+  const where = construirWhereMovimientos(filtros);
+  const limite = Math.min(filtros.limite ?? LIMITE_MAX_HISTORIAL, LIMITE_MAX_HISTORIAL);
+
+  return historialRepositorio.buscarMovimientosExportacion(where, limite);
+};
+
 export const resumenHistorial = async (filtros: FiltrosHistorial) => {
   if (!puedeVerTodo(filtros.rol)) {
     throw new ErrorHttp(403, 'No tienes permisos para ver el resumen central');
@@ -220,18 +227,16 @@ export const resumenHistorial = async (filtros: FiltrosHistorial) => {
   ]);
 
   const [nombresGuardias, nombresBicicleteros] = await Promise.all([
-    historialRepositorio.buscarNombresUsuarios(
-      grupoGuardias.map((g) => g.validadoPorGuardiaId)
-    ),
-    historialRepositorio.buscarNombresBicicleteros(
-      grupoBicicleteros.map((b) => b.bicicleteroId)
-    )
+    historialRepositorio.buscarNombresUsuarios(grupoGuardias.map((g) => g.validadoPorGuardiaId)),
+    historialRepositorio.buscarNombresBicicleteros(grupoBicicleteros.map((b) => b.bicicleteroId))
   ]);
 
   const nombreGuardia = Object.fromEntries(nombresGuardias.map((g) => [g.id, g.nombre]));
   const nombreBicicletero = Object.fromEntries(nombresBicicleteros.map((b) => [b.id, b.nombre]));
 
+  const pendientes = await historialRepositorio.contarPendientesOperativos();
   return {
+    ...pendientes,
     totalMovimientos,
     ingresos,
     retiros: totalMovimientos - ingresos,
@@ -257,16 +262,13 @@ export const opcionesHistorial = async (rol: string) => {
     throw new ErrorHttp(403, 'No tienes permisos para ver filtros centrales');
   }
 
-  const [bicicleteros, guardias, ocupadosPorId] = await Promise.all([
-    bicicleteroRepositorio.listarActivos(),
-    historialRepositorio.listarGuardiasActivos(),
-    contarOcupadosPorBicicletero()
+  const [bicicleteros, guardias] = await Promise.all([
+    listarBicicleteros(),
+    historialRepositorio.listarGuardiasActivos()
   ]);
 
   return {
-    bicicleteros: bicicleteros.map((bicicletero) =>
-      construirStatsBicicletero(bicicletero, ocupadosPorId[bicicletero.id] ?? 0)
-    ),
+    bicicleteros,
     guardias: guardias.map((guardia) => ({
       id: guardia.id,
       nombre: guardia.nombre,
