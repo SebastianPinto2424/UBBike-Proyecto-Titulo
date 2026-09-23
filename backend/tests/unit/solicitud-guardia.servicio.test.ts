@@ -4,7 +4,8 @@ import { prismaMock } from '../helpers/prisma-mock';
 
 jest.mock('../../src/modulos/notificaciones/notificacion.servicio', () => ({
   crearNotificacion: jest.fn().mockResolvedValue(undefined),
-  notificarUsuariosPorRol: jest.fn().mockResolvedValue(undefined)
+  notificarUsuariosPorRol: jest.fn().mockResolvedValue(undefined),
+  ejecutarEfectosDiferidos: jest.fn()
 }));
 
 jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
