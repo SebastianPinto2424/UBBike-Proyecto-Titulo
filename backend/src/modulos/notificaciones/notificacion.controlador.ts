@@ -33,11 +33,7 @@ export const marcarTodas = controladorAsync<SolicitudAutenticada>(async (req, re
 });
 
 export const registrarDispositivo = controladorAsync<SolicitudAutenticada>(async (req, res) => {
-  await registrarDispositivoServicio(
-    req.usuario!.usuarioId,
-    req.body.token,
-    req.body.plataforma
-  );
+  await registrarDispositivoServicio(req.usuario!.usuarioId, req.body.token, req.body.plataforma);
   return res.status(201).json({ message: 'Dispositivo registrado para notificaciones' });
 });
 

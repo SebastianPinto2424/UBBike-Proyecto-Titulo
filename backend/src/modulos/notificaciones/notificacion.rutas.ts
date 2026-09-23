@@ -8,10 +8,7 @@ import {
   marcarTodas,
   registrarDispositivo
 } from './notificacion.controlador';
-import {
-  esquemaEliminarDispositivo,
-  esquemaRegistrarDispositivo
-} from './dispositivo.validacion';
+import { esquemaEliminarDispositivo, esquemaRegistrarDispositivo } from './dispositivo.validacion';
 
 const rutasNotificaciones = Router();
 
