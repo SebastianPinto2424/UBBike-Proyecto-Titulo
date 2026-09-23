@@ -10,7 +10,7 @@ import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
 
@@ -212,7 +212,7 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
                         TarjetaAccion(
                           icono: Icons.error_outline,
                           titulo: 'No se pudieron cargar tus solicitudes',
-                          detalle: '${snapshot.error}',
+                          detalle: 'Revisa tu conexión y toca para reintentar.',
                           color: ColoresUbb.rojoInstitucional,
                           onTap: _recargar,
                         ),
@@ -250,6 +250,7 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
                             permitirNotificarUsuario: true,
                             onNotificarGuardia: () =>
                                 _notificarGuardia(solicitud),
+                            onEsperaCumplida: _recargar,
                           ),
                         ),
                       ),

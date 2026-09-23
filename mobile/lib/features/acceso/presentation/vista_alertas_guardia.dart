@@ -6,9 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
+import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
 
@@ -16,7 +17,8 @@ class VistaAlertasGuardia extends ConsumerStatefulWidget {
   const VistaAlertasGuardia({super.key});
 
   @override
-  ConsumerState<VistaAlertasGuardia> createState() => _VistaAlertasGuardiaState();
+  ConsumerState<VistaAlertasGuardia> createState() =>
+      _VistaAlertasGuardiaState();
 }
 
 class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
@@ -24,7 +26,7 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
   final busquedaController = TextEditingController();
   String estadoFiltro = 'TODOS';
   late Future<List<SolicitudGuardiaApp>> futuroSolicitudes;
-  Timer? temporizadorAlertas;
+  late final RefrescoCoalescido refrescoAlertas;
   Set<String> solicitudesConocidas = {};
   bool solicitudesInicializadas = false;
 
@@ -32,15 +34,17 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
   void initState() {
     super.initState();
     futuroSolicitudes = _cargarSolicitudes();
-    temporizadorAlertas = Timer.periodic(
-      const Duration(seconds: 15),
-      (_) => _recargar(avisarNuevas: true),
-    );
+    refrescoAlertas = RefrescoCoalescido(
+      alRefrescar: () async {
+        _recargar(avisarNuevas: true);
+        await futuroSolicitudes;
+      },
+    )..iniciarRespaldo();
   }
 
   @override
   void dispose() {
-    temporizadorAlertas?.cancel();
+    refrescoAlertas.detener();
     busquedaController.dispose();
     super.dispose();
   }
@@ -105,10 +109,11 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
       child: TarjetaSolicitudGuardia(
         solicitud: solicitud,
         mostrarSolicitante: true,
-        onActualizar: (estado) async {
+        onActualizar: (estado, {nota}) async {
           await vm.actualizarEstado(
             solicitudId: solicitud.id,
             estado: estado,
+            nota: nota,
           );
           _recargar();
         },
@@ -118,6 +123,10 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(solicitudesGuardiaVersionProvider, (_, __) {
+      refrescoAlertas.solicitar();
+    });
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(
@@ -205,7 +214,7 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
                         TarjetaAccion(
                           icono: Icons.error_outline,
                           titulo: 'No se pudieron cargar alertas',
-                          detalle: '${snapshot.error}\nToca para reintentar.',
+                          detalle: 'Revisa tu conexión y toca para reintentar.',
                           color: ColoresUbb.rojoInstitucional,
                           onTap: _recargar,
                         ),

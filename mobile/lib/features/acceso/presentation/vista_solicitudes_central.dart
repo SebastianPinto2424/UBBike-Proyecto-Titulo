@@ -8,7 +8,7 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
 import 'package:ubbike/shared/utils/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
 
@@ -20,8 +20,8 @@ class VistaSolicitudesCentral extends ConsumerStatefulWidget {
       _VistaSolicitudesCentralState();
 }
 
-class _VistaSolicitudesCentralState extends ConsumerState<VistaSolicitudesCentral>
-    with AutoRefrescoMixin {
+class _VistaSolicitudesCentralState
+    extends ConsumerState<VistaSolicitudesCentral> with AutoRefrescoMixin {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
   final busquedaController = TextEditingController();
   Timer? temporizadorBusqueda;
@@ -87,6 +87,10 @@ class _VistaSolicitudesCentralState extends ConsumerState<VistaSolicitudesCentra
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(solicitudesGuardiaVersionProvider, (_, __) {
+      solicitarRefresco();
+    });
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(
@@ -187,7 +191,7 @@ class _VistaSolicitudesCentralState extends ConsumerState<VistaSolicitudesCentra
                         TarjetaAccion(
                           icono: Icons.error_outline,
                           titulo: 'No se pudieron cargar solicitudes',
-                          detalle: '${snapshot.error}\nToca para reintentar.',
+                          detalle: 'Revisa tu conexión y toca para reintentar.',
                           color: ColoresUbb.rojoInstitucional,
                           onTap: _recargar,
                         ),
@@ -229,10 +233,13 @@ class _VistaSolicitudesCentralState extends ConsumerState<VistaSolicitudesCentra
                               mostrarSolicitante: true,
                               permitirNotificarCentral: true,
                               mostrarAccionesGuardia: false,
-                              onActualizar: (estado) async {
+                              permitirCierreCentral: true,
+                              onEsperaCumplida: _recargar,
+                              onActualizar: (estado, {nota}) async {
                                 await vm.actualizarEstado(
                                   solicitudId: solicitud.id,
                                   estado: estado,
+                                  nota: nota,
                                 );
                                 _recargar();
                               },
