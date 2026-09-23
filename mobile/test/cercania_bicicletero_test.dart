@@ -28,7 +28,8 @@ const _face = BicicleteroApp(
 
 void main() {
   group('bicicleteroMasCercano', () {
-    test('sugiere el bicicletero cuando el usuario esta parado justo en el', () {
+    test('sugiere el bicicletero cuando el usuario esta parado justo en el',
+        () {
       final sugerencia = bicicleteroMasCercano(
         bicicleteros: [_centroIdiomas, _face],
         latitudUsuario: _centroIdiomas.latitud!,
