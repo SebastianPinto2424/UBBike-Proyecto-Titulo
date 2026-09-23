@@ -3,7 +3,8 @@ import { controladorAsync } from '../../comun/utils/controlador-async';
 import {
   actualizarEstadoIncidencia,
   crearIncidencia,
-  listarIncidencias
+  listarIncidencias,
+  recordarIncidencia
 } from './incidencia.servicio';
 
 export const crear = controladorAsync<SolicitudAutenticada>(async (req, res) => {
@@ -48,6 +49,16 @@ export const actualizarEstado = controladorAsync<SolicitudAutenticada>(async (re
     respuesta: req.body.respuesta,
     ip: req.ip,
     userAgent: req.get('user-agent')
+  });
+
+  return res.status(200).json({ incidencia });
+});
+
+export const recordar = controladorAsync<SolicitudAutenticada>(async (req, res) => {
+  const incidencia = await recordarIncidencia({
+    usuarioId: req.usuario!.usuarioId,
+    rol: req.usuario!.rol,
+    incidenciaId: req.params.id
   });
 
   return res.status(200).json({ incidencia });

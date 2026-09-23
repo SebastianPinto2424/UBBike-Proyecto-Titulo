@@ -1,5 +1,7 @@
 import { Prisma } from '../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../configuracion/prisma';
+import type { RolUsuario } from '../usuarios/rol-usuario';
+import { bloquearFila } from '../../comun/utils/bloqueos';
 
 export const includeIncidenciaCompleta = {
   reportadaPorUsuario: true,
@@ -32,14 +34,10 @@ export const crear = (
   client: ClientePrisma = prisma
 ) => client.incidencia.create({ data, include: includeIncidenciaCompleta });
 
-export const buscarAsignacionActivaConGuardia = (
-  bicicleteroId: string,
-  client: ClientePrisma = prisma
-) =>
-  client.asignacionGuardia.findFirst({
-    where: { bicicleteroId, activa: true },
-    include: { guardia: true },
-    orderBy: { iniciaEn: 'desc' }
+export const buscarUsuariosPorRoles = (roles: RolUsuario[], client: ClientePrisma = prisma) =>
+  client.usuario.findMany({
+    where: { rol: { in: roles }, cuentaActiva: true, eliminadoEn: null },
+    select: { id: true, nombre: true, correo: true }
   });
 
 export const listar = (
@@ -49,13 +47,15 @@ export const listar = (
   client.incidencia.findMany({
     where: params.where,
     include: includeIncidenciaCompleta,
-    orderBy: { creadaEn: 'desc' },
+    orderBy: [{ creadaEn: 'desc' }, { id: 'desc' }],
     take: params.take,
     ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {})
   });
 
-export const buscarPorId = (id: string, client: ClientePrisma = prisma) =>
-  client.incidencia.findUnique({ where: { id }, include: includeIncidenciaCompleta });
+export const buscarPorId = async (id: string, client: ClientePrisma = prisma) => {
+  if (client !== prisma) await bloquearFila(client, 'incidencias', id);
+  return client.incidencia.findUnique({ where: { id }, include: includeIncidenciaCompleta });
+};
 
 export const actualizar = (
   id: string,
