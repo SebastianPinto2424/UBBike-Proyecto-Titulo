@@ -27,7 +27,7 @@ import {
   resolverRolRegistrable,
   revocarRefreshToken,
   revocarTodosLosRefreshTokens,
-  validarRefreshToken
+  rotarRefreshToken
 } from './autenticacion.tokens';
 import * as autenticacionRepositorio from './autenticacion.repositorio';
 
@@ -49,6 +49,13 @@ type DatosCompletarRegistro = {
   contrasena: string;
 };
 
+const archivarCorreoEliminado = (correo: string, usuarioId: string) => {
+  const sufijo = `.eliminado.${usuarioId.slice(0, 8)}`;
+  const disponible = 160 - sufijo.length;
+
+  return `${correo.slice(0, disponible)}${sufijo}`;
+};
+
 export const registrarUsuario = async (datos: DatosRegistro) => {
   const correoNormalizado = datos.correo.trim().toLowerCase();
   const rut = datos.rut?.trim() || null;
@@ -64,49 +71,31 @@ export const registrarUsuario = async (datos: DatosRegistro) => {
     throw new ErrorHttp(409, 'El RUT ya está registrado');
   }
 
-  if (
-    usuarioPorCorreo?.eliminadoEn &&
-    usuarioPorRut?.eliminadoEn &&
-    usuarioPorCorreo.id !== usuarioPorRut.id
-  ) {
-    throw new ErrorHttp(
-      409,
-      'El correo y el RUT pertenecen a cuentas eliminadas distintas. Solicita apoyo administrativo.'
-    );
-  }
-
   const contrasenaHash = await bcrypt.hash(datos.contrasena, 12);
   const tokenVerificacion = crearTokenSeguro();
   const tokenVerificacionCorreo = hashearToken(tokenVerificacion);
   const tokenVerificacionCorreoExpiraEn = new Date(
     Date.now() + 1000 * 60 * 60 * horasExpiracionVerificacionCorreo
   );
-  const cuentaEliminada = usuarioPorRut?.eliminadoEn
-    ? usuarioPorRut
-    : usuarioPorCorreo?.eliminadoEn
-      ? usuarioPorCorreo
-      : null;
-  const usuarioGuardado = cuentaEliminada
-    ? await autenticacionRepositorio.actualizar(cuentaEliminada.id, {
-        nombre: datos.nombre.trim(),
-        correo: correoNormalizado,
-        rut,
-        rol: rolAsignado,
-        contrasenaHash,
-        cuentaActiva: true,
-        correoVerificado: false,
-        registroParcial: false,
-        debeCambiarContrasena: false,
-        eliminadoEn: null,
-        tokenVerificacionCorreo,
-        tokenVerificacionCorreoExpiraEn,
-        tokenCambioContrasena: null,
-        tokenCambioContrasenaExpiraEn: null,
-        versionSesion: {
-          increment: 1
-        }
-      })
-    : await autenticacionRepositorio.crear({
+  const cuentasEliminadasALiberar = [usuarioPorCorreo, usuarioPorRut].filter(
+    (cuenta, indice, lista) =>
+      cuenta?.eliminadoEn && lista.findIndex((otra) => otra?.id === cuenta.id) === indice
+  );
+
+  const usuarioGuardado = await autenticacionRepositorio.ejecutarEnTransaccion(async (db) => {
+    for (const cuenta of cuentasEliminadasALiberar) {
+      await autenticacionRepositorio.actualizar(
+        cuenta!.id,
+        {
+          correo: archivarCorreoEliminado(cuenta!.correo, cuenta!.id),
+          rut: null
+        },
+        db
+      );
+    }
+
+    return autenticacionRepositorio.crear(
+      {
         nombre: datos.nombre.trim(),
         correo: correoNormalizado,
         rut,
@@ -118,7 +107,10 @@ export const registrarUsuario = async (datos: DatosRegistro) => {
         debeCambiarContrasena: false,
         tokenVerificacionCorreo,
         tokenVerificacionCorreoExpiraEn
-      });
+      },
+      db
+    );
+  });
   const enlace = `${entorno.app.urlFrontend}/verificar-correo?token=${tokenVerificacion}`;
   const correo = crearCorreoVerificacion(usuarioGuardado.nombre, enlace);
 
@@ -139,12 +131,13 @@ export const registrarUsuario = async (datos: DatosRegistro) => {
 
   await registrarAuditoria({
     actorUsuarioId: usuarioGuardado.id,
-    accion: cuentaEliminada ? 'CUENTA_RESTAURADA_REGISTRO' : 'CUENTA_REGISTRADA',
+    accion: 'CUENTA_REGISTRADA',
     entidad: 'usuarios',
     entidadId: usuarioGuardado.id,
     datos: {
       correo: usuarioGuardado.correo,
-      rol: usuarioGuardado.rol
+      rol: usuarioGuardado.rol,
+      identificadoresLiberados: cuentasEliminadasALiberar.map((cuenta) => cuenta!.id)
     }
   });
 
@@ -224,7 +217,7 @@ export const iniciarSesion = async (datos: DatosLogin) => {
 
   const token = crearTokenSesion(usuario.id, usuario.rol, usuario.versionSesion);
   const refreshToken = crearRefreshToken();
-  await guardarRefreshToken(usuario.id, refreshToken);
+  await guardarRefreshToken(usuario.id, refreshToken, usuario.versionSesion);
 
   return {
     usuario: mapearUsuarioPublico(usuario),
@@ -462,13 +455,18 @@ export const cambiarContrasenaSesion = async (
 
   await autenticacionRepositorio.actualizar(usuario.id, {
     contrasenaHash: await bcrypt.hash(contrasenaNueva, 12),
-    debeCambiarContrasena: false
+    debeCambiarContrasena: false,
+    versionSesion: {
+      increment: 1
+    }
   });
+
+  await revocarTodosLosRefreshTokens(usuario.id);
 
   await crearNotificacion({
     usuarioId: usuario.id,
     titulo: 'Contraseña actualizada',
-    mensaje: 'Tu contraseña fue cambiada correctamente.',
+    mensaje: 'Tu contraseña fue cambiada correctamente. Vuelve a iniciar sesión.',
     tipo: TipoNotificacion.CUENTA
   });
 
@@ -488,7 +486,7 @@ export const cambiarContrasenaSesion = async (
   });
 
   return {
-    message: 'Contraseña actualizada correctamente'
+    message: 'Contraseña actualizada correctamente. Vuelve a iniciar sesión.'
   };
 };
 
@@ -499,17 +497,19 @@ export const refrescarToken = async (usuarioId: string, refreshTokenRecibido: st
     throw new ErrorHttp(401, 'Sesión inválida');
   }
 
-  const valido = await validarRefreshToken(usuarioId, refreshTokenRecibido);
+  const nuevoRefreshToken = crearRefreshToken();
+  const valido = await rotarRefreshToken(
+    usuarioId,
+    refreshTokenRecibido,
+    nuevoRefreshToken,
+    usuario.versionSesion
+  );
 
   if (!valido) {
     throw new ErrorHttp(401, 'Refresh token inválido o expirado. Inicia sesión nuevamente.');
   }
 
-  await revocarRefreshToken(usuarioId, refreshTokenRecibido);
-
   const nuevoToken = crearTokenSesion(usuario.id, usuario.rol, usuario.versionSesion);
-  const nuevoRefreshToken = crearRefreshToken();
-  await guardarRefreshToken(usuario.id, nuevoRefreshToken);
 
   return {
     token: nuevoToken,
