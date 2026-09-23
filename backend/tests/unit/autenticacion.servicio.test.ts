@@ -86,7 +86,7 @@ describe('registrarUsuario', () => {
     expect(prismaMock.usuario.create).toHaveBeenCalled();
   });
 
-  it('reactiva cuenta eliminada si el auto-registro reutiliza el RUT con correo nuevo', async () => {
+  it('no hereda la identidad de una cuenta eliminada al reutilizar su RUT', async () => {
     const eliminado = {
       ...usuarioBase,
       id: 'uuid-eliminado',
@@ -94,45 +94,35 @@ describe('registrarUsuario', () => {
       cuentaActiva: false,
       eliminadoEn: new Date()
     };
-    const restaurado = {
-      ...eliminado,
-      nombre: 'Juan Reactivado',
-      correo: 'correo.nuevo@alumnos.ubiobio.cl',
-      cuentaActiva: true,
-      correoVerificado: false,
-      eliminadoEn: null,
-      versionSesion: 1
+    const nuevo = {
+      ...usuarioBase,
+      id: 'uuid-nuevo',
+      nombre: 'Juan Nuevo',
+      correo: 'correo.nuevo@alumnos.ubiobio.cl'
     };
     prismaMock.usuario.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(eliminado as any);
-    prismaMock.usuario.update.mockResolvedValue(restaurado as any);
+    prismaMock.usuario.update.mockResolvedValue({ ...eliminado, rut: null } as any);
+    prismaMock.usuario.create.mockResolvedValue(nuevo as any);
 
     const resultado = await registrarUsuario({
-      nombre: restaurado.nombre,
+      nombre: nuevo.nombre,
       rut: eliminado.rut,
-      correo: restaurado.correo,
+      correo: nuevo.correo,
       contrasena: 'UBBike2026*Test!'
     });
 
     expect(resultado.message).toContain('Registro recibido');
-    expect(prismaMock.usuario.create).not.toHaveBeenCalled();
+    expect(resultado.usuario.id).toBe(nuevo.id);
+    expect(prismaMock.usuario.create).toHaveBeenCalled();
     expect(prismaMock.usuario.update).toHaveBeenCalledWith({
       where: { id: eliminado.id },
-      data: expect.objectContaining({
-        nombre: restaurado.nombre,
-        correo: restaurado.correo,
-        rut: eliminado.rut,
-        cuentaActiva: true,
-        correoVerificado: false,
-        registroParcial: false,
-        eliminadoEn: null,
-        versionSesion: { increment: 1 }
-      })
+      data: expect.objectContaining({ rut: null })
     });
   });
 
-  it('bloquea auto-registro si correo y RUT apuntan a eliminados distintos', async () => {
+  it('libera los identificadores de ambas cuentas eliminadas antes de crear la nueva', async () => {
     const eliminadoPorCorreo = {
       ...usuarioBase,
       id: 'uuid-correo',
@@ -150,17 +140,21 @@ describe('registrarUsuario', () => {
     prismaMock.usuario.findUnique
       .mockResolvedValueOnce(eliminadoPorCorreo as any)
       .mockResolvedValueOnce(eliminadoPorRut as any);
+    prismaMock.usuario.update.mockResolvedValue(eliminadoPorCorreo as any);
+    prismaMock.usuario.create.mockResolvedValue({
+      ...usuarioBase,
+      id: 'uuid-nuevo'
+    } as any);
 
-    await expect(
-      registrarUsuario({
-        nombre: 'Juan Reactivado',
-        rut: eliminadoPorRut.rut!,
-        correo: eliminadoPorCorreo.correo,
-        contrasena: 'UBBike2026*Test!'
-      })
-    ).rejects.toMatchObject({ statusCode: 409 });
-    expect(prismaMock.usuario.update).not.toHaveBeenCalled();
-    expect(prismaMock.usuario.create).not.toHaveBeenCalled();
+    await registrarUsuario({
+      nombre: 'Juan Nuevo',
+      rut: eliminadoPorRut.rut!,
+      correo: eliminadoPorCorreo.correo,
+      contrasena: 'UBBike2026*Test!'
+    });
+
+    expect(prismaMock.usuario.update).toHaveBeenCalledTimes(2);
+    expect(prismaMock.usuario.create).toHaveBeenCalled();
   });
 });
 
