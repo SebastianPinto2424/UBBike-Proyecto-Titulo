@@ -43,7 +43,11 @@ const claveRefreshToken = (usuarioId: string, tokenHash: string) =>
 
 export const crearRefreshToken = (): string => crypto.randomBytes(48).toString('base64url');
 
-export const guardarRefreshToken = async (usuarioId: string, token: string): Promise<void> => {
+export const guardarRefreshToken = async (
+  usuarioId: string,
+  token: string,
+  versionSesion = 0
+): Promise<void> => {
   const redis = await obtenerClienteRedis();
 
   if (!redis) {
@@ -54,21 +58,33 @@ export const guardarRefreshToken = async (usuarioId: string, token: string): Pro
   const clave = claveRefreshToken(usuarioId, hash);
   const ttlSegundos = entorno.jwt.refreshExpiracionDias * 24 * 60 * 60;
 
-  await redis.set(clave, '1', { EX: ttlSegundos });
+  await redis.set(clave, `v:${versionSesion}`, { EX: ttlSegundos });
 };
 
-export const validarRefreshToken = async (usuarioId: string, token: string): Promise<boolean> => {
+export const rotarRefreshToken = async (
+  usuarioId: string,
+  anterior: string,
+  siguiente: string,
+  versionSesion: number
+): Promise<boolean> => {
   const redis = await obtenerClienteRedis();
-
-  if (!redis) {
-    throw new ErrorHttp(503, 'Servicio de sesión no disponible. Intenta nuevamente.');
-  }
-
-  const hash = hashearToken(token);
-  const clave = claveRefreshToken(usuarioId, hash);
-  const valor = await redis.get(clave);
-
-  return valor === '1';
+  if (!redis) throw new ErrorHttp(503, 'Servicio de sesión no disponible. Intenta nuevamente.');
+  const resultado = await redis.eval(
+    `
+    if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+    redis.call('DEL', KEYS[1])
+    redis.call('SET', KEYS[2], ARGV[1], 'EX', ARGV[2])
+    return 1
+  `,
+    {
+      keys: [
+        claveRefreshToken(usuarioId, hashearToken(anterior)),
+        claveRefreshToken(usuarioId, hashearToken(siguiente))
+      ],
+      arguments: [`v:${versionSesion}`, String(entorno.jwt.refreshExpiracionDias * 86400)]
+    }
+  );
+  return resultado === 1;
 };
 
 export const revocarRefreshToken = async (usuarioId: string, token: string): Promise<void> => {
