@@ -77,6 +77,12 @@ if (!contrasenaBaseDatos || contrasenasBaseDatosInvalidas.has(contrasenaBaseDato
   throw new Error('DB_PASSWORD debe estar configurado y no puede usar valores demo');
 }
 
+if (ambiente === 'production' && !process.env.REDIS_URL) {
+  throw new Error(
+    'REDIS_URL es obligatorio en produccion: sin Redis los refresh tokens no se pueden renovar'
+  );
+}
+
 const construirUrlBaseDatos = () => {
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
@@ -147,7 +153,6 @@ export const entorno = {
     urlFrontend: process.env.FRONTEND_URL ?? 'http://localhost:8081'
   },
   firebase: {
-
     credencialesPath: process.env.FIREBASE_CREDENTIALS_PATH
   },
   archivos: {
