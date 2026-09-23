@@ -17,6 +17,7 @@ class MovimientoApp {
     this.bicicletaFotoUrl,
     required this.bicicleteroNombre,
     required this.guardiaNombre,
+    this.guardiaCorreo,
     this.motivoDenegacion,
     this.comentarioGuardia,
   });
@@ -38,6 +39,7 @@ class MovimientoApp {
   final String? bicicletaFotoUrl;
   final String bicicleteroNombre;
   final String guardiaNombre;
+  final String? guardiaCorreo;
   final String? motivoDenegacion;
   final String? comentarioGuardia;
 
@@ -65,6 +67,7 @@ class MovimientoApp {
       bicicletaFotoUrl: bicicleta['fotoUrl'] as String?,
       bicicleteroNombre: bicicletero['nombre'] as String,
       guardiaNombre: guardia['nombre'] as String,
+      guardiaCorreo: guardia['correo'] as String?,
       motivoDenegacion: json['motivoDenegacion'] as String?,
       comentarioGuardia: json['comentarioGuardia'] as String?,
     );
