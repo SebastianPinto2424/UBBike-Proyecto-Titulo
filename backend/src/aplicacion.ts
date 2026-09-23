@@ -1,9 +1,12 @@
 import cors from 'cors';
+import { conTiempoLimite } from './comun/utils/tiempo-limite';
 import helmet from 'helmet';
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { middlewareErrores } from './comun/middlewares/errores.middleware';
 import { entorno } from './configuracion/entorno';
+import { prisma } from './configuracion/prisma';
+import { obtenerClienteRedis } from './configuracion/redis';
 import { especificacionSwagger } from './configuracion/swagger';
 import { registrarRutasModulos } from './modulos/rutas';
 
@@ -47,10 +50,39 @@ if (entorno.swagger.habilitado) {
   });
 }
 
-aplicacion.get(['/salud', '/health'], (_req: Request, res: Response) => {
-  return res.status(200).json({
-    status: 'ok',
-    message: 'UBBike backend funcionando'
+aplicacion.get(['/salud', '/health'], async (_req: Request, res: Response) => {
+  const dependencias = { baseDatos: false, redis: false };
+
+  try {
+    await conTiempoLimite(prisma.$queryRaw`SELECT 1`);
+    dependencias.baseDatos = true;
+  } catch {
+    dependencias.baseDatos = false;
+  }
+
+  if (entorno.redis.url) {
+    try {
+      dependencias.redis = await conTiempoLimite(
+        (async () => {
+          const redis = await obtenerClienteRedis();
+          return redis != null && (await redis.ping()) === 'PONG';
+        })()
+      );
+    } catch {
+      dependencias.redis = false;
+    }
+  } else {
+    dependencias.redis = entorno.ambiente !== 'production';
+  }
+
+  const operativo = dependencias.baseDatos && dependencias.redis;
+
+  return res.status(operativo ? 200 : 503).json({
+    status: operativo ? 'ok' : 'degradado',
+    message: operativo
+      ? 'UBBike backend funcionando'
+      : 'UBBike backend con dependencias no disponibles',
+    dependencias
   });
 });
 
