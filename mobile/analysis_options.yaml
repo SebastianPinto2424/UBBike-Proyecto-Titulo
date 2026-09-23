@@ -5,3 +5,9 @@ linter:
     prefer_const_constructors: true
     prefer_const_literals_to_create_immutables: true
     avoid_print: true
+    # Evita usar el BuildContext despues de un await: es la causa clasica de
+    # crashes cuando la pantalla se cierra mientras corre una peticion.
+    use_build_context_synchronously: true
+    # Obliga a declarar si un Future se ignora a proposito, para que un error
+    # no quede silenciado sin que nadie se entere.
+    unawaited_futures: true
