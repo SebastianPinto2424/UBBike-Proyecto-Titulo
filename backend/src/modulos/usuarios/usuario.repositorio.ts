@@ -45,10 +45,8 @@ export const buscarPorCorreo = (correo: string, client: ClientePrisma = prisma) 
 export const buscarPorRut = (rut: string, client: ClientePrisma = prisma) =>
   client.usuario.findUnique({ where: { rut } });
 
-export const crear = (
-  data: Prisma.UsuarioUncheckedCreateInput,
-  client: ClientePrisma = prisma
-) => client.usuario.create({ data });
+export const crear = (data: Prisma.UsuarioUncheckedCreateInput, client: ClientePrisma = prisma) =>
+  client.usuario.create({ data });
 
 export const actualizar = (
   id: string,
