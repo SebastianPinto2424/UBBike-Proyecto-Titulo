@@ -4,6 +4,10 @@ import 'package:ubbike/features/acceso/data/acceso_api.dart';
 import 'package:ubbike/features/acceso/data/acceso_repository.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_api.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_repository.dart';
+import 'package:ubbike/features/admin/data/bicicleteros_admin_api.dart';
+import 'package:ubbike/features/admin/data/bicicleteros_admin_repository.dart';
+import 'package:ubbike/features/admin/data/geocodificacion_api.dart';
+import 'package:ubbike/features/admin/data/geocodificacion_repository.dart';
 import 'package:ubbike/features/admin/data/usuarios_admin_api.dart';
 import 'package:ubbike/features/admin/data/usuarios_admin_repository.dart';
 import 'package:ubbike/features/auth/data/autenticacion_api.dart';
@@ -66,4 +70,15 @@ final usuariosAdminRepositoryProvider =
     Provider<UsuariosAdminRepository>((ref) {
   final cliente = ref.watch(clienteApiProvider);
   return UsuariosAdminRepository(UsuariosAdminApi(cliente: cliente));
+});
+
+final bicicleterosAdminRepositoryProvider =
+    Provider<BicicleterosAdminRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return BicicleterosAdminRepository(BicicleterosAdminApi(cliente: cliente));
+});
+
+final geocodificacionRepositoryProvider =
+    Provider<GeocodificacionRepository>((ref) {
+  return const GeocodificacionRepository(GeocodificacionApi());
 });
