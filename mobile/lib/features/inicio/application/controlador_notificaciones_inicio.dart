@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
+import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 
 class ControladorNotificacionesInicio extends ChangeNotifier {
   ControladorNotificacionesInicio({
@@ -19,10 +20,14 @@ class ControladorNotificacionesInicio extends ChangeNotifier {
   final Duration _intervalo;
   final Set<String> _notificacionesConocidas = {};
 
-  Timer? _temporizador;
+  late final RefrescoCoalescido _refresco = RefrescoCoalescido(
+    alRefrescar: () => actualizar(avisarNuevas: true),
+    intervaloRespaldo: _intervalo,
+  );
   StreamSubscription<void>? _suscripcionTiempoReal;
   bool _inicializado = false;
   bool _actualizando = false;
+  bool _cerrado = false;
   int _noLeidas = 0;
   NotificacionApp? _nuevaNotificacion;
 
@@ -31,13 +36,9 @@ class ControladorNotificacionesInicio extends ChangeNotifier {
 
   void iniciar() {
     actualizar();
-    _suscripcionTiempoReal = _eventosTiempoReal?.listen(
-      (_) => actualizar(avisarNuevas: true),
-    );
-    _temporizador = Timer.periodic(
-      _intervalo,
-      (_) => actualizar(avisarNuevas: true),
-    );
+    _suscripcionTiempoReal =
+        _eventosTiempoReal?.listen((_) => _refresco.solicitar());
+    _refresco.iniciarRespaldo();
   }
 
   Future<void> actualizar({bool avisarNuevas = false}) async {
@@ -47,7 +48,9 @@ class ControladorNotificacionesInicio extends ChangeNotifier {
 
     _actualizando = true;
     try {
-      final notificaciones = await _notificacionRepository.listar();
+      final pagina = await _notificacionRepository.listarPagina();
+      if (_cerrado) return;
+      final notificaciones = pagina.datos;
       final nuevas = notificaciones
           .where(
             (notificacion) =>
@@ -59,8 +62,7 @@ class ControladorNotificacionesInicio extends ChangeNotifier {
       _notificacionesConocidas
         ..clear()
         ..addAll(notificaciones.map((notificacion) => notificacion.id));
-      _noLeidas =
-          notificaciones.where((notificacion) => !notificacion.leida).length;
+      _noLeidas = pagina.noLeidas;
       _nuevaNotificacion = avisarNuevas && _inicializado && nuevas.isNotEmpty
           ? nuevas.first
           : null;
@@ -76,15 +78,18 @@ class ControladorNotificacionesInicio extends ChangeNotifier {
     _nuevaNotificacion = null;
   }
 
-  void marcarTodasLeidas() {
-    _noLeidas = 0;
-    notifyListeners();
-    _notificacionRepository.marcarTodasLeidas().catchError((_) {});
+  Future<void> marcarTodasLeidas() async {
+    try {
+      await _notificacionRepository.marcarTodasLeidas();
+      if (_cerrado) return;
+      await actualizar();
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _temporizador?.cancel();
+    _cerrado = true;
+    _refresco.detener();
     _suscripcionTiempoReal?.cancel();
     super.dispose();
   }

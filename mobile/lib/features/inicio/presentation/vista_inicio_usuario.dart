@@ -11,8 +11,8 @@ import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/encabezado_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/encabezado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
 
 class VistaInicioUsuario extends ConsumerStatefulWidget {

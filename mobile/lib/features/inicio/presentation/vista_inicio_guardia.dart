@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/features/inicio/presentation/comun/encabezado_widgets.dart';
+import 'package:ubbike/shared/widgets/encabezado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/vista_ingreso_guardia.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
 import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
+import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 
 class VistaInicioGuardia extends ConsumerStatefulWidget {
@@ -25,7 +27,9 @@ class VistaInicioGuardia extends ConsumerStatefulWidget {
 class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
   late Future<BicicleteroApp?> futuroBicicletero;
+  late Future<List<BicicleteroApp>> futuroBicicleteros;
   BicicleteroApp? ultimoBicicletero;
+  List<BicicleteroApp>? ultimosBicicleteros;
   bool bicicleteroConsultado = false;
   int versionSelector = 0;
 
@@ -33,12 +37,14 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
   void initState() {
     super.initState();
     futuroBicicletero = vm.obtenerBicicleteroGestionado();
+    futuroBicicleteros = vm.listarBicicleteros();
   }
 
   Future<void> _recargar() async {
     setState(() {
       versionSelector++;
       futuroBicicletero = vm.obtenerBicicleteroGestionado();
+      futuroBicicleteros = vm.listarBicicleteros();
     });
   }
 
@@ -140,6 +146,48 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
                         onTap: () => widget.onOpenIngreso
                             ?.call(ModoIngresoGuardia.manual),
                       ),
+                      const SizedBox(height: 18),
+                      const TituloApartado(titulo: 'Uso de bicicleteros'),
+                      const SizedBox(height: 10),
+                      FutureBuilder<List<BicicleteroApp>>(
+                        future: futuroBicicleteros,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            ultimosBicicleteros = snapshot.data;
+                          }
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            final bicicleteros = ultimosBicicleteros;
+                            if (bicicleteros == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return _ListaBicicleterosGuardia(
+                              bicicleteros: bicicleteros,
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return TarjetaAccion(
+                              icono: Icons.cloud_off_outlined,
+                              titulo: 'No se pudieron cargar bicicleteros',
+                              detalle: 'Toca para reintentar.',
+                              color: ColoresUbb.rojoInstitucional,
+                              onTap: _recargar,
+                            );
+                          }
+                          final bicicleteros = snapshot.data ?? [];
+                          if (bicicleteros.isEmpty) {
+                            return const EstadoLista(
+                              icono: Icons.location_off_outlined,
+                              titulo: 'Sin bicicleteros activos',
+                              detalle:
+                                  'Cuando existan bicicleteros activos aparecerán aquí.',
+                            );
+                          }
+                          return _ListaBicicleterosGuardia(
+                            bicicleteros: bicicleteros,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -148,6 +196,26 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ListaBicicleterosGuardia extends StatelessWidget {
+  const _ListaBicicleterosGuardia({required this.bicicleteros});
+
+  final List<BicicleteroApp> bicicleteros;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: bicicleteros
+          .map(
+            (bicicletero) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TarjetaBicicleteroApp(bicicletero: bicicletero),
+            ),
+          )
+          .toList(),
     );
   }
 }
