@@ -48,6 +48,8 @@ class SolicitudGuardiaRepository {
   Future<SolicitudGuardiaApp> actualizarEstado({
     required String solicitudId,
     required String estado,
+    String? nota,
   }) =>
-      _api.actualizarEstado(solicitudId: solicitudId, estado: estado);
+      _api.actualizarEstado(
+          solicitudId: solicitudId, estado: estado, nota: nota);
 }

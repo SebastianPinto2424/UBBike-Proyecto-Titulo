@@ -10,7 +10,6 @@ class SolicitudGuardiaApp {
     required this.solicitante,
     required this.creadaEn,
     required this.puedeNotificarGuardia,
-    required this.puedeNotificarGuardiaUsuario,
     required this.notificacionesGuardia,
     this.guardiaAsignado,
     this.mensaje,
@@ -19,6 +18,7 @@ class SolicitudGuardiaApp {
     this.respondidaPorGuardiaEn,
     this.enCaminoEn,
     this.resueltaEn,
+    this.notaCierreCentral,
     this.segundosParaNotificarGuardia,
     this.guardiasAsignados = const [],
   });
@@ -38,8 +38,8 @@ class SolicitudGuardiaApp {
   final DateTime? respondidaPorGuardiaEn;
   final DateTime? enCaminoEn;
   final DateTime? resueltaEn;
+  final String? notaCierreCentral;
   final bool puedeNotificarGuardia;
-  final bool puedeNotificarGuardiaUsuario;
   final int? segundosParaNotificarGuardia;
 
   factory SolicitudGuardiaApp.desdeJson(Map<String, dynamic> json) {
@@ -79,9 +79,8 @@ class SolicitudGuardiaApp {
       resueltaEn: json['resueltaEn'] == null
           ? null
           : DateTime.parse(json['resueltaEn'] as String),
+      notaCierreCentral: json['notaCierreCentral'] as String?,
       puedeNotificarGuardia: json['puedeNotificarGuardia'] as bool? ?? false,
-      puedeNotificarGuardiaUsuario:
-          json['puedeNotificarGuardiaUsuario'] as bool? ?? false,
       segundosParaNotificarGuardia:
           json['segundosParaNotificarGuardia'] as int?,
     );

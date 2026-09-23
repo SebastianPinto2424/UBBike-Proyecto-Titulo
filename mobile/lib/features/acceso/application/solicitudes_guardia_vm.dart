@@ -61,10 +61,12 @@ class SolicitudesGuardiaVm {
   Future<SolicitudGuardiaApp> actualizarEstado({
     required String solicitudId,
     required String estado,
+    String? nota,
   }) =>
       _ref.read(solicitudGuardiaRepositoryProvider).actualizarEstado(
             solicitudId: solicitudId,
             estado: estado,
+            nota: nota,
           );
 }
 

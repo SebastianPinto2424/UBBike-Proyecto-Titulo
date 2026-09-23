@@ -93,10 +93,11 @@ class SolicitudGuardiaApi {
   Future<SolicitudGuardiaApp> actualizarEstado({
     required String solicitudId,
     required String estado,
+    String? nota,
   }) async {
     final respuesta = await cliente.patch(
       '/solicitudes-guardia/$solicitudId/estado',
-      body: {'estado': estado},
+      body: {'estado': estado, if (nota != null) 'nota': nota},
     );
 
     return SolicitudGuardiaApp.desdeJson(
