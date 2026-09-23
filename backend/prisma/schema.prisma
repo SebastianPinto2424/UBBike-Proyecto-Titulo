@@ -221,6 +221,7 @@ model SolicitudGuardia {
   respondidaPorGuardiaEn      DateTime?              @map("respondida_por_guardia_en") @db.Timestamptz(6)
   enCaminoEn                  DateTime?              @map("en_camino_en") @db.Timestamptz(6)
   resueltaEn                  DateTime?              @map("resuelta_en") @db.Timestamptz(6)
+  notaCierreCentral           String?                @map("nota_cierre_central")
   creadaEn                    DateTime               @default(now()) @map("creada_en") @db.Timestamptz(6)
   actualizadaEn               DateTime               @updatedAt @map("actualizada_en") @db.Timestamptz(6)
   solicitadaPorUsuario        Usuario                @relation("SolicitudGuardiaSolicitante", fields: [solicitadaPorUsuarioId], references: [id], onDelete: Cascade)
@@ -277,6 +278,19 @@ model CodigoQrTemporal {
   @@map("codigos_qr_temporales")
 }
 
+model EntregaPendiente {
+  id           String    @id @default(uuid()) @db.Uuid
+  tipo         String    @db.VarChar(20)
+  datos        Json
+  intentos     Int       @default(0)
+  disponibleEn DateTime  @default(now()) @map("disponible_en") @db.Timestamptz(6)
+  creadaEn     DateTime  @default(now()) @map("creada_en") @db.Timestamptz(6)
+  entregadaEn  DateTime? @map("entregada_en") @db.Timestamptz(6)
+  agotada      Boolean   @default(false)
+  @@index([entregadaEn, agotada, disponibleEn])
+  @@map("entregas_pendientes")
+}
+
 model Notificacion {
   id        String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   usuarioId String           @map("usuario_id") @db.Uuid
@@ -316,6 +330,8 @@ model Incidencia {
   estado                 EstadoIncidencia @default(PENDIENTE)
   respuesta              String?
   resueltaEn             DateTime?        @map("resuelta_en") @db.Timestamptz(6)
+  ultimoRecordatorioEn   DateTime?        @map("ultimo_recordatorio_en") @db.Timestamptz(6)
+  recordatorios          Int              @default(0) @map("recordatorios")
   creadaEn               DateTime         @default(now()) @map("creada_en") @db.Timestamptz(6)
   actualizadaEn          DateTime         @updatedAt @map("actualizada_en") @db.Timestamptz(6)
   reportadaPorUsuario    Usuario          @relation("IncidenciaReportante", fields: [reportadaPorUsuarioId], references: [id], onDelete: Cascade)
