@@ -233,8 +233,9 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
         Expanded(
           child: ListView.separated(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            itemCount:
-                tieneError || cargando || usuarios.isEmpty ? 1 : usuarios.length,
+            itemCount: tieneError || cargando || usuarios.isEmpty
+                ? 1
+                : usuarios.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               if (cargando) {
@@ -1433,7 +1434,7 @@ class _PanelGestionUsuario extends StatelessWidget {
                     ),
                   );
                   if (confirmar == true) {
-                    onActualizar(usuario, rol: rol);
+                    await onActualizar(usuario, rol: rol);
                   }
                 },
               ),

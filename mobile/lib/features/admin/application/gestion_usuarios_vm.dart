@@ -6,6 +6,8 @@ import 'package:ubbike/core/providers/repositorios_provider.dart';
 import 'package:ubbike/shared/modelos/rol_usuario.dart';
 import 'package:ubbike/shared/modelos/usuario_app.dart';
 
+final usuariosVersionProvider = StateProvider<int>((ref) => 0);
+
 enum FiltroEstadoCuenta { todos, activos, denegados }
 
 extension DatosFiltroEstadoCuenta on FiltroEstadoCuenta {
