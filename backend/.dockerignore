@@ -7,5 +7,7 @@ dist/
 .vscode/
 .idea/
 coverage/
+uploads/
+tests/
 *.log
 npm-debug.log
