@@ -1,0 +1,77 @@
+name: Verificación
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: auditoria
+          POSTGRES_PASSWORD: solo-pruebas-ci-no-produccion
+          POSTGRES_DB: ubbike_e2e_ci
+        ports: ['15439:5432']
+        options: >-
+          --health-cmd "pg_isready -U auditoria -d ubbike_e2e_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['56389:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://auditoria:solo-pruebas-ci-no-produccion@127.0.0.1:15439/ubbike_e2e_ci
+      TEST_REDIS_URL: redis://127.0.0.1:56389
+      ALLOW_TEST_DATABASE_RESET: '1'
+      DATABASE_URL: postgresql://auditoria:solo-pruebas-ci-no-produccion@127.0.0.1:15439/ubbike_e2e_ci
+      DB_PASSWORD: solo-pruebas-ci-no-produccion
+      JWT_SECRET: secreto-de-ci-no-produccion-con-mas-de-32-caracteres
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run test:coverage -- --runInBand
+      - run: npm run test:e2e -- --runInBand
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cobertura-backend
+          path: backend/coverage
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.41.9'
+          cache: true
+      - run: flutter pub get
+        working-directory: mobile
+      - run: flutter analyze
+        working-directory: mobile
+      - run: flutter test --coverage
+        working-directory: mobile
+      - run: flutter build web --release
+        working-directory: mobile
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cobertura-flutter
+          path: mobile/coverage/lcov.info
