@@ -20,7 +20,7 @@ import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
 import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
 import 'package:ubbike/features/acceso/presentation/vista_escaner_qr_guardia.dart';
 
@@ -65,7 +65,6 @@ class _VistaGestionManualGuardiaState
     extends ConsumerState<VistaGestionManualGuardia> {
   GestionManualVm get vm => ref.read(gestionManualVmProvider);
   final formKeyGestionManual = GlobalKey<FormState>();
-
 
   final nombreController = TextEditingController();
   final correoController = TextEditingController();
@@ -146,8 +145,9 @@ class _VistaGestionManualGuardiaState
       }
 
       final archivos = respuesta.files;
-      final archivo =
-          archivos != null && archivos.isNotEmpty ? archivos.first : respuesta.file;
+      final archivo = archivos != null && archivos.isNotEmpty
+          ? archivos.first
+          : respuesta.file;
       if (archivo == null) {
         return;
       }
@@ -827,7 +827,6 @@ class _VistaGestionManualGuardiaState
     );
   }
 
-
   Future<void> _buscarCoincidencia(String correo, String rut) async {
     try {
       final coincidencia = await vm.buscarCoincidencia(
@@ -887,7 +886,8 @@ class _VistaGestionManualGuardiaState
     actualizandoCampos = false;
     nombreAutocompletado = true;
 
-    final preferida = vm.bicicletaPreferidaAutodetectada(coincidencia.bicicletas);
+    final preferida =
+        vm.bicicletaPreferidaAutodetectada(coincidencia.bicicletas);
 
     setState(() {
       buscandoCoincidencia = false;
@@ -913,8 +913,6 @@ class _VistaGestionManualGuardiaState
       operacion = vm.operacionParaBicicleta(preferida);
     });
   }
-
-
 
   BicicletaApp? _buscarBicicletaSeleccionada(String? bicicletaId) {
     if (bicicletaId == null) {

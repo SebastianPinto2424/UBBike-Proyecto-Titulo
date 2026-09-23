@@ -18,11 +18,11 @@ class VistaEscanerQrGuardia extends ConsumerStatefulWidget {
   final VoidCallback? onMovimientoRegistrado;
 
   @override
-  ConsumerState<VistaEscanerQrGuardia> createState() => _VistaEscanerQrGuardiaState();
+  ConsumerState<VistaEscanerQrGuardia> createState() =>
+      _VistaEscanerQrGuardiaState();
 }
 
-class _VistaEscanerQrGuardiaState
-    extends ConsumerState<VistaEscanerQrGuardia> {
+class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   EscanerQrVm get vm => ref.read(escanerQrVmProvider);
   final formKeyQrValidado = GlobalKey<FormState>();
   final comentarioController = TextEditingController();
