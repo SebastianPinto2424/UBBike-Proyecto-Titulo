@@ -47,7 +47,12 @@ rutasAutenticacion.post(
   limitarIntentos({
     ventanaMs: 15 * 60 * 1000,
     maximo: conFactor(10),
-    mensaje: 'Demasiados intentos de ingreso. Intenta más tarde.'
+    mensaje: 'Demasiados intentos fallidos para esta cuenta. Intenta más tarde.',
+    contarSoloFallos: true,
+    clave: (req) =>
+      `login:${String(req.body?.correo ?? '')
+        .trim()
+        .toLowerCase()}`
   }),
   validarCuerpo(esquemaLogin),
   iniciarSesion
@@ -88,7 +93,8 @@ rutasAutenticacion.post(
   limitarIntentos({
     ventanaMs: 15 * 60 * 1000,
     maximo: conFactor(10),
-    mensaje: 'Demasiados intentos de cambio de contraseña. Intenta más tarde.'
+    mensaje: 'Demasiados intentos de cambio de contraseña. Intenta más tarde.',
+    contarSoloFallos: true
   }),
   validarCuerpo(esquemaCambioContrasena),
   cambiarContrasena
@@ -99,7 +105,9 @@ rutasAutenticacion.post(
   limitarIntentos({
     ventanaMs: 15 * 60 * 1000,
     maximo: conFactor(30),
-    mensaje: 'Demasiadas solicitudes de refresh. Intenta más tarde.'
+    mensaje: 'Demasiadas solicitudes de refresh. Intenta más tarde.',
+
+    contarSoloFallos: true
   }),
   validarCuerpo(esquemaRefreshToken),
   refrescarToken
@@ -111,7 +119,8 @@ rutasAutenticacion.post(
   limitarIntentos({
     ventanaMs: 15 * 60 * 1000,
     maximo: conFactor(10),
-    mensaje: 'Demasiados intentos de cambio de contraseña. Intenta más tarde.'
+    mensaje: 'Demasiados intentos de cambio de contraseña. Intenta más tarde.',
+    contarSoloFallos: true
   }),
   validarCuerpo(esquemaCambioContrasenaSesion),
   cambiarContrasenaSesion

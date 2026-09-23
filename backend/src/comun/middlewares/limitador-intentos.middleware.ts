@@ -6,6 +6,10 @@ type OpcionesLimitador = {
   ventanaMs: number;
   maximo: number;
   mensaje: string;
+
+  contarSoloFallos?: boolean;
+
+  clave?: (req: Request) => string;
 };
 
 type RegistroIntentos = {
@@ -15,65 +19,40 @@ type RegistroIntentos = {
 
 const intentos = new Map<string, RegistroIntentos>();
 
-const limitarConMemoria = (
-  clave: string,
-  opciones: OpcionesLimitador,
-  ahora: number,
-  res: Response,
-  next: NextFunction
-) => {
+const leerEnMemoria = (clave: string, ahora: number) => {
   const registro = intentos.get(clave);
-
   if (!registro || registro.reiniciaEn <= ahora) {
-    intentos.set(clave, {
-      cantidad: 1,
-      reiniciaEn: ahora + opciones.ventanaMs
-    });
-    return next();
+    return { cantidad: 0, reiniciaEn: 0 };
   }
+  return registro;
+};
 
-  if (registro.cantidad >= opciones.maximo) {
-    const segundos = Math.ceil((registro.reiniciaEn - ahora) / 1000);
-    res.setHeader('Retry-After', segundos.toString());
-    return res.status(429).json({
-      message: opciones.mensaje
-    });
+const sumarEnMemoria = (clave: string, ventanaMs: number, ahora: number) => {
+  const registro = intentos.get(clave);
+  if (!registro || registro.reiniciaEn <= ahora) {
+    intentos.set(clave, { cantidad: 1, reiniciaEn: ahora + ventanaMs });
+    return;
   }
-
   registro.cantidad += 1;
   intentos.set(clave, registro);
-  return next();
+};
+
+const responderBloqueo = (res: Response, mensaje: string, segundos: number) => {
+  res.setHeader('Retry-After', Math.max(segundos, 1).toString());
+  return res.status(429).json({ message: mensaje });
 };
 
 export const limitarIntentos =
   (opciones: OpcionesLimitador) => async (req: Request, res: Response, next: NextFunction) => {
     const ahora = Date.now();
-    const clave = `${req.ip}:${req.path}`;
+    const identificador = opciones.clave ? opciones.clave(req) : req.ip;
+    const clave = `${identificador}:${req.path}`;
+    const claveRedis = `rate-limit:${clave}`;
+
+    let redis: Awaited<ReturnType<typeof obtenerClienteRedis>> = null;
 
     try {
-      const redis = await obtenerClienteRedis();
-
-      if (!redis) {
-        return limitarConMemoria(clave, opciones, ahora, res, next);
-      }
-
-      const claveRedis = `rate-limit:${clave}`;
-      const cantidad = await redis.incr(claveRedis);
-
-      if (cantidad === 1) {
-        await redis.pExpire(claveRedis, opciones.ventanaMs);
-      }
-
-      if (cantidad > opciones.maximo) {
-        const ttlMs = await redis.pTTL(claveRedis);
-        const segundos = Math.max(Math.ceil(ttlMs / 1000), 1);
-        res.setHeader('Retry-After', segundos.toString());
-        return res.status(429).json({
-          message: opciones.mensaje
-        });
-      }
-
-      return next();
+      redis = await obtenerClienteRedis();
     } catch (error) {
       console.error('No se pudo aplicar rate limiting distribuido', error);
 
@@ -82,7 +61,40 @@ export const limitarIntentos =
           message: 'Protección temporal no disponible. Intenta nuevamente más tarde.'
         });
       }
-
-      return limitarConMemoria(clave, opciones, ahora, res, next);
     }
+
+    const sumar = async () => {
+      if (redis) {
+        const cantidad = await redis.incr(claveRedis);
+        if (cantidad === 1) {
+          await redis.pExpire(claveRedis, opciones.ventanaMs);
+        }
+        return;
+      }
+      sumarEnMemoria(clave, opciones.ventanaMs, ahora);
+    };
+
+    const cantidadActual = redis
+      ? Number((await redis.get(claveRedis)) ?? 0)
+      : leerEnMemoria(clave, ahora).cantidad;
+
+    if (cantidadActual >= opciones.maximo) {
+      const segundos = redis
+        ? Math.ceil((await redis.pTTL(claveRedis)) / 1000)
+        : Math.ceil((leerEnMemoria(clave, ahora).reiniciaEn - ahora) / 1000);
+      return responderBloqueo(res, opciones.mensaje, segundos);
+    }
+
+    if (!opciones.contarSoloFallos) {
+      await sumar();
+      return next();
+    }
+
+    res.on('finish', () => {
+      if (res.statusCode >= 400) {
+        void sumar();
+      }
+    });
+
+    return next();
   };
