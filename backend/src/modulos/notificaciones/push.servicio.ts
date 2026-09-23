@@ -1,5 +1,6 @@
 import { getMessaging } from 'firebase-admin/messaging';
 import { obtenerFirebase } from '../../configuracion/firebase';
+import { entorno } from '../../configuracion/entorno';
 import * as dispositivoRepositorio from './dispositivo.repositorio';
 
 type DatosPush = {
@@ -29,6 +30,9 @@ export const enviarPushAUsuario = async (usuarioId: string, push: DatosPush): Pr
   const app = obtenerFirebase();
 
   if (!app) {
+    if (entorno.ambiente === 'production') {
+      throw new Error('Firebase no está disponible; no se puede confirmar la entrega push');
+    }
     return;
   }
 
@@ -55,6 +59,7 @@ export const enviarPushAUsuario = async (usuarioId: string, push: DatosPush): Pr
   });
 
   const tokensInvalidos: string[] = [];
+  let hayFalloTemporal = false;
 
   respuesta.responses.forEach((resultado, indice) => {
     if (!resultado.success) {
@@ -65,6 +70,8 @@ export const enviarPushAUsuario = async (usuarioId: string, push: DatosPush): Pr
         codigo === 'messaging/invalid-registration-token'
       ) {
         tokensInvalidos.push(tokens[indice]);
+      } else {
+        hayFalloTemporal = true;
       }
     }
   });
@@ -72,4 +79,5 @@ export const enviarPushAUsuario = async (usuarioId: string, push: DatosPush): Pr
   if (tokensInvalidos.length > 0) {
     await dispositivoRepositorio.eliminarTokens(tokensInvalidos);
   }
+  if (hayFalloTemporal) throw new Error('FCM informó entregas fallidas; reintentar');
 };
