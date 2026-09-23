@@ -1,6 +1,9 @@
 import { Prisma } from '../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../configuracion/prisma';
 
+export const ejecutarEnTransaccion = <T>(callback: (client: ClientePrisma) => Promise<T>) =>
+  prisma.$transaction(callback);
+
 export const buscarPorCorreo = (correo: string, client: ClientePrisma = prisma) =>
   client.usuario.findUnique({
     where: { correo }
