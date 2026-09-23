@@ -9,13 +9,24 @@ export const obtenerClienteRedis = async (): Promise<RedisClientType | null> => 
     return null;
   }
 
-  if (cliente?.isOpen) {
+  if (cliente?.isReady) {
     return cliente;
+  }
+  if (cliente?.isOpen) throw new Error('Redis reconectando');
+
+  if (cliente && !cliente.isOpen) {
+    cliente = null;
+    promesaConexion = null;
   }
 
   if (!promesaConexion) {
     cliente = createClient({
-      url: entorno.redis.url
+      url: entorno.redis.url,
+      disableOfflineQueue: true,
+      socket: {
+        connectTimeout: 3000,
+        reconnectStrategy: (intentos) => (intentos < 3 ? 500 : false)
+      }
     });
 
     cliente.on('error', (error) => {
@@ -33,4 +44,10 @@ export const obtenerClienteRedis = async (): Promise<RedisClientType | null> => 
   }
 
   return promesaConexion;
+};
+
+export const cerrarRedis = async () => {
+  if (cliente?.isOpen) cliente.destroy();
+  cliente = null;
+  promesaConexion = null;
 };
