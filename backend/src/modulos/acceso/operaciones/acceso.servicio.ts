@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { bloquearClave } from '../../../comun/utils/bloqueos';
 import { existsSync } from 'node:fs';
 import bcrypt from 'bcryptjs';
 import { ErrorHttp } from '../../../comun/errors/error-http';
@@ -30,7 +31,7 @@ import {
 import { guardarFotoBicicleta } from '../../bicicletas/foto-bicicleta.servicio';
 import { mapearMovimiento } from './acceso.mapeador';
 import * as accesoRepositorio from './acceso.repositorio';
-import { validarReglaMovimiento } from './acceso.reglas';
+import { validarBicicleteroDelRetiro, validarReglaMovimiento } from './acceso.reglas';
 
 type DatosConfirmarQr = {
   token: string;
@@ -152,6 +153,7 @@ const obtenerBicicleteroOperacion = async (
   db?: ClientePrisma
 ) => {
   const validarAsignacionGuardia = async (bicicletero: BicicleteroOperacion) => {
+    if (!bicicletero.activo) throw new ErrorHttp(409, 'El bicicletero está inactivo');
     if (rol !== RolUsuario.GUARDIA) {
       return;
     }
@@ -179,8 +181,7 @@ const obtenerBicicleteroOperacion = async (
   }
 
   if (bicicleteroQr) {
-    await validarAsignacionGuardia(bicicleteroQr);
-    return bicicleteroQr;
+    return obtenerBicicleteroOperacion(guardiaId, rol, bicicleteroQr.id, null, db);
   }
 
   const asignacion = await accesoRepositorio.buscarAsignacionActivaConBicicletero(guardiaId, db);
@@ -189,7 +190,7 @@ const obtenerBicicleteroOperacion = async (
     throw new ErrorHttp(400, 'Debes indicar bicicletero para esta operación');
   }
 
-  return asignacion.bicicletero;
+  return obtenerBicicleteroOperacion(guardiaId, rol, asignacion.bicicletero.id, null, db);
 };
 
 const registrarMovimiento = async ({
@@ -232,8 +233,16 @@ const registrarMovimiento = async ({
   );
 
   if (estado === EstadoMovimiento.CONFIRMADO) {
-    await accesoRepositorio.actualizarBicicleta(
+    if (
+      tipo === TipoMovimiento.INGRESO &&
+      (await accesoRepositorio.contarOcupacion(bicicletero.id, db)) >= bicicletero.capacidad
+    ) {
+      throw new ErrorHttp(409, 'El bicicletero no tiene cupos disponibles');
+    }
+    const cambio = await accesoRepositorio.moverBicicletaSiCoincide(
       bicicleta.id,
+      bicicleta.dentroBicicletero,
+      bicicleta.bicicleteroActualId,
       tipo === TipoMovimiento.INGRESO
         ? {
             dentroBicicletero: true,
@@ -245,6 +254,8 @@ const registrarMovimiento = async ({
           },
       db
     );
+    if (cambio.count !== 1)
+      throw new ErrorHttp(409, 'La bicicleta cambió de estado; vuelve a consultar');
   }
 
   await registrarAuditoria(
@@ -267,10 +278,12 @@ const registrarMovimiento = async ({
     db
   );
 
-  return accesoRepositorio.buscarMovimientoCompleto(movimiento.id, db);
+  const completo = await accesoRepositorio.buscarMovimientoCompleto(movimiento.id, db);
+  await prepararCorreoMovimiento(completo, db);
+  return completo;
 };
 
-const notificarMovimiento = async (
+const notificarMovimiento = (
   movimientoCompleto: Awaited<ReturnType<typeof accesoRepositorio.buscarMovimientoCompleto>>
 ) => {
   emitirTiempoReal(
@@ -281,35 +294,40 @@ const notificarMovimiento = async (
     ],
     EventosTiempoReal.MOVIMIENTO
   );
+};
 
-  try {
-    const fotoNombreArchivo = movimientoCompleto.bicicleta.fotoNombreArchivo;
-    const rutaFoto = fotoNombreArchivo
-      ? path.join(entorno.archivos.directorioUploads, 'bicicletas', fotoNombreArchivo)
-      : null;
-    const hayFoto = rutaFoto != null && existsSync(rutaFoto);
-    const fotoCid = hayFoto ? `foto-bicicleta-${movimientoCompleto.id}@ubbike` : null;
+const prepararCorreoMovimiento = async (
+  movimientoCompleto: Awaited<ReturnType<typeof accesoRepositorio.buscarMovimientoCompleto>>,
+  db: ClientePrisma
+) => {
+  const fotoNombreArchivo = movimientoCompleto.bicicleta.fotoNombreArchivo;
+  const rutaFoto = fotoNombreArchivo
+    ? path.join(entorno.archivos.directorioUploads, 'bicicletas', fotoNombreArchivo)
+    : null;
+  const hayFoto = rutaFoto != null && existsSync(rutaFoto);
+  const fotoCid = hayFoto ? `foto-bicicleta-${movimientoCompleto.id}@ubbike` : null;
 
-    const correo = crearCorreoMovimiento({
-      nombre: movimientoCompleto.usuario.nombre,
-      tipo: movimientoCompleto.tipo,
-      estado: movimientoCompleto.estado,
-      origen: movimientoCompleto.origen,
-      bicicleta: movimientoCompleto.bicicleta.descripcion,
-      marca: movimientoCompleto.bicicleta.marca,
-      modelo: movimientoCompleto.bicicleta.modelo,
-      color: movimientoCompleto.bicicleta.color,
-      aro: movimientoCompleto.bicicleta.aro,
-      numeroSerie: movimientoCompleto.bicicleta.numeroSerie,
-      bicicletero: movimientoCompleto.bicicletero.nombre,
-      guardia: movimientoCompleto.validadoPorGuardia.nombre,
-      fecha: movimientoCompleto.creadoEn,
-      motivoDenegacion: movimientoCompleto.motivoDenegacion,
-      comentarioGuardia: movimientoCompleto.comentarioGuardia,
-      fotoCid
-    });
+  const correo = crearCorreoMovimiento({
+    nombre: movimientoCompleto.usuario.nombre,
+    tipo: movimientoCompleto.tipo,
+    estado: movimientoCompleto.estado,
+    origen: movimientoCompleto.origen,
+    bicicleta: movimientoCompleto.bicicleta.descripcion,
+    marca: movimientoCompleto.bicicleta.marca,
+    modelo: movimientoCompleto.bicicleta.modelo,
+    color: movimientoCompleto.bicicleta.color,
+    aro: movimientoCompleto.bicicleta.aro,
+    numeroSerie: movimientoCompleto.bicicleta.numeroSerie,
+    bicicletero: movimientoCompleto.bicicletero.nombre,
+    guardia: movimientoCompleto.validadoPorGuardia.nombre,
+    fecha: movimientoCompleto.creadoEn,
+    motivoDenegacion: movimientoCompleto.motivoDenegacion,
+    comentarioGuardia: movimientoCompleto.comentarioGuardia,
+    fotoCid
+  });
 
-    await enviarCorreo({
+  await enviarCorreo(
+    {
       para: movimientoCompleto.usuario.correo,
       asunto: correo.asunto,
       texto: correo.texto,
@@ -319,10 +337,9 @@ const notificarMovimiento = async (
         hayFoto && fotoNombreArchivo && rutaFoto
           ? [{ filename: fotoNombreArchivo, path: rutaFoto, cid: fotoCid! }]
           : undefined
-    });
-  } catch (error) {
-    console.error('[acceso] No se pudo enviar el correo de movimiento', error);
-  }
+    },
+    db
+  );
 };
 
 const crearBicicletaManual = async (
@@ -330,6 +347,7 @@ const crearBicicletaManual = async (
   usuarioId: string,
   datos: DatosGestionManual
 ) => {
+  await bloquearClave(db, `bicicletas:${usuarioId}`);
   const descripcion = datos.bicicletaDescripcion?.trim();
   const marca = datos.bicicletaMarca?.trim();
   const modelo = datos.bicicletaModelo?.trim();
@@ -372,16 +390,23 @@ const crearBicicletaManual = async (
   };
 };
 
-const enviarCorreoCompletarRegistro = async (correoUsuario: string, token: string) => {
+const enviarCorreoCompletarRegistro = async (
+  correoUsuario: string,
+  token: string,
+  db: ClientePrisma
+) => {
   const enlace = `${entorno.app.urlFrontend}/completar-registro?token=${token}`;
   const correo = crearCorreoCompletarRegistro(correoUsuario, enlace);
 
-  await enviarCorreo({
-    para: correoUsuario,
-    asunto: correo.asunto,
-    texto: correo.texto,
-    html: correo.html
-  });
+  await enviarCorreo(
+    {
+      para: correoUsuario,
+      asunto: correo.asunto,
+      texto: correo.texto,
+      html: correo.html
+    },
+    db
+  );
 };
 
 export const confirmarQr = async (datos: DatosConfirmarQr) => {
@@ -404,6 +429,7 @@ export const confirmarQr = async (datos: DatosConfirmarQr) => {
     const tipo = codigo.tipo as TipoMovimiento;
 
     validarReglaMovimiento(codigo.bicicleta, tipo);
+    validarBicicleteroDelRetiro(codigo.bicicleta, tipo, bicicletero.id);
 
     const marcado = await accesoRepositorio.marcarQrUsado(codigo.id, db);
 
@@ -528,20 +554,23 @@ export const registrarGestionManual = async (datos: DatosGestionManual) => {
       tokenCompletarRegistro = crearTokenSeguro();
       correoCompletarRegistro = correoNormalizado;
 
-      usuario = await accesoRepositorio.crearUsuario({
-        nombre: datos.nombre?.trim() || 'Registro pendiente',
-        correo: correoNormalizado,
-        rut: datos.rut,
-        rol: rolAsignado,
-        contrasenaHash: await bcrypt.hash(crearTokenSeguro(), 12),
-        cuentaActiva: true,
-        correoVerificado: false,
-        registroParcial: true,
-        tokenVerificacionCorreo: hashearToken(tokenCompletarRegistro),
-        tokenVerificacionCorreoExpiraEn: new Date(
-          Date.now() + 1000 * 60 * 60 * horasExpiracionVerificacionCorreo
-        )
-      });
+      usuario = await accesoRepositorio.crearUsuario(
+        {
+          nombre: datos.nombre?.trim() || 'Registro pendiente',
+          correo: correoNormalizado,
+          rut: datos.rut,
+          rol: rolAsignado,
+          contrasenaHash: await bcrypt.hash(crearTokenSeguro(), 12),
+          cuentaActiva: true,
+          correoVerificado: false,
+          registroParcial: true,
+          tokenVerificacionCorreo: hashearToken(tokenCompletarRegistro),
+          tokenVerificacionCorreoExpiraEn: new Date(
+            Date.now() + 1000 * 60 * 60 * horasExpiracionVerificacionCorreo
+          )
+        },
+        db
+      );
     } else if (usuario.registroParcial) {
       if (datos.tipo === TipoMovimiento.RETIRO) {
         throw new ErrorHttp(
@@ -605,6 +634,11 @@ export const registrarGestionManual = async (datos: DatosGestionManual) => {
 
     if (estado === EstadoMovimiento.CONFIRMADO) {
       validarReglaMovimiento(bicicleta, datos.tipo);
+      validarBicicleteroDelRetiro(bicicleta, datos.tipo, bicicletero.id);
+    }
+
+    if (tokenCompletarRegistro && correoCompletarRegistro) {
+      await enviarCorreoCompletarRegistro(correoCompletarRegistro, tokenCompletarRegistro, db);
     }
 
     return registrarMovimiento({
@@ -620,10 +654,6 @@ export const registrarGestionManual = async (datos: DatosGestionManual) => {
       db
     });
   });
-
-  if (tokenCompletarRegistro && correoCompletarRegistro) {
-    await enviarCorreoCompletarRegistro(correoCompletarRegistro, tokenCompletarRegistro);
-  }
 
   void notificarMovimiento(movimientoCompleto);
   return mapearMovimiento(movimientoCompleto);
