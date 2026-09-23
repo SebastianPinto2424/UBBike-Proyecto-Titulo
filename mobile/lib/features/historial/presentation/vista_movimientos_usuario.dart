@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/features/historial/application/movimientos_vm.dart';
@@ -6,7 +5,7 @@ import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
 
 class VistaMovimientosUsuario extends ConsumerStatefulWidget {
@@ -209,6 +208,16 @@ class _VistaMovimientosUsuarioState
                         ),
                       ),
                     ),
+                    if (vm.desactualizado)
+                      const Text(
+                          'No pudimos actualizar. Se muestran los últimos datos.'),
+                    if (vm.hayMas)
+                      OutlinedButton(
+                        onPressed: vm.cargandoMas ? null : vm.cargarMas,
+                        child: Text(vm.cargandoMas
+                            ? 'Cargando…'
+                            : 'Cargar más movimientos'),
+                      ),
                   ],
                 );
               },

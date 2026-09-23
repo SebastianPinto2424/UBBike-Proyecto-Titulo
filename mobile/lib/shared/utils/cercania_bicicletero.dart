@@ -24,7 +24,9 @@ SugerenciaBicicletero? bicicleteroMasCercano({
   for (final bicicletero in bicicleteros) {
     final latitud = bicicletero.latitud;
     final longitud = bicicletero.longitud;
-    if (latitud == null || longitud == null || bicicletero.cuposDisponibles <= 0) {
+    if (latitud == null ||
+        longitud == null ||
+        bicicletero.cuposDisponibles <= 0) {
       continue;
     }
 
