@@ -1,4 +1,6 @@
 import { ErrorHttp } from '../../comun/errors/error-http';
+import { prisma, type ClientePrisma } from '../../configuracion/prisma';
+import { bloquearClave } from '../../comun/utils/bloqueos';
 import type { Bicicleta } from '../../generated/prisma/client';
 import { eliminarArchivoFotoBicicleta, guardarFotoBicicleta } from './foto-bicicleta.servicio';
 import * as bicicletaRepositorio from './bicicleta.repositorio';
@@ -64,9 +66,17 @@ const buscarBicicletaUsuario = async (usuarioId: string, bicicletaId: string) =>
   return bicicleta;
 };
 
-const dejarSoloActiva = async (usuarioId: string, bicicletaId: string) => {
-  await bicicletaRepositorio.desactivarTodasDeUsuario(usuarioId);
-  await bicicletaRepositorio.actualizar(bicicletaId, { activa: true });
+const dejarSoloActiva = async (
+  usuarioId: string,
+  bicicletaId: string,
+  db?: ClientePrisma
+): Promise<void> => {
+  if (!db) return prisma.$transaction((tx) => dejarSoloActiva(usuarioId, bicicletaId, tx));
+  await bloquearClave(db, `bicicletas:${usuarioId}`);
+  const vigente = await bicicletaRepositorio.buscarDeUsuario(usuarioId, bicicletaId, db);
+  if (!vigente) throw new ErrorHttp(404, 'Bicicleta no encontrada');
+  await bicicletaRepositorio.desactivarTodasDeUsuario(usuarioId, db);
+  await bicicletaRepositorio.actualizar(bicicletaId, { activa: true }, db);
 };
 
 export const listarBicicletasUsuario = async (usuarioId: string) => {
@@ -184,12 +194,22 @@ export const actualizarBicicleta = async (
 
 export const eliminarBicicleta = async (usuarioId: string, bicicletaId: string) => {
   const bicicleta = await buscarBicicletaUsuario(usuarioId, bicicletaId);
+
+  if (bicicleta.dentroBicicletero) {
+    throw new ErrorHttp(
+      409,
+      'No puedes eliminar una bicicleta que está dentro de un bicicletero. Registra primero su retiro.'
+    );
+  }
+
   const estabaActiva = bicicleta.activa;
 
-  await bicicletaRepositorio.actualizar(bicicleta.id, {
-    eliminadoEn: new Date(),
-    activa: false
+  const eliminada = await prisma.bicicleta.updateMany({
+    where: { id: bicicleta.id, usuarioId, eliminadoEn: null, dentroBicicletero: false },
+    data: { eliminadoEn: new Date(), activa: false }
   });
+  if (eliminada.count !== 1)
+    throw new ErrorHttp(409, 'La bicicleta cambió de estado; vuelve a consultar');
 
   await eliminarArchivoFotoBicicleta(bicicleta.fotoNombreArchivo);
 
