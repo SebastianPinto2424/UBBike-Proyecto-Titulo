@@ -21,7 +21,6 @@ export type SolicitudAutenticada = Request & {
 };
 
 type OpcionesAutenticacion = {
-
   exigirContrasenaActualizada?: boolean;
 };
 
