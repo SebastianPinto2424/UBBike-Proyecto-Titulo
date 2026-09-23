@@ -1,6 +1,7 @@
 import { Prisma } from '../../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../../configuracion/prisma';
 import { includeMovimientoCompleto } from './acceso.mapeador';
+import { bloquearFila } from '../../../comun/utils/bloqueos';
 
 export const ejecutarEnTransaccion = <T>(callback: (client: ClientePrisma) => Promise<T>) =>
   prisma.$transaction(callback);
@@ -35,9 +36,28 @@ export const buscarAsignacionActivaConBicicletero = (
     }
   });
 
-export const buscarBicicletero = (id: string, client: ClientePrisma = prisma) =>
-  client.bicicletero.findUnique({
+export const buscarBicicletero = async (id: string, client: ClientePrisma = prisma) => {
+  if (client !== prisma) await bloquearFila(client, 'bicicleteros', id);
+  return client.bicicletero.findUnique({
     where: { id }
+  });
+};
+
+export const contarOcupacion = (bicicleteroId: string, client: ClientePrisma = prisma) =>
+  client.bicicleta.count({
+    where: { bicicleteroActualId: bicicleteroId, dentroBicicletero: true, eliminadoEn: null }
+  });
+
+export const moverBicicletaSiCoincide = (
+  id: string,
+  dentroBicicletero: boolean,
+  bicicleteroActualId: string | null,
+  data: Prisma.BicicletaUncheckedUpdateManyInput,
+  client: ClientePrisma = prisma
+) =>
+  client.bicicleta.updateMany({
+    where: { id, dentroBicicletero, bicicleteroActualId, eliminadoEn: null },
+    data
   });
 
 export const marcarQrUsado = (codigoQrId: string, client: ClientePrisma = prisma) =>
