@@ -39,10 +39,8 @@ export const buscarSiguienteActivable = (usuarioId: string, client: ClientePrism
 export const contarDeUsuario = (usuarioId: string, client: ClientePrisma = prisma) =>
   client.bicicleta.count({ where: { usuarioId, eliminadoEn: null } });
 
-export const crear = (
-  data: Prisma.BicicletaUncheckedCreateInput,
-  client: ClientePrisma = prisma
-) => client.bicicleta.create({ data });
+export const crear = (data: Prisma.BicicletaUncheckedCreateInput, client: ClientePrisma = prisma) =>
+  client.bicicleta.create({ data });
 
 export const desactivarTodasDeUsuario = (usuarioId: string, client: ClientePrisma = prisma) =>
   client.bicicleta.updateMany({
