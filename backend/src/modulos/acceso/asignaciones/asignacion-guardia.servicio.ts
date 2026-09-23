@@ -1,11 +1,16 @@
 import { ErrorHttp } from '../../../comun/errors/error-http';
+import { bloquearClave, bloquearFila } from '../../../comun/utils/bloqueos';
 import type { AsignacionGuardia, Bicicletero } from '../../../generated/prisma/client';
 import { registrarAuditoria } from '../../auditoria/auditoria.servicio';
 import {
   construirStatsBicicletero,
   contarOcupadosBicicletero
 } from '../../bicicleteros/bicicletero.ocupacion';
-import { crearNotificacion } from '../../notificaciones/notificacion.servicio';
+import {
+  crearNotificacion,
+  ejecutarEfectosDiferidos,
+  type EfectosDiferidos
+} from '../../notificaciones/notificacion.servicio';
 import { TipoNotificacion } from '../../notificaciones/tipo-notificacion';
 import * as asignacionGuardiaRepositorio from './asignacion-guardia.repositorio';
 
@@ -27,7 +32,10 @@ export const obtenerAsignacionActivaGuardia = async (guardiaId: string) => {
 };
 
 export const seleccionarBicicleteroGuardia = async (guardiaId: string, bicicleteroId: string) => {
+  const efectos: EfectosDiferidos = [];
   const resultado = await asignacionGuardiaRepositorio.ejecutarEnTransaccion(async (db) => {
+    await bloquearClave(db, `asignacion:${guardiaId}`);
+    await bloquearFila(db, 'bicicleteros', bicicleteroId);
     const bicicletero = await asignacionGuardiaRepositorio.buscarBicicleteroActivo(
       bicicleteroId,
       db
@@ -41,13 +49,16 @@ export const seleccionarBicicleteroGuardia = async (guardiaId: string, biciclete
 
     await asignacionGuardiaRepositorio.cerrarActivasDeGuardia(guardiaId, ahora, db);
 
-    const asignacion = await asignacionGuardiaRepositorio.crear({
-      guardiaId,
-      bicicleteroId: bicicletero.id,
-      iniciaEn: ahora,
-      terminaEn: null,
-      activa: true
-    });
+    const asignacion = await asignacionGuardiaRepositorio.crear(
+      {
+        guardiaId,
+        bicicleteroId: bicicletero.id,
+        iniciaEn: ahora,
+        terminaEn: null,
+        activa: true
+      },
+      db
+    );
 
     await registrarAuditoria(
       {
@@ -73,7 +84,8 @@ export const seleccionarBicicleteroGuardia = async (guardiaId: string, biciclete
           asignacionId: asignacion.id
         }
       },
-      db
+      db,
+      efectos
     );
 
     return {
@@ -82,11 +94,13 @@ export const seleccionarBicicleteroGuardia = async (guardiaId: string, biciclete
     };
   });
 
+  ejecutarEfectosDiferidos(efectos);
   return mapearAsignacion(resultado);
 };
 
 export const liberarBicicleteroGuardia = async (guardiaId: string) => {
   await asignacionGuardiaRepositorio.ejecutarEnTransaccion(async (db) => {
+    await bloquearClave(db, `asignacion:${guardiaId}`);
     await asignacionGuardiaRepositorio.cerrarActivasDeGuardia(guardiaId, new Date(), db);
 
     await registrarAuditoria(
