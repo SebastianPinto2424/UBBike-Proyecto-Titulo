@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
+import 'package:ubbike/shared/widgets/boton_con_espera.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
-import 'package:ubbike/features/inicio/presentation/comun/central_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/utiles_comun.dart';
+import 'package:ubbike/shared/widgets/central_widgets.dart';
+import 'package:ubbike/shared/utils/utiles_comun.dart';
 
 class TarjetaSolicitudGuardia extends StatelessWidget {
   const TarjetaSolicitudGuardia({
@@ -15,6 +16,8 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
     this.permitirNotificarCentral = false,
     this.permitirNotificarUsuario = false,
     this.mostrarAccionesGuardia = true,
+    this.permitirCierreCentral = false,
+    this.onEsperaCumplida,
     this.onActualizar,
     this.onNotificarGuardia,
   });
@@ -24,7 +27,10 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
   final bool permitirNotificarCentral;
   final bool permitirNotificarUsuario;
   final bool mostrarAccionesGuardia;
-  final Future<void> Function(String estado)? onActualizar;
+  final bool permitirCierreCentral;
+
+  final VoidCallback? onEsperaCumplida;
+  final Future<void> Function(String estado, {String? nota})? onActualizar;
   final Future<void> Function()? onNotificarGuardia;
 
   @override
@@ -169,6 +175,14 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
                 mensaje: mensaje,
               ),
             ],
+            if (solicitud.notaCierreCentral != null &&
+                solicitud.notaCierreCentral!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              BloqueMensajeSolicitud(
+                titulo: 'Motivo de cierre (Central)',
+                mensaje: solicitud.notaCierreCentral!,
+              ),
+            ],
             if (!cerrada && onActualizar != null) ...[
               const SizedBox(height: 14),
               Wrap(
@@ -176,21 +190,19 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
                 runSpacing: 10,
                 children: [
                   if (permitirNotificarUsuario && onNotificarGuardia != null)
-                    OutlinedButton.icon(
-                      onPressed: solicitud.puedeNotificarGuardiaUsuario
-                          ? () => _notificarGuardia(context)
-                          : null,
-                      icon: const Icon(Icons.notifications_active_outlined),
-                      label: Text(_textoBotonRecordarUsuario(solicitud)),
+                    _BotonRecordarSolicitud(
+                      solicitud: solicitud,
+                      prefijoEspera: 'Podrás recordar en',
+                      onPresionar: () => _notificarGuardia(context),
+                      alTerminarEspera: onEsperaCumplida,
                     ),
                   if (permitirNotificarCentral &&
                       solicitud.guardiaAsignado != null)
-                    OutlinedButton.icon(
-                      onPressed: solicitud.puedeNotificarGuardia
-                          ? () => _actualizar(context, 'NOTIFICADA')
-                          : null,
-                      icon: const Icon(Icons.notifications_active_outlined),
-                      label: Text(_textoBotonNotificarGuardia(solicitud)),
+                    _BotonRecordarSolicitud(
+                      solicitud: solicitud,
+                      prefijoEspera: 'Reenviar en',
+                      onPresionar: () => _actualizar(context, 'NOTIFICADA'),
+                      alTerminarEspera: onEsperaCumplida,
                     ),
                   if (mostrarAccionesGuardia) ...[
                     OutlinedButton.icon(
@@ -206,6 +218,24 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
                       label: const Text('Marcar resuelta'),
                     ),
                   ],
+                  if (permitirCierreCentral) ...[
+                    OutlinedButton.icon(
+                      onPressed: () => _cerrarComoCentral(context, 'RESUELTA'),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Marcar resuelta'),
+                    ),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ColoresUbb.rojoInstitucional,
+                        side: const BorderSide(
+                          color: ColoresUbb.rojoInstitucional,
+                        ),
+                      ),
+                      onPressed: () => _cerrarComoCentral(context, 'CANCELADA'),
+                      icon: const Icon(Icons.block_outlined),
+                      label: const Text('Cerrar sin resolver'),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -217,12 +247,11 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
               if (solicitud.guardiaAsignado == null)
                 const _IndicadorCentralAvisada()
               else
-                OutlinedButton.icon(
-                  onPressed: solicitud.puedeNotificarGuardiaUsuario
-                      ? () => _notificarGuardia(context)
-                      : null,
-                  icon: const Icon(Icons.notifications_active_outlined),
-                  label: Text(_textoBotonRecordarUsuario(solicitud)),
+                _BotonRecordarSolicitud(
+                  solicitud: solicitud,
+                  prefijoEspera: 'Podrás recordar en',
+                  onPresionar: () => _notificarGuardia(context),
+                  alTerminarEspera: onEsperaCumplida,
                 ),
             ],
           ],
@@ -231,9 +260,13 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
     );
   }
 
-  Future<void> _actualizar(BuildContext context, String estado) async {
+  Future<void> _actualizar(
+    BuildContext context,
+    String estado, {
+    String? nota,
+  }) async {
     try {
-      await onActualizar?.call(estado);
+      await onActualizar?.call(estado, nota: nota);
       if (context.mounted) {
         context.mostrarExito('Solicitud ${etiquetaEstadoSolicitud(estado)}');
       }
@@ -244,6 +277,17 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
     }
   }
 
+  Future<void> _cerrarComoCentral(BuildContext context, String estado) async {
+    final nota = await showDialog<String>(
+      context: context,
+      builder: (_) => _DialogoNotaCierre(estado: estado),
+    );
+    if (nota == null || !context.mounted) {
+      return;
+    }
+    await _actualizar(context, estado, nota: nota);
+  }
+
   Future<void> _notificarGuardia(BuildContext context) async {
     try {
       await onNotificarGuardia?.call();
@@ -252,6 +296,78 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
         context.mostrarError(error.mensaje);
       }
     }
+  }
+}
+
+class _DialogoNotaCierre extends StatefulWidget {
+  const _DialogoNotaCierre({required this.estado});
+
+  final String estado;
+
+  @override
+  State<_DialogoNotaCierre> createState() => _DialogoNotaCierreState();
+}
+
+class _DialogoNotaCierreState extends State<_DialogoNotaCierre> {
+  final formKeyNotaCierre = GlobalKey<FormState>();
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    if (formKeyNotaCierre.currentState?.validate() != true) {
+      return;
+    }
+
+    Navigator.of(context).pop(controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        widget.estado == 'RESUELTA'
+            ? 'Marcar solicitud como resuelta'
+            : 'Cerrar solicitud sin resolver',
+      ),
+      content: Form(
+        key: formKeyNotaCierre,
+        child: TextFormField(
+          controller: controller,
+          minLines: 3,
+          maxLines: 5,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Motivo del cierre',
+            hintText: 'Ej: El guardia no respondió, se cerró desde central.',
+            alignLabelWithHint: true,
+          ),
+          validator: (valor) => (valor == null || valor.trim().isEmpty)
+              ? 'Escribe un motivo para cerrar la solicitud.'
+              : null,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: _confirmar,
+          child: const Text('Confirmar'),
+        ),
+      ],
+    );
   }
 }
 
@@ -380,42 +496,48 @@ String _etiquetaTipoSolicitud(String tipo) {
   };
 }
 
-String _textoBotonRecordarUsuario(SolicitudGuardiaApp solicitud) {
-  final segundos = solicitud.segundosParaNotificarGuardia;
+class _BotonRecordarSolicitud extends StatelessWidget {
+  const _BotonRecordarSolicitud({
+    required this.solicitud,
+    required this.prefijoEspera,
+    required this.onPresionar,
+    this.alTerminarEspera,
+  });
 
-  if (solicitud.respondidaPorGuardiaEn != null ||
-      solicitud.estado == 'EN_CAMINO') {
-    return solicitud.estado == 'EN_CAMINO'
-        ? 'Guardia en camino'
-        : 'Guardia respondió';
+  final SolicitudGuardiaApp solicitud;
+  final String prefijoEspera;
+  final VoidCallback onPresionar;
+  final VoidCallback? alTerminarEspera;
+
+  bool get _esReenvio => prefijoEspera.startsWith('Reenviar');
+
+  @override
+  Widget build(BuildContext context) {
+    if (solicitud.respondidaPorGuardiaEn != null ||
+        solicitud.estado == 'EN_CAMINO') {
+      return OutlinedButton.icon(
+        onPressed: null,
+        icon: const Icon(Icons.notifications_active_outlined),
+        label: Text(solicitud.estado == 'EN_CAMINO'
+            ? 'Guardia en camino'
+            : 'Guardia respondió'),
+      );
+    }
+
+    final yaAviso = solicitud.notificacionesGuardia > 0;
+
+    return BotonConEspera(
+      key: ValueKey('$prefijoEspera-${solicitud.id}'),
+      segundosRestantes: solicitud.segundosParaNotificarGuardia,
+      prefijoEspera: prefijoEspera,
+      etiquetaLista: _esReenvio
+          ? (yaAviso ? 'Reenviar aviso' : 'Avisar guardia')
+          : (yaAviso ? 'Recordar al guardia' : 'Avisar al guardia'),
+      icono: Icons.notifications_active_outlined,
+      onPresionar: onPresionar,
+      alTerminarEspera: alTerminarEspera,
+    );
   }
-
-  if (segundos != null && segundos > 0) {
-    return 'Podrás recordar en ${segundos}s';
-  }
-
-  return solicitud.notificacionesGuardia > 0
-      ? 'Recordar al guardia'
-      : 'Avisar al guardia';
-}
-
-String _textoBotonNotificarGuardia(SolicitudGuardiaApp solicitud) {
-  final segundos = solicitud.segundosParaNotificarGuardia;
-
-  if (solicitud.respondidaPorGuardiaEn != null ||
-      solicitud.estado == 'EN_CAMINO') {
-    return solicitud.estado == 'EN_CAMINO'
-        ? 'Guardia en camino'
-        : 'Guardia respondió';
-  }
-
-  if (segundos != null && segundos > 0) {
-    return 'Reenviar en ${segundos}s';
-  }
-
-  return solicitud.notificacionesGuardia > 0
-      ? 'Reenviar aviso'
-      : 'Avisar guardia';
 }
 
 String etiquetaEstadoSolicitud(String estado) {
