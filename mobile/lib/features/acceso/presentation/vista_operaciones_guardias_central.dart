@@ -9,8 +9,11 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/exportacion_reporte.dart';
 import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
+import 'package:ubbike/core/providers/sesion_provider.dart';
+import 'package:ubbike/shared/modelos/rol_usuario.dart';
 
 class _ResumenGuardia {
   int total = 0;
@@ -69,6 +72,9 @@ class _VistaOperacionesGuardiasCentralState
   BicicleteroApp? bicicleteroSeleccionado;
   List<BicicleteroApp> bicicleteros = [];
   late Future<List<MovimientoApp>> futuroMovimientos;
+  String? formatoExportacion;
+  bool exportarAbierto = false;
+  bool exportando = false;
 
   @override
   void initState() {
@@ -92,11 +98,11 @@ class _VistaOperacionesGuardiasCentralState
 
   Future<List<MovimientoApp>> _obtenerMovimientos() {
     return ref.read(movimientosCentralVmProvider).listar(
-      periodo: periodo,
-      estado: estadoMovimiento,
-      bicicleteroId: bicicleteroSeleccionado?.id,
-      limite: 100000,
-    );
+          periodo: periodo,
+          estado: estadoMovimiento,
+          bicicleteroId: bicicleteroSeleccionado?.id,
+          limite: 100000,
+        );
   }
 
   void _recargar() {
@@ -120,6 +126,40 @@ class _VistaOperacionesGuardiasCentralState
       bicicleteroSeleccionado = null;
       futuroMovimientos = _obtenerMovimientos();
     });
+  }
+
+  bool get _puedeExportar {
+    final sesion = ref.read(sesionProvider).value;
+    final rol = sesion is SesionActiva ? sesion.usuario.rol : null;
+    return rol == RolUsuario.adminCentral || rol == RolUsuario.administrador;
+  }
+
+  Future<void> _exportarSeleccionado(String? formato) async {
+    if (formato == null || exportando) {
+      return;
+    }
+
+    setState(() => exportando = true);
+    try {
+      await ExportadorReporte(ref).exportar(
+        context: context,
+        formato: formato,
+        resumenFiltros: _resumenFiltros(),
+        filtros: (
+          filtro: null,
+          periodo: periodo,
+          desde: null,
+          hasta: null,
+          tipo: null,
+          estado: estadoMovimiento,
+          bicicleteroId: bicicleteroSeleccionado?.id,
+          guardiaId: null,
+          origen: null,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => exportando = false);
+    }
   }
 
   void _mostrarDetalleGuardia(
@@ -264,6 +304,21 @@ class _VistaOperacionesGuardiasCentralState
             ),
           ],
         ),
+        if (_puedeExportar) ...[
+          const SizedBox(height: 10),
+          PanelExportarReporte(
+            exportando: exportando,
+            expandido: exportarAbierto,
+            formatoSeleccionado: formatoExportacion,
+            onToggle: () {
+              setState(() => exportarAbierto = !exportarAbierto);
+            },
+            onFormato: (formato) {
+              setState(() => formatoExportacion = formato);
+            },
+            onDescargar: () => _exportarSeleccionado(formatoExportacion),
+          ),
+        ],
         const SizedBox(height: 16),
         FutureBuilder<List<MovimientoApp>>(
           future: futuroMovimientos,
@@ -276,7 +331,7 @@ class _VistaOperacionesGuardiasCentralState
               return TarjetaAccion(
                 icono: Icons.error_outline,
                 titulo: 'No se pudieron cargar operaciones',
-                detalle: '${snapshot.error}\nToca para reintentar.',
+                detalle: 'Revisa tu conexión y toca para reintentar.',
                 color: ColoresUbb.rojoInstitucional,
                 onTap: _recargar,
               );
