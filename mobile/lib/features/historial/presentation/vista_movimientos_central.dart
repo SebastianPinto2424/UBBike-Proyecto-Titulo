@@ -3,20 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/features/historial/application/movimientos_vm.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import 'package:ubbike/shared/widgets/exportacion_reporte.dart';
 
 import 'package:ubbike/core/providers/sesion_provider.dart';
+import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/historial/data/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/servicios/descarga_reporte.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/utiles_comun.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
 
 class VistaMovimientosCentral extends ConsumerStatefulWidget {
@@ -30,8 +27,13 @@ class VistaMovimientosCentral extends ConsumerStatefulWidget {
 class _VistaMovimientosCentralState
     extends ConsumerState<VistaMovimientosCentral> {
   MovimientosCentralVm get vm => ref.read(movimientosCentralVmProvider);
-  static const int _limiteVistaHistorial = 300;
-  static const int _limiteReporteHistorial = 100000;
+  static const int _tamanoPagina = 50;
+
+  int paginaActual = 1;
+  bool hayMasPaginas = false;
+  bool cargandoMas = false;
+  int totalMovimientos = 0;
+  List<MovimientoApp> acumulados = const [];
 
   final filtroController = TextEditingController();
   Timer? temporizadorBusqueda;
@@ -58,13 +60,13 @@ class _VistaMovimientosCentralState
   bool get _puedeExportar {
     final sesion = ref.read(sesionProvider).value;
     final rol = sesion is SesionActiva ? sesion.usuario.rol : null;
-    return rol == RolUsuario.adminCentral;
+    return rol == RolUsuario.adminCentral || rol == RolUsuario.administrador;
   }
 
   @override
   void initState() {
     super.initState();
-    futuroMovimientos = _obtenerMovimientos();
+    futuroMovimientos = _obtenerPrimeraPagina();
     if (_esCentral) {
       futuroOpciones = vm.opciones();
     }
@@ -77,10 +79,8 @@ class _VistaMovimientosCentralState
     super.dispose();
   }
 
-  Future<List<MovimientoApp>> _obtenerMovimientos({
-    int limite = _limiteVistaHistorial,
-  }) {
-    return vm.listar(
+  Future<List<MovimientoApp>> _obtenerPrimeraPagina() async {
+    final pagina = await vm.listarPagina(
       filtro: filtroController.text,
       periodo: periodo,
       desde: fechaDesde,
@@ -90,14 +90,67 @@ class _VistaMovimientosCentralState
       bicicleteroId: bicicleteroId,
       guardiaId: guardiaId,
       origen: origenMovimiento,
-      limite: limite,
+      limite: _tamanoPagina,
     );
+
+    paginaActual = pagina.pagina;
+    hayMasPaginas = pagina.hayMas;
+    totalMovimientos = pagina.total;
+    acumulados = pagina.movimientos;
+    return acumulados;
+  }
+
+  Future<void> _cargarSiguientePagina() async {
+    if (cargandoMas || !hayMasPaginas) {
+      return;
+    }
+
+    setState(() => cargandoMas = true);
+    try {
+      final siguiente = await vm.listarPagina(
+        filtro: filtroController.text,
+        periodo: periodo,
+        desde: fechaDesde,
+        hasta: fechaHasta,
+        tipo: tipoMovimiento,
+        estado: estadoMovimiento,
+        bicicleteroId: bicicleteroId,
+        guardiaId: guardiaId,
+        origen: origenMovimiento,
+        limite: _tamanoPagina,
+        pagina: paginaActual + 1,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        acumulados = [...acumulados, ...siguiente.movimientos];
+        paginaActual = siguiente.pagina;
+        hayMasPaginas = siguiente.hayMas;
+        totalMovimientos = siguiente.total;
+        futuroMovimientos = Future.value(acumulados);
+      });
+    } on ExcepcionApi catch (error) {
+      if (mounted) {
+        context.mostrarError(error.mensaje);
+      }
+    } catch (_) {
+      if (mounted) {
+        context.mostrarError('No se pudieron cargar más movimientos.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => cargandoMas = false);
+      }
+    }
   }
 
   void _recargar() {
     temporizadorBusqueda?.cancel();
     setState(() {
-      futuroMovimientos = _obtenerMovimientos();
+      futuroMovimientos = _obtenerPrimeraPagina();
     });
   }
 
@@ -181,118 +234,31 @@ class _VistaMovimientosCentralState
     }
   }
 
-  Future<void> _exportarExcel() async {
-    if (exportando) return;
-    setState(() => exportando = true);
-    try {
-      final excel = await vm.exportarExcel(
-        filtro: filtroController.text,
-        periodo: periodo,
-        desde: fechaDesde,
-        hasta: fechaHasta,
-        tipo: tipoMovimiento,
-        estado: estadoMovimiento,
-        bicicleteroId: bicicleteroId,
-        guardiaId: guardiaId,
-        origen: origenMovimiento,
-      );
-      final nombre =
-          'historial-ubbike-${DateTime.now().millisecondsSinceEpoch}.xls';
-      final mensaje = await descargarReporteTexto(
-        nombreArchivo: nombre,
-        contenido: excel,
-        tipoMime: 'application/vnd.ms-excel;charset=utf-8',
-      );
-      if (mounted) {
-        context.mostrarExito(mensaje);
-      }
-    } catch (error) {
-      if (mounted) {
-        context.mostrarError(error.toString());
-      }
-    } finally {
-      if (mounted) setState(() => exportando = false);
-    }
-  }
-
-  Future<void> _exportarPdf() async {
-    if (exportando) return;
-    setState(() => exportando = true);
-    try {
-      final movimientos = await _obtenerMovimientos(
-        limite: _limiteReporteHistorial,
-      );
-      final pdf = pw.Document();
-
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4.landscape,
-          build: (context) => [
-            pw.Header(
-                level: 0, child: pw.Text('Reporte de movimientos UBBike')),
-            pw.Text('Filtros: ${_resumenFiltros()}'),
-            pw.SizedBox(height: 10),
-            pw.TableHelper.fromTextArray(
-              context: context,
-              headerStyle:
-                  pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
-              cellStyle: const pw.TextStyle(fontSize: 7),
-              cellAlignment: pw.Alignment.centerLeft,
-              data: <List<String>>[
-                <String>[
-                  'Tipo',
-                  'Estado',
-                  'Fecha',
-                  'Hora',
-                  'Usuario',
-                  'Correo',
-                  'RUT',
-                  'Bicicleta',
-                  'Bicicletero',
-                  'Guardia',
-                  'Método',
-                ],
-                ...movimientos.map((m) => [
-                      m.tipo == "INGRESO" ? "Ingreso" : "Retiro",
-                      m.estado == "CONFIRMADO" ? "Confirmado" : "Denegado",
-                      formatearFecha(m.creadoEn),
-                      formatearHora(m.creadoEn),
-                      m.usuarioNombre,
-                      m.usuarioCorreo,
-                      m.usuarioRut ?? 'Sin RUT',
-                      m.bicicletaDescripcion,
-                      m.bicicleteroNombre,
-                      m.guardiaNombre,
-                      etiquetaOrigenMovimientoFiltro(m.origen),
-                    ]),
-              ],
-            ),
-          ],
-        ),
-      );
-
-      await Printing.sharePdf(
-        bytes: await pdf.save(),
-        filename: 'historial-ubbike.pdf',
-      );
-    } catch (e) {
-      if (mounted) {
-        context.mostrarError('Error al exportar PDF: $e');
-      }
-    } finally {
-      if (mounted) setState(() => exportando = false);
-    }
-  }
-
   Future<void> _exportarSeleccionado(String? formato) async {
     if (formato == null || exportando) {
       return;
     }
 
-    if (formato == 'EXCEL') {
-      await _exportarExcel();
-    } else if (formato == 'PDF') {
-      await _exportarPdf();
+    setState(() => exportando = true);
+    try {
+      await ExportadorReporte(ref).exportar(
+        context: context,
+        formato: formato,
+        resumenFiltros: _resumenFiltros(),
+        filtros: (
+          filtro: filtroController.text,
+          periodo: periodo,
+          desde: fechaDesde,
+          hasta: fechaHasta,
+          tipo: tipoMovimiento,
+          estado: estadoMovimiento,
+          bicicleteroId: bicicleteroId,
+          guardiaId: guardiaId,
+          origen: origenMovimiento,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => exportando = false);
     }
   }
 
@@ -300,16 +266,16 @@ class _VistaMovimientosCentralState
     return [
       EtiquetaFiltro(
         texto: 'Período',
-        child: SegmentadoEnLinea<String>(
-          segments: const [
-            ButtonSegment(value: 'DIA', label: Text('Día')),
-            ButtonSegment(value: 'SEMANA', label: Text('Semana')),
-            ButtonSegment(value: 'MES', label: Text('Mes')),
-            ButtonSegment(value: 'ANIO', label: Text('Año')),
-          ],
-          selected: {periodo},
-          onSelectionChanged: (valor) {
-            setState(() => periodo = valor.first);
+        child: _ChipsFiltro(
+          opciones: const {
+            'DIA': 'Día',
+            'SEMANA': 'Semana',
+            'MES': 'Mes',
+            'ANIO': 'Año',
+          },
+          seleccionado: periodo,
+          onSeleccion: (valor) {
+            setState(() => periodo = valor);
             _recargar();
           },
         ),
@@ -369,15 +335,15 @@ class _VistaMovimientosCentralState
       const SizedBox(height: 12),
       EtiquetaFiltro(
         texto: 'Tipo de movimiento',
-        child: SegmentadoEnLinea<String>(
-          segments: const [
-            ButtonSegment(value: 'TODOS', label: Text('Todos')),
-            ButtonSegment(value: 'INGRESO', label: Text('Ingresos')),
-            ButtonSegment(value: 'RETIRO', label: Text('Retiros')),
-          ],
-          selected: {tipoMovimiento},
-          onSelectionChanged: (valor) {
-            setState(() => tipoMovimiento = valor.first);
+        child: _ChipsFiltro(
+          opciones: const {
+            'TODOS': 'Todos',
+            'INGRESO': 'Ingresos',
+            'RETIRO': 'Retiros',
+          },
+          seleccionado: tipoMovimiento,
+          onSeleccion: (valor) {
+            setState(() => tipoMovimiento = valor);
             _recargar();
           },
         ),
@@ -385,15 +351,15 @@ class _VistaMovimientosCentralState
       const SizedBox(height: 12),
       EtiquetaFiltro(
         texto: 'Resultado',
-        child: SegmentadoEnLinea<String>(
-          segments: const [
-            ButtonSegment(value: 'TODOS', label: Text('Todos')),
-            ButtonSegment(value: 'CONFIRMADO', label: Text('Confirmados')),
-            ButtonSegment(value: 'DENEGADO', label: Text('Denegados')),
-          ],
-          selected: {estadoMovimiento},
-          onSelectionChanged: (valor) {
-            setState(() => estadoMovimiento = valor.first);
+        child: _ChipsFiltro(
+          opciones: const {
+            'TODOS': 'Todos',
+            'CONFIRMADO': 'Confirmados',
+            'DENEGADO': 'Denegados',
+          },
+          seleccionado: estadoMovimiento,
+          onSeleccion: (valor) {
+            setState(() => estadoMovimiento = valor);
             _recargar();
           },
         ),
@@ -401,15 +367,15 @@ class _VistaMovimientosCentralState
       const SizedBox(height: 12),
       EtiquetaFiltro(
         texto: 'Origen',
-        child: SegmentadoEnLinea<String>(
-          segments: const [
-            ButtonSegment(value: 'TODOS', label: Text('Todos')),
-            ButtonSegment(value: 'QR', label: Text('QR')),
-            ButtonSegment(value: 'MANUAL', label: Text('Manual')),
-          ],
-          selected: {origenMovimiento},
-          onSelectionChanged: (valor) {
-            setState(() => origenMovimiento = valor.first);
+        child: _ChipsFiltro(
+          opciones: const {
+            'TODOS': 'Todos',
+            'QR': 'QR',
+            'MANUAL': 'Manual',
+          },
+          seleccionado: origenMovimiento,
+          onSeleccion: (valor) {
+            setState(() => origenMovimiento = valor);
             _recargar();
           },
         ),
@@ -519,17 +485,15 @@ class _VistaMovimientosCentralState
           ),
         ),
         const SizedBox(height: 10),
-
         PanelFiltros(
           titulo: 'Filtros',
           detalle: _resumenFiltros(),
           onLimpiar: _limpiarFiltros,
           children: _controlesFiltros(),
         ),
-
         if (_puedeExportar) ...[
           const SizedBox(height: 10),
-          _PanelExportarHistorial(
+          PanelExportarReporte(
             exportando: exportando,
             expandido: exportarAbierto,
             formatoSeleccionado: formatoExportacion,
@@ -543,7 +507,6 @@ class _VistaMovimientosCentralState
           ),
         ],
         const SizedBox(height: 16),
-
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async => _recargar(),
@@ -584,14 +547,26 @@ class _VistaMovimientosCentralState
                 return ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: movimientos.length,
-                  itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: TarjetaMovimientoCentral(
-                      movimiento: movimientos[index],
-                      mostrarIdentidad: true,
-                    ),
-                  ),
+                  itemCount: movimientos.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == movimientos.length) {
+                      return _PieListaMovimientos(
+                        mostrados: movimientos.length,
+                        total: totalMovimientos,
+                        hayMas: hayMasPaginas,
+                        cargando: cargandoMas,
+                        onCargarMas: _cargarSiguientePagina,
+                      );
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TarjetaMovimientoCentral(
+                        movimiento: movimientos[index],
+                        mostrarIdentidad: true,
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -602,206 +577,83 @@ class _VistaMovimientosCentralState
   }
 }
 
-class _PanelExportarHistorial extends StatelessWidget {
-  const _PanelExportarHistorial({
-    required this.exportando,
-    required this.expandido,
-    required this.formatoSeleccionado,
-    required this.onToggle,
-    required this.onFormato,
-    required this.onDescargar,
+class _PieListaMovimientos extends StatelessWidget {
+  const _PieListaMovimientos({
+    required this.mostrados,
+    required this.total,
+    required this.hayMas,
+    required this.cargando,
+    required this.onCargarMas,
   });
 
-  final bool exportando;
-  final bool expandido;
-  final String? formatoSeleccionado;
-  final VoidCallback onToggle;
-  final ValueChanged<String?> onFormato;
-  final VoidCallback onDescargar;
+  final int mostrados;
+  final int total;
+  final bool hayMas;
+  final bool cargando;
+  final VoidCallback onCargarMas;
 
   @override
   Widget build(BuildContext context) {
-    final etiquetaFormato = switch (formatoSeleccionado) {
-      'EXCEL' => 'Excel',
-      'PDF' => 'PDF',
-      _ => 'Excel o PDF',
-    };
-
-    return Card(
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: exportando ? null : onToggle,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  if (exportando) ...[
-                    const SizedBox(
+          Text(
+            hayMas
+                ? 'Mostrando $mostrados de $total movimientos'
+                : 'Mostrando los $total movimientos del filtro',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: ColoresUbb.textoSecundario,
+                ),
+          ),
+          if (hayMas) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: cargando ? null : onCargarMas,
+              icon: cargando
+                  ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: ColoresUbb.azulApp,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          exportando ? 'Exportando' : 'Exportar',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: ColoresUbb.azulNoche,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Usa los filtros actuales',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: ColoresUbb.textoSecundario,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    etiquetaFormato,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: ColoresUbb.azulApp,
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    expandido
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: ColoresUbb.azulApp,
-                    size: 18,
-                  ),
-                ],
-              ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.expand_more),
+              label: Text(cargando ? 'Cargando' : 'Cargar más'),
             ),
-          ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 180),
-            crossFadeState: expandido
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  _OpcionExportacion(
-                    titulo: 'Excel',
-                    detalle: 'Archivo editable con los movimientos filtrados.',
-                    seleccionado: formatoSeleccionado == 'EXCEL',
-                    onChanged: exportando
-                        ? null
-                        : (activo) => onFormato(activo ? 'EXCEL' : null),
-                  ),
-                  const SizedBox(height: 10),
-                  _OpcionExportacion(
-                    titulo: 'PDF',
-                    detalle: 'Reporte listo para compartir o imprimir.',
-                    seleccionado: formatoSeleccionado == 'PDF',
-                    onChanged: exportando
-                        ? null
-                        : (activo) => onFormato(activo ? 'PDF' : null),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: formatoSeleccionado == null || exportando
-                        ? null
-                        : onDescargar,
-                    child: Text(exportando ? 'Descargando...' : 'Descargar'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _OpcionExportacion extends StatelessWidget {
-  const _OpcionExportacion({
-    required this.titulo,
-    required this.detalle,
+class _ChipsFiltro extends StatelessWidget {
+  const _ChipsFiltro({
+    required this.opciones,
     required this.seleccionado,
-    required this.onChanged,
+    required this.onSeleccion,
   });
 
-  final String titulo;
-  final String detalle;
-  final bool seleccionado;
-  final ValueChanged<bool>? onChanged;
+  final Map<String, String> opciones;
+  final String seleccionado;
+  final ValueChanged<String> onSeleccion;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onChanged == null ? null : () => onChanged!(!seleccionado),
-      borderRadius: BorderRadius.circular(8),
-      child: Ink(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: seleccionado
-              ? ColoresUbb.azulApp.withValues(alpha: 0.08)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: seleccionado ? ColoresUbb.azulApp : ColoresUbb.borde,
-            width: seleccionado ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    titulo,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: ColoresUbb.azulNoche,
-                          fontWeight: FontWeight.w900,
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    detalle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: ColoresUbb.textoSecundario,
-                        ),
-                  ),
-                ],
-              ),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: opciones.entries
+          .map(
+            (opcion) => FiltroChip(
+              label: opcion.value,
+              value: opcion.key,
+              selectedValue: seleccionado,
+              onTap: onSeleccion,
             ),
-            const SizedBox(width: 10),
-            Switch.adaptive(
-              value: seleccionado,
-              onChanged: onChanged,
-              activeThumbColor: Colors.white,
-              activeTrackColor: ColoresUbb.azulApp,
-            ),
-          ],
-        ),
-      ),
+          )
+          .toList(),
     );
   }
 }
