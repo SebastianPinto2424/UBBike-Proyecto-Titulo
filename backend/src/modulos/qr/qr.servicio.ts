@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { bloquearClave } from '../../comun/utils/bloqueos';
 import { ErrorHttp } from '../../comun/errors/error-http';
 import { entorno } from '../../configuracion/entorno';
 import type { ClientePrisma } from '../../configuracion/prisma';
@@ -64,9 +65,21 @@ export const generarQrTemporal = async (datos: DatosGenerarQr) => {
   if (tipo === TipoMovimiento.INGRESO && !bicicletero) {
     throw new ErrorHttp(400, 'Selecciona un bicicletero para generar QR de ingreso');
   }
+  if (bicicletero && !bicicletero.activo) throw new ErrorHttp(409, 'El bicicletero está inactivo');
 
   if (tipo === TipoMovimiento.RETIRO && !bicicleta.dentroBicicletero) {
     throw new ErrorHttp(409, 'La bicicleta no registra ingreso activo');
+  }
+
+  if (
+    tipo === TipoMovimiento.RETIRO &&
+    bicicleta.bicicleteroActualId &&
+    bicicletero?.id !== bicicleta.bicicleteroActualId
+  ) {
+    throw new ErrorHttp(
+      409,
+      'La bicicleta está registrada en otro bicicletero. El retiro debe hacerse donde ingresó.'
+    );
   }
 
   if (tipo === TipoMovimiento.INGRESO && bicicleta.dentroBicicletero) {
@@ -76,6 +89,7 @@ export const generarQrTemporal = async (datos: DatosGenerarQr) => {
   const token = `UBBIKE-${crypto.randomBytes(24).toString('base64url')}`;
   const expiraEn = new Date(Date.now() + duracionQrSegundos * 1000);
   const codigo = await qrRepositorio.ejecutarEnTransaccion(async (tx) => {
+    await bloquearClave(tx, `qr:${datos.usuarioId}`);
     await qrRepositorio.invalidarQrActivos(datos.usuarioId, tx);
 
     return qrRepositorio.crearQr(
