@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -13,6 +15,8 @@ class ClienteApi {
     this.obtenerUsuarioId,
     this.alActualizarTokens,
     this.alExpirarSesion,
+    this.httpClient,
+    this.timeout = const Duration(seconds: 20),
   });
 
   final String? Function()? obtenerToken;
@@ -21,6 +25,11 @@ class ClienteApi {
   final Future<void> Function(String token, String? refreshToken)?
       alActualizarTokens;
   final Future<void> Function()? alExpirarSesion;
+  final http.Client? httpClient;
+  final Duration timeout;
+  http.Client get _http => httpClient ?? clienteHttp;
+
+  static final Map<String, Future<bool>> _renovaciones = {};
 
   Uri _uri(String ruta) => Uri.parse('${ConfiguracionApi.baseUrl}$ruta');
 
@@ -32,14 +41,49 @@ class ClienteApi {
     };
   }
 
+  static const _reintentosLectura = 2;
+  static const _esperaReintento = Duration(milliseconds: 600);
+
+  bool _esFalloTransitorio(Object error) {
+    if (error is TimeoutException || error is http.ClientException) {
+      return true;
+    }
+    final tipo = error.runtimeType.toString();
+    return tipo == 'SocketException' || tipo == 'HandshakeException';
+  }
+
+  Future<http.Response> _leerConReintento(
+    Future<http.Response> Function() solicitud,
+  ) async {
+    for (var intento = 0;; intento++) {
+      try {
+        return await _respuesta(solicitud);
+      } catch (error) {
+        if (intento >= _reintentosLectura || !_esFalloTransitorio(error)) {
+          rethrow;
+        }
+        await Future<void>.delayed(_esperaReintento * (intento + 1));
+      }
+    }
+  }
+
   Future<Map<String, dynamic>> get(String ruta) async {
-    return _ejecutar(() => clienteHttp.get(_uri(ruta), headers: _headers()));
+    return _procesarRespuesta(await _leerConReintento(
+        () => _http.get(_uri(ruta), headers: _headers())));
   }
 
   Future<String> getTexto(String ruta) async {
-    final respuesta = await clienteHttp.get(_uri(ruta), headers: _headers());
+    final respuesta = await _leerConReintento(
+        () => _http.get(_uri(ruta), headers: _headers()));
     if (respuesta.statusCode >= 400) _procesarRespuesta(respuesta);
     return respuesta.body;
+  }
+
+  Future<Uint8List> getBytes(String ruta) async {
+    final respuesta = await _leerConReintento(
+        () => _http.get(_uri(ruta), headers: _headers()));
+    if (respuesta.statusCode >= 400) _procesarRespuesta(respuesta);
+    return respuesta.bodyBytes;
   }
 
   Future<Map<String, dynamic>> post(
@@ -47,7 +91,7 @@ class ClienteApi {
     Map<String, dynamic>? body,
   }) async {
     return _ejecutar(
-      () => clienteHttp.post(
+      () => _http.post(
         _uri(ruta),
         headers: _headers(),
         body: jsonEncode(body ?? {}),
@@ -60,7 +104,7 @@ class ClienteApi {
     Map<String, dynamic>? body,
   }) async {
     return _ejecutar(
-      () => clienteHttp.patch(
+      () => _http.patch(
         _uri(ruta),
         headers: _headers(),
         body: jsonEncode(body ?? {}),
@@ -73,7 +117,7 @@ class ClienteApi {
     Map<String, dynamic>? body,
   }) async {
     return _ejecutar(
-      () => clienteHttp.delete(
+      () => _http.delete(
         _uri(ruta),
         headers: _headers(),
         body: body == null ? null : jsonEncode(body),
@@ -84,47 +128,80 @@ class ClienteApi {
   Future<Map<String, dynamic>> _ejecutar(
     Future<http.Response> Function() solicitud,
   ) async {
-    var respuesta = await solicitud();
+    return _procesarRespuesta(await _respuesta(solicitud));
+  }
+
+  Future<http.Response> _respuesta(
+    Future<http.Response> Function() solicitud,
+  ) async {
+    final tokenEnviado = obtenerToken?.call();
+    final usuarioEnviado = obtenerUsuarioId?.call();
+    var respuesta = await solicitud().timeout(timeout);
 
     if (respuesta.statusCode == 401) {
+      if (obtenerUsuarioId?.call() != usuarioEnviado) return respuesta;
+
+      if (obtenerToken?.call() != tokenEnviado) {
+        return solicitud().timeout(timeout);
+      }
       final refreshToken = obtenerRefreshToken?.call();
       final usuarioId = obtenerUsuarioId?.call();
 
       if (refreshToken != null &&
           usuarioId != null &&
           alActualizarTokens != null) {
-        final reintentado = await _intentarRefresh(refreshToken, usuarioId);
+        final clave = '$usuarioId:$refreshToken';
+        final renovacion = _renovaciones.putIfAbsent(
+          clave,
+          () => _intentarRefresh(refreshToken, usuarioId),
+        );
+        final bool reintentado;
+        try {
+          reintentado = await renovacion;
+        } finally {
+          if (identical(_renovaciones[clave], renovacion)) {
+            unawaited(_renovaciones.remove(clave)!);
+          }
+        }
         if (reintentado) {
-          respuesta = await solicitud();
+          respuesta = await solicitud().timeout(timeout);
         }
       }
     }
 
-    return _procesarRespuesta(respuesta);
+    return respuesta;
   }
 
   Future<bool> _intentarRefresh(
     String refreshToken,
     String usuarioId,
   ) async {
-    try {
-      final respuesta = await clienteHttp.post(
-        Uri.parse('${ConfiguracionApi.baseUrl}/autenticacion/refresh'),
-        headers: {'Content-Type': 'application/json'},
-        body:
-            jsonEncode({'usuarioId': usuarioId, 'refreshToken': refreshToken}),
-      );
+    final respuesta = await _http
+        .post(
+          Uri.parse('${ConfiguracionApi.baseUrl}/autenticacion/refresh'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(
+              {'usuarioId': usuarioId, 'refreshToken': refreshToken}),
+        )
+        .timeout(timeout);
 
-      if (respuesta.statusCode == 200) {
-        final datos = jsonDecode(respuesta.body) as Map<String, dynamic>;
-        final nuevoToken = datos['token'] as String;
-        final nuevoRefreshToken = datos['refreshToken'] as String?;
-        await alActualizarTokens!(nuevoToken, nuevoRefreshToken);
-        return true;
+    if (respuesta.statusCode == 200) {
+      final datos = jsonDecode(respuesta.body) as Map<String, dynamic>;
+      final nuevoToken = datos['token'] as String;
+      final nuevoRefreshToken = datos['refreshToken'] as String?;
+      if (obtenerRefreshToken?.call() != refreshToken) return false;
+      await alActualizarTokens!(nuevoToken, nuevoRefreshToken);
+      return true;
+    }
+    if (respuesta.statusCode == 401 || respuesta.statusCode == 403) {
+      if (obtenerRefreshToken?.call() == refreshToken) {
+        await alExpirarSesion?.call();
       }
-    } catch (_) {}
-
-    await alExpirarSesion?.call();
+    } else {
+      _procesarRespuesta(respuesta);
+      throw const ExcepcionApi(
+          'No se pudo renovar la sesión. Intenta nuevamente.');
+    }
     return false;
   }
 
@@ -146,6 +223,7 @@ class ClienteApi {
       final mensaje = primerDetalle ?? contenido['message']?.toString();
       throw ExcepcionApi(
         _mensajeApiAmigable(mensaje) ?? 'Error ${respuesta.statusCode}',
+        statusCode: respuesta.statusCode,
       );
     }
 
