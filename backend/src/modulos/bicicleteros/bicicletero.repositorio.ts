@@ -1,3 +1,4 @@
+import { Prisma } from '../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../configuracion/prisma';
 
 const filtroOcupacion = {
@@ -10,6 +11,23 @@ export const listarActivos = (client: ClientePrisma = prisma) =>
     where: { activo: true },
     orderBy: { nombre: 'asc' }
   });
+
+export const crear = (
+  data: Prisma.BicicleteroUncheckedCreateInput,
+  client: ClientePrisma = prisma
+) => client.bicicletero.create({ data });
+
+export const buscarPorId = (id: string, client: ClientePrisma = prisma) =>
+  client.bicicletero.findUnique({ where: { id } });
+
+export const buscarPorNombre = (nombre: string, client: ClientePrisma = prisma) =>
+  client.bicicletero.findUnique({ where: { nombre } });
+
+export const actualizar = (
+  id: string,
+  data: Prisma.BicicleteroUpdateInput,
+  client: ClientePrisma = prisma
+) => client.bicicletero.update({ where: { id }, data });
 
 export const contarOcupadosAgrupados = (client: ClientePrisma = prisma) =>
   client.bicicleta.groupBy({
