@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:ubbike/core/servicios/cliente_api.dart';
+import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/features/auth/data/autenticacion_api.dart';
 import 'package:ubbike/features/auth/data/autenticacion_repository.dart';
 import 'package:ubbike/shared/modelos/rol_usuario.dart';
@@ -43,125 +45,166 @@ const _storage = FlutterSecureStorage(
 );
 
 class SesionNotifier extends AsyncNotifier<SesionState> {
-  @override
-  Future<SesionState> build() async {
-    return _restaurarSesion();
+  int _epoca = 0;
+  Future<void> _escrituras = Future.value();
+  Future<void> _persistir(Future<void> Function() accion) {
+    final resultado = _escrituras.then((_) => accion());
+    _escrituras = resultado.catchError((Object _) {});
+    return resultado;
   }
+
+  @override
+  Future<SesionState> build() => _restaurarSesion();
 
   Future<SesionState> _restaurarSesion() async {
+    final epoca = ++_epoca;
+    await _escrituras;
+    var token = await _storage.read(key: _storageKeyToken);
+    var refresh = await _storage.read(key: _storageKeyRefreshToken);
+    final id = await _storage.read(key: _storageKeyUsuarioId);
+    if (token == null) return const SesionVacia();
     try {
-      final token = await _storage.read(key: _storageKeyToken);
-      final refreshToken = await _storage.read(key: _storageKeyRefreshToken);
-
-      if (token == null) return const SesionVacia();
-
-      final repository = AutenticacionRepository(
-        AutenticacionApi(cliente: ClienteApi(obtenerToken: () => token)),
+      final api = ClienteApi(
+        httpClient: ref.read(sesionHttpProvider),
+        obtenerToken: () => epoca == _epoca ? token : null,
+        obtenerRefreshToken: () => epoca == _epoca ? refresh : null,
+        obtenerUsuarioId: () => epoca == _epoca ? id : null,
+        alActualizarTokens: (t, r) async {
+          if (epoca != _epoca) return;
+          token = t;
+          refresh = r;
+          await _persistir(() async {
+            await _storage.write(key: _storageKeyToken, value: t);
+            await _storage.write(key: _storageKeyRefreshToken, value: r);
+          });
+        },
       );
-      final usuario = await repository.obtenerPerfil();
-
+      final usuario =
+          await AutenticacionRepository(AutenticacionApi(cliente: api))
+              .obtenerPerfil();
+      if (epoca != _epoca) return state.valueOrNull ?? const SesionVacia();
       return SesionActiva(
-        usuario: usuario,
-        token: token,
-        refreshToken: refreshToken,
-      );
-    } catch (_) {
-      await _limpiarStorage();
-      return const SesionVacia();
+          usuario: usuario, token: token!, refreshToken: refresh);
+    } on ExcepcionApi catch (error) {
+      if (epoca != _epoca) return state.valueOrNull ?? const SesionVacia();
+      if (error.statusCode == 401 || error.statusCode == 403) {
+        await _persistir(_limpiarStorage);
+        return const SesionVacia();
+      }
+      rethrow;
     }
   }
 
-  Future<void> iniciar({
-    required String token,
-    required UsuarioApp usuario,
-    String? refreshToken,
-  }) async {
-    await _storage.write(key: _storageKeyToken, value: token);
-    await _storage.write(key: _storageKeyUsuarioId, value: usuario.id);
-    await _storage.write(key: _storageKeyUsuarioNombre, value: usuario.nombre);
-    await _storage.write(key: _storageKeyUsuarioCorreo, value: usuario.correo);
-    await _storage.write(
-      key: _storageKeyUsuarioRol,
-      value: usuario.rol.valorApi,
-    );
-
-    if (refreshToken != null) {
-      await _storage.write(key: _storageKeyRefreshToken, value: refreshToken);
+  Future<void> iniciar(
+      {required String token,
+      required UsuarioApp usuario,
+      String? refreshToken}) async {
+    final epoca = ++_epoca;
+    await _persistir(() async {
+      await _storage.write(key: _storageKeyToken, value: token);
+      await _storage.write(key: _storageKeyUsuarioId, value: usuario.id);
+      await _storage.write(
+          key: _storageKeyUsuarioNombre, value: usuario.nombre);
+      await _storage.write(
+          key: _storageKeyUsuarioCorreo, value: usuario.correo);
+      await _storage.write(
+          key: _storageKeyUsuarioRol, value: usuario.rol.valorApi);
+      if (refreshToken == null) {
+        await _storage.delete(key: _storageKeyRefreshToken);
+      } else {
+        await _storage.write(key: _storageKeyRefreshToken, value: refreshToken);
+      }
+    });
+    if (epoca == _epoca) {
+      state = AsyncData(SesionActiva(
+          usuario: usuario, token: token, refreshToken: refreshToken));
     }
-
-    state = AsyncData(
-      SesionActiva(
-        usuario: usuario,
-        token: token,
-        refreshToken: refreshToken,
-      ),
-    );
   }
 
   Future<void> actualizarToken(
-    String nuevoToken,
-    String? nuevoRefreshToken,
-  ) async {
-    final sesionActual = state.value;
-    if (sesionActual is! SesionActiva) return;
+      String nuevoToken, String? nuevoRefreshToken) async {
+    final actual = state.valueOrNull;
+    if (actual is! SesionActiva) return;
+    final refresh = nuevoRefreshToken ?? actual.refreshToken;
 
-    await _storage.write(key: _storageKeyToken, value: nuevoToken);
-    if (nuevoRefreshToken != null) {
-      await _storage.write(
-          key: _storageKeyRefreshToken, value: nuevoRefreshToken);
-    }
-
-    final refreshFinal = nuevoRefreshToken ?? sesionActual.refreshToken;
-    state = AsyncData(
-      SesionActiva(
-        usuario: sesionActual.usuario,
-        token: nuevoToken,
-        refreshToken: refreshFinal,
-      ),
-    );
+    state = AsyncData(SesionActiva(
+        usuario: actual.usuario, token: nuevoToken, refreshToken: refresh));
+    await _persistir(() async {
+      await _storage.write(key: _storageKeyToken, value: nuevoToken);
+      await _storage.write(key: _storageKeyRefreshToken, value: refresh);
+    });
   }
 
   Future<void> refrescarPerfil() async {
-    final sesionActual = state.value;
-    if (sesionActual is! SesionActiva) return;
-
-    final repository = AutenticacionRepository(
-      AutenticacionApi(
-        cliente: ClienteApi(obtenerToken: () => sesionActual.token),
-      ),
+    final actual = state.valueOrNull;
+    if (actual is! SesionActiva) return;
+    final epoca = _epoca;
+    final api = ClienteApi(
+      httpClient: ref.read(sesionHttpProvider),
+      obtenerToken: () =>
+          switch (state.valueOrNull) { SesionActiva s => s.token, _ => null },
+      obtenerRefreshToken: () => switch (state.valueOrNull) {
+        SesionActiva s => s.refreshToken,
+        _ => null
+      },
+      obtenerUsuarioId: () => switch (state.valueOrNull) {
+        SesionActiva s => s.usuario.id,
+        _ => null
+      },
+      alActualizarTokens: actualizarToken,
+      alExpirarSesion: olvidar,
     );
-    final usuario = await repository.obtenerPerfil();
-
-    state = AsyncData(
-      SesionActiva(
+    final usuario =
+        await AutenticacionRepository(AutenticacionApi(cliente: api))
+            .obtenerPerfil();
+    final vigente = state.valueOrNull;
+    if (epoca != _epoca ||
+        vigente is! SesionActiva ||
+        vigente.usuario.id != usuario.id) {
+      return;
+    }
+    state = AsyncData(SesionActiva(
         usuario: usuario,
-        token: sesionActual.token,
-        refreshToken: sesionActual.refreshToken,
-      ),
-    );
+        token: vigente.token,
+        refreshToken: vigente.refreshToken));
   }
 
   Future<void> cerrar() async {
+    final actual = state.valueOrNull;
+    final httpClient = ref.read(sesionHttpProvider);
+    await olvidar();
+    if (actual is! SesionActiva) return;
     try {
-      final sesionActual = state.value;
-      if (sesionActual is SesionActiva) {
-        final repository = AutenticacionRepository(
-          AutenticacionApi(
-            cliente: ClienteApi(obtenerToken: () => sesionActual.token),
-          ),
-        );
-        await repository.cerrarSesion(refreshToken: sesionActual.refreshToken);
-      }
+      await AutenticacionRepository(AutenticacionApi(
+          cliente: ClienteApi(
+        httpClient: httpClient,
+        obtenerToken: () => actual.token,
+        timeout: const Duration(seconds: 5),
+      ))).cerrarSesion(refreshToken: actual.refreshToken);
     } catch (_) {}
+  }
 
-    await _limpiarStorage();
+  Future<void> olvidar() async {
+    _epoca++;
     state = const AsyncData(SesionVacia());
+    await _persistir(_limpiarStorage);
   }
 
   Future<void> _limpiarStorage() async {
-    await _storage.deleteAll();
+    for (final clave in [
+      _storageKeyToken,
+      _storageKeyRefreshToken,
+      _storageKeyUsuarioId,
+      _storageKeyUsuarioNombre,
+      _storageKeyUsuarioCorreo,
+      _storageKeyUsuarioRol
+    ]) {
+      await _storage.delete(key: clave);
+    }
   }
 }
+
+final sesionHttpProvider = Provider<http.Client?>((ref) => null);
 
 final sesionProvider = AsyncNotifierProvider<SesionNotifier, SesionState>(
   SesionNotifier.new,
