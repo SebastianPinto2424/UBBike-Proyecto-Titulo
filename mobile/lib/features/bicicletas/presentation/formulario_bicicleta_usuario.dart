@@ -13,8 +13,8 @@ import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/utils/limites_foto.dart';
 import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/utiles_comun.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/utils/utiles_comun.dart';
 
 const _alturaCampoFormularioBicicleta = 56.0;
 const _paddingCampoFormularioBicicleta =

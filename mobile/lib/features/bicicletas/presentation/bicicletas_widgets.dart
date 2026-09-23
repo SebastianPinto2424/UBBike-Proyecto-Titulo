@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
-import 'package:ubbike/features/inicio/presentation/comun/utiles_comun.dart';
+import 'package:ubbike/shared/utils/utiles_comun.dart';
 
 class TarjetaBicicletaUsuario extends StatefulWidget {
   const TarjetaBicicletaUsuario({

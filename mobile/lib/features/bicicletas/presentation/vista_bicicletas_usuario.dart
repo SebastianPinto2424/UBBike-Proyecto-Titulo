@@ -8,11 +8,12 @@ import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/utils/auto_refresco.dart';
+import 'package:ubbike/shared/widgets/dialogo_eliminar.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/vista_con_tabs.dart';
 import 'package:ubbike/features/bicicletas/presentation/bicicletas_widgets.dart';
-import 'package:ubbike/features/inicio/presentation/comun/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_usuario.dart';
 
@@ -143,36 +144,15 @@ class _VistaBicicletasState extends ConsumerState<VistaBicicletas>
   }
 
   Future<void> _eliminarBicicleta(BicicletaApp bicicleta) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(
-          Icons.delete_forever_outlined,
-          color: ColoresUbb.rojoInstitucional,
-          size: 44,
-        ),
-        title: const Text('Eliminar bicicleta'),
-        content: Text(
-          '¿Seguro que deseas eliminar "${bicicleta.descripcion}"?\nEsta acción no se puede deshacer.',
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ColoresUbb.rojoInstitucional,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+    final confirmar = await confirmarEliminacion(
+      context,
+      titulo: 'Eliminar bicicleta',
+      nombre: bicicleta.descripcion,
+      consecuencia:
+          'Dejará de aparecer en tu lista y se borrará su foto. El historial de ingresos y retiros se conserva.',
     );
 
-    if (confirmar != true) {
+    if (!confirmar || !mounted) {
       return;
     }
 
