@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ubbike/features/auth/application/autenticacion_vm.dart';
 import 'package:flutter/foundation.dart';
@@ -37,9 +39,8 @@ class _PantallaVerificarCorreoState
 
   Future<void> _verificar() async {
     try {
-      final respuesta = await ref
-          .read(autenticacionVmProvider)
-          .verificarCorreo(widget.token);
+      final respuesta =
+          await ref.read(autenticacionVmProvider).verificarCorreo(widget.token);
       if (mounted) {
         setState(() {
           mensaje =
@@ -105,7 +106,7 @@ class _PantallaVerificarCorreoState
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
+    unawaited(Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => PantallaLogin(
           correoInicial: correo != null && correo.isNotEmpty ? correo : null,
@@ -114,7 +115,7 @@ class _PantallaVerificarCorreoState
         ),
       ),
       (_) => false,
-    );
+    ));
   }
 }
 
@@ -163,19 +164,18 @@ class _PantallaCompletarRegistroState
     setState(() => cargando = true);
 
     try {
-      final mensaje =
-          await ref.read(autenticacionVmProvider).completarRegistro(
-                token: widget.token,
-                nombre: nombre,
-                contrasena: contrasenaController.text,
-              );
+      final mensaje = await ref.read(autenticacionVmProvider).completarRegistro(
+            token: widget.token,
+            nombre: nombre,
+            contrasena: contrasenaController.text,
+          );
 
       if (mounted) {
         context.mostrarExito(mensaje);
-        Navigator.of(context).pushAndRemoveUntil(
+        unawaited(Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const PantallaLogin()),
           (_) => false,
-        );
+        ));
       }
     } on ExcepcionApi catch (error) {
       if (mounted) {
@@ -305,11 +305,10 @@ class _PantallaCambiarContrasenaState
     setState(() => cargando = true);
 
     try {
-      final mensaje =
-          await ref.read(autenticacionVmProvider).cambiarContrasena(
-                token: widget.token,
-                contrasena: contrasenaController.text,
-              );
+      final mensaje = await ref.read(autenticacionVmProvider).cambiarContrasena(
+            token: widget.token,
+            contrasena: contrasenaController.text,
+          );
 
       if (mounted) {
         await ref.read(sesionProvider.notifier).cerrar();
@@ -640,7 +639,7 @@ class _PantallaCambiarContrasenaState
   }
 
   void _mostrarLoginContrasenaActualizada() {
-    Navigator.of(context).pushAndRemoveUntil(
+    unawaited(Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const PantallaLogin(
           mensajeInicial:
@@ -648,7 +647,7 @@ class _PantallaCambiarContrasenaState
         ),
       ),
       (_) => false,
-    );
+    ));
   }
 }
 
@@ -743,12 +742,13 @@ class _PantallaEstadoCorreo extends StatelessWidget {
                           style: estiloBotonAuth(),
                           onPressed: onAccion ??
                               () {
-                                Navigator.of(context).pushAndRemoveUntil(
+                                unawaited(
+                                    Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(
                                     builder: (_) => const PantallaLogin(),
                                   ),
                                   (_) => false,
-                                );
+                                ));
                               },
                           icon: const Icon(Icons.login),
                           label: Text(textoAccion ?? 'Iniciar sesión'),

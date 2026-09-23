@@ -171,11 +171,10 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
     setState(() => cargando = true);
 
     try {
-      final resultado =
-          await ref.read(autenticacionVmProvider).iniciarSesion(
-                correo: correo,
-                contrasena: contrasena,
-              );
+      final resultado = await ref.read(autenticacionVmProvider).iniciarSesion(
+            correo: correo,
+            contrasena: contrasena,
+          );
 
       await ref.read(sesionProvider.notifier).iniciar(
             token: resultado.token,

@@ -30,8 +30,9 @@ class AutenticacionVm {
             contrasena: contrasena,
           );
 
-  Future<String> solicitarCambioContrasena(String correo) =>
-      _ref.read(autenticacionRepositoryProvider).solicitarCambioContrasena(correo);
+  Future<String> solicitarCambioContrasena(String correo) => _ref
+      .read(autenticacionRepositoryProvider)
+      .solicitarCambioContrasena(correo);
 
   Future<ResultadoVerificacionCorreo> verificarCorreo(String token) =>
       _ref.read(autenticacionRepositoryProvider).verificarCorreo(token);

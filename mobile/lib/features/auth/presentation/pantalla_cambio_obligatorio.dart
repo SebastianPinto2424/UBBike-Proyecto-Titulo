@@ -45,10 +45,13 @@ class _PantallaCambioObligatorioState
             contrasenaNueva: nuevaController.text,
           );
 
-      await ref.read(sesionProvider.notifier).refrescarPerfil();
       if (mounted) {
-        context.mostrarExito('Contraseña actualizada. ¡Bienvenido!');
+        context.mostrarExito(
+          'Contraseña actualizada. Inicia sesión con tu nueva contraseña.',
+        );
       }
+
+      await ref.read(sesionProvider.notifier).cerrar();
     } on ExcepcionApi catch (error) {
       if (mounted) {
         context.mostrarError(error.mensaje);
