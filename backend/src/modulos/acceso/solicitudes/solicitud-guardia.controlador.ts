@@ -36,7 +36,8 @@ export const actualizarEstado = controladorAsync<SolicitudAutenticada>(async (re
     req.usuario!.usuarioId,
     req.usuario!.rol,
     req.params.id,
-    req.body.estado
+    req.body.estado,
+    req.body.nota
   );
 
   return res.status(200).json({ solicitud });
