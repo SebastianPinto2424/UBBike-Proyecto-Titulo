@@ -61,6 +61,7 @@ const codigoQrBase = {
 
 const bicicleteroBase = {
   id: 'bicicletero-uuid-1',
+  activo: true,
   nombre: 'Bicicletero Central'
 };
 
@@ -90,7 +91,8 @@ describe('generarQrTemporal', () => {
     prismaMock.bicicleta.findFirst.mockResolvedValue(bicicletaBase as any);
     prismaMock.bicicletero.findUnique.mockResolvedValue({
       id: 'bicicletero-uuid-1',
-      nombre: 'Centro Idiomas'
+      nombre: 'Centro Idiomas',
+      activo: true
     } as any);
     prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.codigoQrTemporal.create.mockResolvedValue({
@@ -129,7 +131,10 @@ describe('generarQrTemporal', () => {
 
     expect(resultado.token).toMatch(/^UBBIKE-/);
     expect(resultado.tipo).toBe('RETIRO');
-    expect(resultado.bicicletero).toEqual(bicicleteroBase);
+    expect(resultado.bicicletero).toEqual({
+      id: bicicleteroBase.id,
+      nombre: bicicleteroBase.nombre
+    });
     expect(resultado.duracionSegundos).toBe(15);
   });
 });
@@ -192,6 +197,9 @@ describe('validarQrTemporal', () => {
     expect(resultado.valido).toBe(true);
     expect(resultado.usuario.id).toBe('user-uuid-1');
     expect(resultado.tipo).toBe('RETIRO');
-    expect(resultado.bicicletero).toEqual(bicicleteroBase);
+    expect(resultado.bicicletero).toEqual({
+      id: bicicleteroBase.id,
+      nombre: bicicleteroBase.nombre
+    });
   });
 });
