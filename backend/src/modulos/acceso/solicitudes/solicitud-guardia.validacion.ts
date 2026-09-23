@@ -13,7 +13,8 @@ export const esquemaCrearSolicitudGuardia = Joi.object({
 export const esquemaActualizarEstadoSolicitudGuardia = Joi.object({
   estado: Joi.string()
     .valid(...Object.values(EstadoSolicitudGuardia))
-    .required()
+    .required(),
+  nota: Joi.string().trim().max(600).allow('', null)
 });
 
 export const esquemaNotificarGuardiaSolicitud = Joi.object({
