@@ -177,6 +177,17 @@ erDiagram
     jsonb datos
     timestamptz creado_en
   }
+
+  ENTREGAS_PENDIENTES {
+    uuid id PK
+    varchar tipo
+    jsonb datos
+    integer intentos
+    timestamptz disponible_en
+    timestamptz creada_en
+    timestamptz entregada_en
+    boolean agotada
+  }
 ```
 
 ## Reglas Principales
@@ -197,17 +208,33 @@ erDiagram
 - La foto de una bicicleta se modela como atributo de `bicicletas`, porque el
   sistema requiere una sola foto principal por bicicleta. El archivo se guarda
   fuera de la base de datos y en la tabla se persisten URL y metadatos.
+- Un retiro solo puede registrarse en el mismo bicicletero donde la bicicleta
+  ingresó: `bicicletero_actual_id` debe coincidir con el bicicletero de la
+  operación, tanto por QR como en gestión manual.
+- Una bicicleta no puede eliminarse mientras `dentro_bicicletero` sea verdadero,
+  y un bicicletero no puede desactivarse mientras tenga bicicletas dentro. Así
+  la ocupación calculada nunca se desvía de la realidad física.
 - Las solicitudes de guardia registran quién pidió ayuda, en qué bicicletero,
   qué guardia fue asignado, cuántas veces se notificó, cuándo respondió el
-  guardia y cuándo quedó en camino o resuelta.
+  guardia y cuándo quedó en camino o resuelta. Si central cierra una solicitud
+  sin que el guardia responda, el motivo queda en `nota_cierre_central`.
 - Las incidencias registran problemas operativos del bicicletero, bicicleta, QR,
   movimientos o datos de usuario. Cualquier actor autenticado puede reportar.
   Los guardias pueden ver las incidencias asociadas a su bicicletero asignado,
   pero el cambio formal de estado queda reservado a administración/central.
   Para cerrar una incidencia como `RESUELTA` o `DESCARTADA`, se debe registrar
-  una respuesta de gestión.
+  una respuesta de gestión, que se notifica y envía por correo al reportante.
+- Quien reporta una incidencia puede insistir con un recordatorio hacia
+  administración. `ultimo_recordatorio_en` y `recordatorios` sostienen esa
+  función: guardan cuándo se envió el último aviso y cuántos van, con una espera
+  mínima de 5 minutos entre uno y otro.
 - Los eventos críticos quedan registrados en `auditoria_eventos` para
   trazabilidad operativa y revisión posterior.
+- `entregas_pendientes` conserva los trabajos de correo y push hasta que un
+  worker los procesa. Los avisos de incidencias y movimientos se encolan en la
+  misma transacción del negocio. La entrega admite reintentos y posibles
+  duplicados; no garantiza exactamente un envío. El contenido se borra al
+  completar o agotar los intentos, y los metadatos permanecen para seguimiento.
 
 ## Enumeraciones
 

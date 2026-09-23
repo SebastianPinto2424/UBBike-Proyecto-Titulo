@@ -54,6 +54,8 @@ Table bicicleteros {
   id String [pk]
   nombre String [unique, not null]
   ubicacion String [not null]
+  latitud Float
+  longitud Float
   capacidad Int [not null, default: 80]
   activo Boolean [not null, default: true]
   creadoEn DateTime [default: `now()`, not null]
@@ -85,6 +87,7 @@ Table solicitudes_guardia {
   respondidaPorGuardiaEn DateTime
   enCaminoEn DateTime
   resueltaEn DateTime
+  notaCierreCentral String
   creadaEn DateTime [default: `now()`, not null]
   actualizadaEn DateTime [not null]
 }
@@ -115,6 +118,17 @@ Table codigos_qr_temporales {
   escaneadoPorGuardiaId String
   escaneadoEn DateTime
   creadoEn DateTime [default: `now()`, not null]
+}
+
+Table entregas_pendientes {
+  id String [pk]
+  tipo String [not null]
+  datos Json [not null]
+  intentos Int [not null, default: 0]
+  disponibleEn DateTime [default: `now()`, not null]
+  creadaEn DateTime [default: `now()`, not null]
+  entregadaEn DateTime
+  agotada Boolean [not null, default: false]
 }
 
 Table notificaciones {
@@ -148,6 +162,8 @@ Table incidencias {
   estado EstadoIncidencia [not null, default: 'PENDIENTE']
   respuesta String
   resueltaEn DateTime
+  ultimoRecordatorioEn DateTime
+  recordatorios Int [not null, default: 0]
   creadaEn DateTime [default: `now()`, not null]
   actualizadaEn DateTime [not null]
 }

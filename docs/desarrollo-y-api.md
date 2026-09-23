@@ -49,21 +49,42 @@ POST /autenticacion/login
 GET  /autenticacion/perfil
 GET  /autenticacion/verificar-correo
 POST /autenticacion/verificar-correo
+POST /autenticacion/completar-registro
 POST /autenticacion/solicitar-cambio-contrasena
 POST /autenticacion/cambiar-contrasena
+POST /autenticacion/cambiar-contrasena-sesion
+POST /autenticacion/refresh
+POST /autenticacion/logout
 ```
 
-Bicicletas y bicicleteros:
+`cambiar-contrasena-sesion` revoca todas las sesiones del usuario (sube `versionSesion`
+e invalida los refresh tokens), por lo que tras usarlo hay que iniciar sesion de nuevo.
+
+Bicicletas:
 
 ```text
-GET    /bicicleteros
 GET    /bicicletas
 GET    /bicicletas/activa
 POST   /bicicletas
 PATCH  /bicicletas/:id
 DELETE /bicicletas/:id
 PATCH  /bicicletas/:id/activar
+PATCH  /bicicletas/:id/desactivar
 ```
+
+No se puede eliminar una bicicleta que este registrada dentro de un bicicletero:
+primero hay que registrar su retiro.
+
+Bicicleteros (crear, editar y eliminar solo ADMINISTRADOR):
+
+```text
+GET    /bicicleteros
+POST   /bicicleteros
+PATCH  /bicicleteros/:id
+DELETE /bicicleteros/:id
+```
+
+Eliminar un bicicletero lo desactiva, y falla si todavia tiene bicicletas dentro.
 
 QR y accesos:
 
@@ -78,22 +99,66 @@ POST /accesos/manual
 Guardias y solicitudes:
 
 ```text
-GET   /guardias/me/bicicletero
-PATCH /guardias/me/bicicletero
-GET   /solicitudes-guardia
-POST  /solicitudes-guardia
-PATCH /solicitudes-guardia/:id/estado
+GET    /guardias/me/bicicletero
+PATCH  /guardias/me/bicicletero
+DELETE /guardias/me/bicicletero
+GET    /solicitudes-guardia
+POST   /solicitudes-guardia
+POST   /solicitudes-guardia/:id/notificar-guardia
+PATCH  /solicitudes-guardia/:id/estado
 ```
 
-Historial, usuarios y notificaciones:
+Incidencias:
 
 ```text
-GET   /historial
-GET   /historial/resumen
-GET   /notificaciones
-PATCH /notificaciones/leidas
-GET   /usuarios
-PATCH /usuarios/:id
+GET   /incidencias
+POST  /incidencias
+POST  /incidencias/:id/recordar
+PATCH /incidencias/:id/estado
+```
+
+`recordar` solo lo puede usar quien reporto la incidencia, con una espera de
+5 minutos entre recordatorios. Al crear o recordar se notifica a ADMIN_CENTRAL y
+ADMINISTRADOR (nunca al guardia ni a quien ejecuta la accion), y se envia correo
+de respaldo. Cerrar una incidencia exige una respuesta, que se envia al reportante.
+
+Historial y reportes:
+
+```text
+GET /historial
+GET /historial/resumen
+GET /historial/opciones
+GET /historial/exportar-excel
+```
+
+La exportacion esta restringida a ADMIN_CENTRAL y ADMINISTRADOR, y respeta los
+mismos filtros de la consulta (`q`, `periodo`, `desde`, `hasta`, `tipo`, `estado`,
+`bicicleteroId`, `guardiaId`, `origen`).
+
+Devuelve un `.xlsx` real generado con ExcelJS
+(`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`), con
+encabezado fijo, autofiltro y la fecha como celda de tipo fecha. El tipo
+declarado coincide con el contenido, asi que Excel lo abre sin la advertencia de
+formato y Sheets o LibreOffice lo leen igual. El PDF se genera en el cliente.
+
+El `override` de `uuid` se mantiene en la linea `11.x` a proposito: ExcelJS lo
+carga con `require('uuid')` y las versiones 13+ son solo ESM, lo que rompe la
+carga en cualquier Node sin soporte de `require(esm)`.
+
+Usuarios y notificaciones:
+
+```text
+GET    /usuarios
+POST   /usuarios
+PATCH  /usuarios/:id/permisos
+POST   /usuarios/:id/reenviar-acceso
+POST   /usuarios/:id/reenviar-verificacion
+DELETE /usuarios/:id
+GET    /notificaciones
+PATCH  /notificaciones/leidas
+PATCH  /notificaciones/:id/leida
+POST   /notificaciones/dispositivos
+DELETE /notificaciones/dispositivos
 ```
 
 Alias mantenidos por compatibilidad:
@@ -162,7 +227,26 @@ npm run generate
 npx prisma validate
 npm run typecheck
 npm run build
+npm test
 ```
+
+`npm test` corre las pruebas unitarias y de rutas con dependencias simuladas.
+`npm run test:coverage` mide y exige el mínimo definido en `jest.config.ts`.
+
+Las pruebas reales requieren PostgreSQL y Redis **exclusivos para pruebas**.
+La base ya debe existir y llamarse `ubbike_e2e` o `ubbike_e2e_<sufijo>`.
+No se reutilizan variables ni contenedores de desarrollo. El helper aplica
+migraciones y vacía únicamente esa base, con autorización explícita:
+
+```bash
+cd backend
+TEST_DATABASE_URL='postgresql://usuario:clave@127.0.0.1:15439/ubbike_e2e_local' \
+TEST_REDIS_URL='redis://127.0.0.1:56389' ALLOW_TEST_DATABASE_RESET=1 npm run test:e2e
+```
+
+Verifican lo que las pruebas con mocks no pueden garantizar: que una transaccion
+fallida no deje escrituras a medias, que las restricciones de unicidad se
+apliquen de verdad y que la ocupacion se calcule sobre las filas reales.
 
 Frontend:
 
