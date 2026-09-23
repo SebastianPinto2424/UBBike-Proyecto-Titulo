@@ -1,5 +1,6 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
+import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 
 class IncidenciaApi {
   const IncidenciaApi({required this.cliente});
@@ -12,8 +13,25 @@ class IncidenciaApi {
     String? bicicleteroId,
     String? q,
     int? limite,
+  }) async =>
+      (await listarPagina(
+              estado: estado,
+              tipo: tipo,
+              bicicleteroId: bicicleteroId,
+              q: q,
+              limite: limite))
+          .datos;
+
+  Future<PaginaCursor<IncidenciaApp>> listarPagina({
+    String? cursor,
+    String? estado,
+    String? tipo,
+    String? bicicleteroId,
+    String? q,
+    int? limite,
   }) async {
     final parametros = <String, String>{
+      if (cursor != null) 'cursor': cursor,
       if (estado != null && estado != 'TODOS') 'estado': estado,
       if (tipo != null && tipo != 'TODOS') 'tipo': tipo,
       if (bicicleteroId != null && bicicleteroId.isNotEmpty)
@@ -26,9 +44,12 @@ class IncidenciaApi {
     final respuesta = await cliente.get('/incidencias$consulta');
     final datos = respuesta['incidencias'] as List<dynamic>;
 
-    return datos
-        .map((item) => IncidenciaApp.desdeJson(item as Map<String, dynamic>))
-        .toList();
+    return PaginaCursor(
+      cursor: respuesta['nextCursor'] as String?,
+      datos: datos
+          .map((item) => IncidenciaApp.desdeJson(item as Map<String, dynamic>))
+          .toList(),
+    );
   }
 
   Future<IncidenciaApp> crear({
@@ -66,6 +87,14 @@ class IncidenciaApi {
           'respuesta': respuesta.trim(),
       },
     );
+
+    return IncidenciaApp.desdeJson(
+      datos['incidencia'] as Map<String, dynamic>,
+    );
+  }
+
+  Future<IncidenciaApp> recordar({required String incidenciaId}) async {
+    final datos = await cliente.post('/incidencias/$incidenciaId/recordar');
 
     return IncidenciaApp.desdeJson(
       datos['incidencia'] as Map<String, dynamic>,

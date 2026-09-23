@@ -6,6 +6,7 @@ import 'package:ubbike/core/providers/repositorios_provider.dart';
 import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 
 class FiltrosIncidencias {
   const FiltrosIncidencias({
@@ -18,7 +19,8 @@ class FiltrosIncidencias {
   final String tipo;
   final String busqueda;
 
-  FiltrosIncidencias copyWith({String? estado, String? tipo, String? busqueda}) {
+  FiltrosIncidencias copyWith(
+      {String? estado, String? tipo, String? busqueda}) {
     return FiltrosIncidencias(
       estado: estado ?? this.estado,
       tipo: tipo ?? this.tipo,
@@ -32,38 +34,111 @@ final filtrosIncidenciasProvider =
   (ref) => const FiltrosIncidencias(),
 );
 
+final incidenciasVersionProvider = StateProvider<int>((ref) => 0);
+
 class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
   Timer? _debounceBusqueda;
+  late RefrescoCoalescido _refresco;
+  int _revision = 0;
+  String? _cursor;
+  bool cargandoMas = false;
+  bool desactualizado = false;
+  bool get hayMas => _cursor != null;
 
   @override
   Future<List<IncidenciaApp>> build() {
     final filtros = ref.watch(filtrosIncidenciasProvider);
-    final temporizador = Timer.periodic(
-      const Duration(seconds: 3),
-      (_) => refrescar(),
-    );
+    _revision++;
+    _cursor = null;
+    cargandoMas = false;
+    final refresco = RefrescoCoalescido(
+      alRefrescar: _refrescar,
+      detectarFallo: () => desactualizado,
+    )..iniciarRespaldo();
+    _refresco = refresco;
+    ref.listen<int>(
+        incidenciasVersionProvider, (_, __) => refresco.solicitar());
     ref.onDispose(() {
-      temporizador.cancel();
+      _revision++;
+      refresco.detener();
       _debounceBusqueda?.cancel();
     });
     return _cargar(filtros);
   }
 
-  Future<List<IncidenciaApp>> _cargar(FiltrosIncidencias filtros) {
-    return ref.read(incidenciaRepositoryProvider).listar(
+  Future<List<IncidenciaApp>> _cargar(FiltrosIncidencias filtros,
+      {int conservar = 0}) async {
+    final revision = _revision;
+    var pagina = await ref.read(incidenciaRepositoryProvider).listarPagina(
           estado: filtros.estado,
           tipo: filtros.tipo,
           q: filtros.busqueda,
         );
+    final datos = [...pagina.datos];
+    while (datos.length < conservar &&
+        pagina.cursor != null &&
+        revision == _revision) {
+      pagina = await ref.read(incidenciaRepositoryProvider).listarPagina(
+          estado: filtros.estado,
+          tipo: filtros.tipo,
+          q: filtros.busqueda,
+          cursor: pagina.cursor);
+      datos.addAll(pagina.datos);
+    }
+    if (revision == _revision) {
+      _cursor = pagina.cursor;
+      desactualizado = false;
+    }
+    return {for (final item in datos) item.id: item}.values.toList();
   }
 
-  Future<void> refrescar() async {
+  Future<void> refrescar() => _refresco.solicitar();
+
+  Future<void> _refrescar() async {
+    if (cargandoMas) return;
+    final revision = _revision;
     try {
-      final datos = await _cargar(ref.read(filtrosIncidenciasProvider));
-      state = AsyncData(datos);
+      final datos = await _cargar(ref.read(filtrosIncidenciasProvider),
+          conservar: state.valueOrNull?.length ?? 0);
+      if (revision == _revision) state = AsyncData(datos);
     } catch (error, stackTrace) {
+      if (revision != _revision) return;
+      desactualizado = true;
       if (!state.hasValue) {
         state = AsyncError(error, stackTrace);
+      } else {
+        state = AsyncData([...state.valueOrNull!]);
+      }
+    }
+  }
+
+  Future<void> cargarMas() async {
+    final cursor = _cursor;
+    if (cursor == null || cargandoMas || _refresco.enVuelo) return;
+    final revision = _revision;
+    final filtros = ref.read(filtrosIncidenciasProvider);
+    cargandoMas = true;
+    state = AsyncData([...?state.valueOrNull]);
+    try {
+      final pagina = await ref.read(incidenciaRepositoryProvider).listarPagina(
+            estado: filtros.estado,
+            tipo: filtros.tipo,
+            q: filtros.busqueda,
+            cursor: cursor,
+          );
+      if (revision != _revision) return;
+      _cursor = pagina.cursor;
+      final porId = {
+        for (final item in [...?state.valueOrNull, ...pagina.datos])
+          item.id: item
+      };
+      state = AsyncData(porId.values.toList());
+    } catch (_) {
+      if (revision == _revision) desactualizado = true;
+    } finally {
+      if (revision == _revision) {
+        cargandoMas = false;
+        state = AsyncData([...?state.valueOrNull]);
       }
     }
   }
@@ -126,6 +201,13 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
         );
     recargar();
   }
+
+  Future<void> recordar({required String incidenciaId}) async {
+    await ref
+        .read(incidenciaRepositoryProvider)
+        .recordar(incidenciaId: incidenciaId);
+    recargar();
+  }
 }
 
 final incidenciasVmProvider =
@@ -143,9 +225,9 @@ class DatosFormularioIncidencia {
   final List<BicicletaApp> bicicletas;
 }
 
-final datosFormularioIncidenciaProvider = FutureProvider.autoDispose
-    .family<DatosFormularioIncidencia,
-        ({bool gestionGuardia, bool permitirBicicletaPropia})>(
+final datosFormularioIncidenciaProvider = FutureProvider.autoDispose.family<
+    DatosFormularioIncidencia,
+    ({bool gestionGuardia, bool permitirBicicletaPropia})>(
   (ref, args) async {
     final solicitudGuardiaRepository =
         ref.read(solicitudGuardiaRepositoryProvider);

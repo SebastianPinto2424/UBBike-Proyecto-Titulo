@@ -1,10 +1,15 @@
 import 'package:ubbike/features/incidencias/data/incidencia_api.dart';
 import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
+import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 
 class IncidenciaRepository {
   const IncidenciaRepository(this._api);
 
   final IncidenciaApi _api;
+
+  Future<PaginaCursor<IncidenciaApp>> listarPagina(
+          {String? estado, String? tipo, String? q, String? cursor}) =>
+      _api.listarPagina(estado: estado, tipo: tipo, q: q, cursor: cursor);
 
   Future<List<IncidenciaApp>> listar({
     String? estado,
@@ -44,4 +49,7 @@ class IncidenciaRepository {
         estado: estado,
         respuesta: respuesta,
       );
+
+  Future<IncidenciaApp> recordar({required String incidenciaId}) =>
+      _api.recordar(incidenciaId: incidenciaId);
 }
