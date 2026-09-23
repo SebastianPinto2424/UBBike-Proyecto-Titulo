@@ -3,7 +3,10 @@ import 'package:geolocator/geolocator.dart';
 class UbicacionServicio {
   const UbicacionServicio();
 
-  Future<Position?> obtenerPosicionActual() async {
+  Future<Position?> obtenerPosicionActual({
+    LocationAccuracy precision = LocationAccuracy.medium,
+    Duration limite = const Duration(seconds: 6),
+  }) async {
     try {
       final servicioHabilitado = await Geolocator.isLocationServiceEnabled();
       if (!servicioHabilitado) {
@@ -21,9 +24,9 @@ class UbicacionServicio {
       }
 
       return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 6),
+        locationSettings: LocationSettings(
+          accuracy: precision,
+          timeLimit: limite,
         ),
       );
     } catch (_) {
