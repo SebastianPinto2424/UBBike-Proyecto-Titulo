@@ -7,8 +7,8 @@ export const guardarToken = (usuarioId: string, token: string, plataforma: strin
     update: { usuarioId, plataforma }
   });
 
-export const eliminarToken = (token: string) =>
-  prisma.dispositivoToken.deleteMany({ where: { token } });
+export const eliminarToken = (usuarioId: string, token: string) =>
+  prisma.dispositivoToken.deleteMany({ where: { token, usuarioId } });
 
 export const eliminarTokens = (tokens: string[]) =>
   prisma.dispositivoToken.deleteMany({ where: { token: { in: tokens } } });
