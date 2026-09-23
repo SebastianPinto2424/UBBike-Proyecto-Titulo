@@ -1,7 +1,6 @@
 import { CustomHelpers } from 'joi';
 
-const agregarPuntos = (cuerpo: string): string =>
-  cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const agregarPuntos = (cuerpo: string): string => cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 export const normalizarRut = (cuerpo: string, dv: string): string =>
   `${agregarPuntos(cuerpo)}-${dv}`;
