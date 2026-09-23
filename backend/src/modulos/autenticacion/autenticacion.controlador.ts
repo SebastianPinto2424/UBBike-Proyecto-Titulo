@@ -53,16 +53,14 @@ export const cambiarContrasena = controladorAsync(async (req, res) => {
   return res.status(200).json(resultado);
 });
 
-export const cambiarContrasenaSesion = controladorAsync<SolicitudAutenticada>(
-  async (req, res) => {
-    const resultado = await cambiarContrasenaSesionServicio(
-      req.usuario!.usuarioId,
-      req.body.contrasenaActual,
-      req.body.contrasenaNueva
-    );
-    return res.status(200).json(resultado);
-  }
-);
+export const cambiarContrasenaSesion = controladorAsync<SolicitudAutenticada>(async (req, res) => {
+  const resultado = await cambiarContrasenaSesionServicio(
+    req.usuario!.usuarioId,
+    req.body.contrasenaActual,
+    req.body.contrasenaNueva
+  );
+  return res.status(200).json(resultado);
+});
 
 export const refrescarToken = controladorAsync(async (req, res) => {
   const { usuarioId, refreshToken } = req.body;
