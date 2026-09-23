@@ -22,6 +22,7 @@ jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
 
 jest.mock('../../src/configuracion/prisma', () => ({
   prisma: {
+    $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
     usuario: {
       findUnique: jest.fn().mockResolvedValue(null),
       findFirst: jest.fn().mockResolvedValue(null),
