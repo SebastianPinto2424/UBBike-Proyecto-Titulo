@@ -8,9 +8,18 @@ export const crear = (
   client: ClientePrisma = prisma
 ) => client.notificacion.create({ data });
 
-export const buscarIdsPorRoles = (roles: RolUsuario[], client: ClientePrisma = prisma) =>
+export const buscarIdsPorRoles = (
+  roles: RolUsuario[],
+  client: ClientePrisma = prisma,
+  excluirUsuarioId?: string
+) =>
   client.usuario.findMany({
-    where: { rol: { in: roles } },
+    where: {
+      rol: { in: roles },
+      cuentaActiva: true,
+      eliminadoEn: null,
+      ...(excluirUsuarioId ? { id: { not: excluirUsuarioId } } : {})
+    },
     select: { id: true }
   });
 
@@ -30,7 +39,7 @@ export const listarDeUsuario = (
       ...(params.tipos?.length ? { tipo: { in: params.tipos } } : {}),
       ...(params.soloNoLeidas ? { leida: false } : {})
     },
-    orderBy: { creadaEn: 'desc' },
+    orderBy: [{ creadaEn: 'desc' }, { id: 'desc' }],
     take: params.take,
     ...(params.cursor
       ? {
