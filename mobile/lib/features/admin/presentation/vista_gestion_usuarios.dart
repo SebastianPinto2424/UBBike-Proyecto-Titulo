@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
+
 import 'package:ubbike/features/admin/application/gestion_usuarios_vm.dart';
 import 'package:ubbike/shared/modelos/rol_usuario.dart';
 import 'package:ubbike/shared/modelos/usuario_app.dart';
 import 'package:ubbike/shared/utils/identidad.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/features/auth/presentation/widgets/estilos_formulario_auth.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 
 class VistaGestionUsuarios extends ConsumerStatefulWidget {
   const VistaGestionUsuarios({super.key});
@@ -205,8 +208,9 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
     final tieneError = estado.hasError && estado.valueOrNull == null;
     final tieneFiltros = filtros.tieneFiltros;
 
-    return Column(
-      children: [
+    return ListaConFiltros(
+      onRefrescar: () async => vm.recargar(),
+      cabecera: [
         _EncabezadoAdminUsuarios(onCrear: _crearUsuario),
         const SizedBox(height: 12),
         _FiltrosUsuariosAdmin(
@@ -217,6 +221,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
           rol: filtros.rol,
           estadoCuenta: filtros.estadoCuenta,
           estadoCorreo: filtros.estadoCorreo,
+          activos: _filtrosActivos(filtros),
           onBuscar: vm.buscar,
           onRol: (rol) => vm.actualizarFiltros(
             rol: rol,
@@ -229,50 +234,92 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
           onLimpiarBusqueda: _limpiarBusqueda,
           onLimpiar: _limpiarFiltros,
         ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView.separated(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            itemCount: tieneError || cargando || usuarios.isEmpty
-                ? 1
-                : usuarios.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              if (cargando) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (tieneError) {
-                return const _EstadoUsuarios(
-                  icono: Icons.cloud_off_outlined,
-                  titulo: 'No se pudieron cargar usuarios',
-                  detalle: 'Revisa la conexión con el backend.',
-                );
-              }
-
-              if (usuarios.isEmpty) {
-                return _EstadoUsuarios(
-                  icono: Icons.people_outline,
-                  titulo: tieneFiltros ? 'Sin resultados' : 'Sin usuarios',
-                  detalle: tieneFiltros
-                      ? 'Ajusta la búsqueda o los filtros.'
-                      : 'Los registros aparecerán aquí.',
-                );
-              }
-
-              final usuario = usuarios[index];
-              return _TarjetaUsuarioAdmin(
-                key: ValueKey('usuario-${usuario.id}'),
-                usuario: usuario,
-                onActualizar: _actualizar,
-                onReenviarCorreoCuenta: _reenviarCorreoCuenta,
-                onEditarCredenciales: _editarCredenciales,
-                onEliminar: _eliminarUsuario,
-              );
-            },
-          ),
-        ),
       ],
+      contenido: _contenidoUsuarios(
+        cargando: cargando,
+        tieneError: tieneError,
+        tieneFiltros: tieneFiltros,
+        usuarios: usuarios,
+      ),
+    );
+  }
+
+  List<FiltroActivo> _filtrosActivos(FiltrosGestionUsuarios filtros) {
+    final busqueda = busquedaController.text.trim();
+    return [
+      if (filtros.rol != null)
+        FiltroActivo(
+          etiqueta: filtros.rol!.etiqueta,
+          onQuitar: () => vm.actualizarFiltros(limpiarRol: true),
+        ),
+      if (filtros.estadoCuenta != FiltroEstadoCuenta.todos)
+        FiltroActivo(
+          etiqueta: filtros.estadoCuenta.etiqueta,
+          onQuitar: () =>
+              vm.actualizarFiltros(estadoCuenta: FiltroEstadoCuenta.todos),
+        ),
+      if (filtros.estadoCorreo != FiltroEstadoCorreo.todos)
+        FiltroActivo(
+          etiqueta: filtros.estadoCorreo.etiqueta,
+          onQuitar: () =>
+              vm.actualizarFiltros(estadoCorreo: FiltroEstadoCorreo.todos),
+        ),
+      if (busqueda.isNotEmpty)
+        FiltroActivo(
+          etiqueta: 'Busca: $busqueda',
+          onQuitar: _limpiarBusqueda,
+        ),
+    ];
+  }
+
+  Widget _contenidoUsuarios({
+    required bool cargando,
+    required bool tieneError,
+    required bool tieneFiltros,
+    required List<UsuarioApp> usuarios,
+  }) {
+    if (cargando) {
+      return const SliverCargando();
+    }
+
+    if (tieneError) {
+      return const SliverEspacioRestante(
+        child: _EstadoUsuarios(
+          icono: Icons.cloud_off_outlined,
+          titulo: 'No se pudieron cargar usuarios',
+          detalle: 'Revisa la conexión con el backend.',
+        ),
+      );
+    }
+
+    if (usuarios.isEmpty) {
+      return SliverEspacioRestante(
+        child: _EstadoUsuarios(
+          icono: Icons.people_outline,
+          titulo: tieneFiltros ? 'Sin resultados' : 'Sin usuarios',
+          detalle: tieneFiltros
+              ? 'Ajusta la búsqueda o los filtros.'
+              : 'Los registros aparecerán aquí.',
+        ),
+      );
+    }
+
+    return SliverList.builder(
+      itemCount: usuarios.length,
+      itemBuilder: (context, index) {
+        final usuario = usuarios[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _TarjetaUsuarioAdmin(
+            key: ValueKey('usuario-${usuario.id}'),
+            usuario: usuario,
+            onActualizar: _actualizar,
+            onReenviarCorreoCuenta: _reenviarCorreoCuenta,
+            onEditarCredenciales: _editarCredenciales,
+            onEliminar: _eliminarUsuario,
+          ),
+        );
+      },
     );
   }
 
@@ -758,6 +805,7 @@ class _FiltrosUsuariosAdmin extends StatelessWidget {
     required this.rol,
     required this.estadoCuenta,
     required this.estadoCorreo,
+    required this.activos,
     required this.onBuscar,
     required this.onRol,
     required this.onEstadoCuenta,
@@ -773,6 +821,7 @@ class _FiltrosUsuariosAdmin extends StatelessWidget {
   final RolUsuario? rol;
   final FiltroEstadoCuenta estadoCuenta;
   final FiltroEstadoCorreo estadoCorreo;
+  final List<FiltroActivo> activos;
   final ValueChanged<String> onBuscar;
   final ValueChanged<RolUsuario?> onRol;
   final ValueChanged<FiltroEstadoCuenta> onEstadoCuenta;
@@ -832,6 +881,7 @@ class _FiltrosUsuariosAdmin extends StatelessWidget {
             _PanelFiltrosUsuarios(
               titulo: 'Filtros',
               detalle: _resumenFiltros(),
+              activos: activos,
               onLimpiar: tieneFiltros ? onLimpiar : null,
               children: [
                 _EtiquetaFiltroUsuarios(
@@ -910,12 +960,14 @@ class _PanelFiltrosUsuarios extends StatelessWidget {
     required this.detalle,
     required this.children,
     this.onLimpiar,
+    this.activos = const <FiltroActivo>[],
   });
 
   final String titulo;
   final String detalle;
   final List<Widget> children;
   final VoidCallback? onLimpiar;
+  final List<FiltroActivo> activos;
 
   @override
   Widget build(BuildContext context) {
@@ -925,41 +977,98 @@ class _PanelFiltrosUsuarios extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: ColoresUbb.bordeFuerte),
       ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.tune, color: ColoresUbb.azulApp),
-        title: Text(
-          titulo,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: ColoresUbb.azulNoche,
-                fontWeight: FontWeight.w900,
-              ),
-        ),
-        subtitle: Text(
-          detalle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: ColoresUbb.textoSecundario,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 4),
-          ...children,
-          if (onLimpiar != null) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onLimpiar,
-                icon: const Icon(Icons.filter_alt_off_outlined),
-                label: const Text('Restablecer filtros'),
+          ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.tune, color: ColoresUbb.azulApp),
+            title: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    titulo,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: ColoresUbb.azulNoche,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+                if (activos.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: ColoresUbb.azulApp,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${activos.length}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            subtitle: Text(
+              detalle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ColoresUbb.textoSecundario,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            children: [
+              const SizedBox(height: 4),
+              ...children,
+              if (onLimpiar != null) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: onLimpiar,
+                    icon: const Icon(Icons.filter_alt_off_outlined),
+                    label: const Text('Restablecer filtros'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (activos.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final filtro in activos)
+                    InputChip(
+                      label: Text(filtro.etiqueta),
+                      onDeleted: filtro.onQuitar,
+                      deleteIcon: const Icon(Icons.close, size: 16),
+                      deleteButtonTooltipMessage: 'Quitar filtro',
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor:
+                          ColoresUbb.azulApp.withValues(alpha: 0.08),
+                      side: BorderSide(
+                        color: ColoresUbb.azulApp.withValues(alpha: 0.28),
+                      ),
+                      labelStyle:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: ColoresUbb.azulNoche,
+                                fontWeight: FontWeight.w700,
+                              ),
+                    ),
+                ],
               ),
             ),
-          ],
         ],
       ),
     );
