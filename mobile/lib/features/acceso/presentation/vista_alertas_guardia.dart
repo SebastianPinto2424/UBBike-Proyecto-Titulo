@@ -10,8 +10,9 @@ import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
-import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 
 class VistaAlertasGuardia extends ConsumerStatefulWidget {
   const VistaAlertasGuardia({super.key});
@@ -121,6 +122,22 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
     );
   }
 
+  List<FiltroActivo> _filtrosActivos() {
+    final busqueda = busquedaController.text.trim();
+    return [
+      if (estadoFiltro != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaEstadoSolicitud(estadoFiltro),
+          onQuitar: () => setState(() => estadoFiltro = 'TODOS'),
+        ),
+      if (busqueda.isNotEmpty)
+        FiltroActivo(
+          etiqueta: 'Busca: $busqueda',
+          onQuitar: () => setState(busquedaController.clear),
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<int>(solicitudesGuardiaVersionProvider, (_, __) {
@@ -129,129 +146,112 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const TituloApartado(titulo: 'Alertas'),
-          const SizedBox(height: 10),
-          TextField(
-            controller: busquedaController,
-            textInputAction: TextInputAction.search,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: 'Buscar por bicicletero o solicitante',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: busquedaController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Limpiar búsqueda',
-                      icon: const Icon(Icons.close),
-                      onPressed: () => setState(busquedaController.clear),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          PanelFiltros(
-            titulo: 'Filtros',
-            detalle: estadoFiltro == 'TODOS'
-                ? 'Todas'
-                : etiquetaEstadoSolicitud(estadoFiltro),
-            onLimpiar: () => setState(() {
-              estadoFiltro = 'TODOS';
-              busquedaController.clear();
-            }),
-            children: [
-              EtiquetaFiltro(
-                texto: 'Estado',
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final item in [
-                      'TODOS',
-                      'PENDIENTE',
-                      'NOTIFICADA',
-                      'EN_CAMINO',
-                      'RESUELTA',
-                      'CANCELADA',
-                    ])
-                      FiltroChip(
-                        label: item == 'TODOS'
-                            ? 'Todas'
-                            : etiquetaEstadoSolicitud(item),
-                        value: item,
-                        selectedValue: estadoFiltro,
-                        onTap: (valor) => setState(() => estadoFiltro = valor),
-                      ),
-                  ],
+      body: FutureBuilder<List<SolicitudGuardiaApp>>(
+        future: futuroSolicitudes,
+        builder: (context, snapshot) {
+          return ListaConFiltros(
+            onRefrescar: () async => _recargar(),
+            cabecera: [
+              const TituloApartado(titulo: 'Alertas'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: busquedaController,
+                textInputAction: TextInputAction.search,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Buscar por bicicletero o solicitante',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: busquedaController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Limpiar búsqueda',
+                          icon: const Icon(Icons.close),
+                          onPressed: () => setState(busquedaController.clear),
+                        ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async => _recargar(),
-              child: FutureBuilder<List<SolicitudGuardiaApp>>(
-                future: futuroSolicitudes,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(
-                          height: 180,
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                      ],
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
+              const SizedBox(height: 10),
+              PanelFiltros(
+                titulo: 'Filtros',
+                activos: _filtrosActivos(),
+                detalle: estadoFiltro == 'TODOS'
+                    ? 'Todas'
+                    : etiquetaEstadoSolicitud(estadoFiltro),
+                onLimpiar: () => setState(() {
+                  estadoFiltro = 'TODOS';
+                  busquedaController.clear();
+                }),
+                children: [
+                  EtiquetaFiltro(
+                    texto: 'Estado',
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        TarjetaAccion(
-                          icono: Icons.error_outline,
-                          titulo: 'No se pudieron cargar alertas',
-                          detalle: 'Revisa tu conexión y toca para reintentar.',
-                          color: ColoresUbb.rojoInstitucional,
-                          onTap: _recargar,
-                        ),
+                        for (final item in [
+                          'TODOS',
+                          'PENDIENTE',
+                          'NOTIFICADA',
+                          'EN_CAMINO',
+                          'RESUELTA',
+                          'CANCELADA',
+                        ])
+                          FiltroChip(
+                            label: item == 'TODOS'
+                                ? 'Todas'
+                                : etiquetaEstadoSolicitud(item),
+                            value: item,
+                            selectedValue: estadoFiltro,
+                            onTap: (valor) =>
+                                setState(() => estadoFiltro = valor),
+                          ),
                       ],
-                    );
-                  }
-
-                  final todas = snapshot.data ?? [];
-                  final solicitudes = _filtrar(todas);
-
-                  if (solicitudes.isEmpty) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        EstadoLista(
-                          icono: Icons.notifications_active_outlined,
-                          titulo:
-                              todas.isEmpty ? 'Sin alertas' : 'Sin resultados',
-                          detalle: todas.isEmpty
-                              ? 'No hay solicitudes asignadas por ahora.'
-                              : 'Ninguna alerta coincide con tu búsqueda o filtro.',
-                        ),
-                      ],
-                    );
-                  }
-
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    children: solicitudes.map(_tarjetaSolicitud).toList(),
-                  );
-                },
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
+            ],
+            contenido: _contenidoAlertas(snapshot),
+          );
+        },
       ),
+    );
+  }
+
+  Widget _contenidoAlertas(AsyncSnapshot<List<SolicitudGuardiaApp>> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const SliverCargando();
+    }
+
+    if (snapshot.hasError) {
+      return SliverToBoxAdapter(
+        child: TarjetaAccion(
+          icono: Icons.error_outline,
+          titulo: 'No se pudieron cargar alertas',
+          detalle: 'Revisa tu conexión y toca para reintentar.',
+          color: ColoresUbb.rojoInstitucional,
+          onTap: _recargar,
+        ),
+      );
+    }
+
+    final todas = snapshot.data ?? [];
+    final solicitudes = _filtrar(todas);
+
+    if (solicitudes.isEmpty) {
+      return SliverEspacioRestante(
+        child: EstadoLista(
+          icono: Icons.notifications_active_outlined,
+          titulo: todas.isEmpty ? 'Sin alertas' : 'Sin resultados',
+          detalle: todas.isEmpty
+              ? 'No hay solicitudes asignadas por ahora.'
+              : 'Ninguna alerta coincide con tu búsqueda o filtro.',
+        ),
+      );
+    }
+
+    return SliverList.list(
+      children: solicitudes.map(_tarjetaSolicitud).toList(),
     );
   }
 }
