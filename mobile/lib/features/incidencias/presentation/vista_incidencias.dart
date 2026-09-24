@@ -15,10 +15,12 @@ import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/central_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/shared/utils/utiles_comun.dart';
-import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
+
 import 'package:ubbike/features/bicicletas/presentation/vista_bicicletas_usuario.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 
 class VistaIncidencias extends ConsumerStatefulWidget {
   const VistaIncidencias({
@@ -212,9 +214,9 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      body: ListaConFiltros(
+        onRefrescar: vm.refrescar,
+        cabecera: [
           _FiltrosIncidencias(
             estado: filtros.estado,
             tipo: filtros.tipo,
@@ -225,101 +227,73 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
             onBuscar: _programarBusqueda,
             onRegistrar: datosFormulario.isLoading ? null : _abrirFormulario,
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: vm.refrescar,
-              child: Builder(
-                builder: (context) {
-                  final ultimoDato = estadoIncidencias.valueOrNull;
-                  final cargandoInicial =
-                      estadoIncidencias.isLoading && ultimoDato == null;
-                  if (cargandoInicial) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 24),
-                      children: const [
-                        SizedBox(
-                          height: 180,
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                      ],
-                    );
-                  }
+        ],
+        contenido: _contenidoIncidencias(estadoIncidencias),
+      ),
+    );
+  }
 
-                  if (estadoIncidencias.hasError && ultimoDato == null) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 24),
-                      children: [
-                        TarjetaAccion(
-                          icono: Icons.error_outline,
-                          titulo: 'No se pudieron cargar incidencias',
-                          detalle: 'Revisa tu conexión y toca para reintentar.',
-                          color: ColoresUbb.rojoInstitucional,
-                          onTap: _recargar,
-                        ),
-                      ],
-                    );
-                  }
+  Widget _contenidoIncidencias(AsyncValue<List<IncidenciaApp>> estado) {
+    final ultimoDato = estado.valueOrNull;
 
-                  final incidencias = ultimoDato ?? const <IncidenciaApp>[];
+    if (estado.isLoading && ultimoDato == null) {
+      return const SliverCargando();
+    }
 
-                  if (incidencias.isEmpty) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 24),
-                      children: const [
-                        EstadoLista(
-                          icono: Icons.report_problem_outlined,
-                          titulo: 'Sin incidencias',
-                          detalle:
-                              'Cuando exista un reporte operativo aparecerá aquí.',
-                        ),
-                      ],
-                    );
-                  }
+    if (estado.hasError && ultimoDato == null) {
+      return SliverToBoxAdapter(
+        child: TarjetaAccion(
+          icono: Icons.error_outline,
+          titulo: 'No se pudieron cargar incidencias',
+          detalle: 'Revisa tu conexión y toca para reintentar.',
+          color: ColoresUbb.rojoInstitucional,
+          onTap: _recargar,
+        ),
+      );
+    }
 
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    children: [
-                      if (vm.desactualizado)
-                        const ListTile(
-                            leading: Icon(Icons.cloud_off_outlined),
-                            title: Text(
-                                'Datos sin actualizar. Desliza para reintentar.')),
-                      ...incidencias.map(
-                        (incidencia) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _TarjetaIncidencia(
-                            incidencia: incidencia,
-                            mostrarReportante: widget.mostrarReportante,
-                            puedeGestionar: widget.puedeGestionar,
-                            gestionGuardia: widget.gestionGuardia,
-                            mostrarRecordar: !widget.mostrarReportante,
-                            onActualizarEstado: (estado) =>
-                                _actualizarEstado(incidencia, estado),
-                            onRecordar: () => _recordar(incidencia),
-                            onEsperaCumplida: vm.refrescar,
-                          ),
-                        ),
-                      ),
-                      if (vm.hayMas)
-                        OutlinedButton(
-                          onPressed: vm.cargandoMas ? null : vm.cargarMas,
-                          child: Text(vm.cargandoMas
-                              ? 'Cargando…'
-                              : 'Cargar más incidencias'),
-                        ),
-                    ],
-                  );
-                },
-              ),
+    final incidencias = ultimoDato ?? const <IncidenciaApp>[];
+
+    if (incidencias.isEmpty) {
+      return const SliverEspacioRestante(
+        child: EstadoLista(
+          icono: Icons.report_problem_outlined,
+          titulo: 'Sin incidencias',
+          detalle: 'Cuando exista un reporte operativo aparecerá aquí.',
+        ),
+      );
+    }
+
+    return SliverList.list(
+      children: [
+        if (vm.desactualizado)
+          const ListTile(
+            leading: Icon(Icons.cloud_off_outlined),
+            title: Text('Datos sin actualizar. Desliza para reintentar.'),
+          ),
+        ...incidencias.map(
+          (incidencia) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _TarjetaIncidencia(
+              incidencia: incidencia,
+              mostrarReportante: widget.mostrarReportante,
+              puedeGestionar: widget.puedeGestionar,
+              gestionGuardia: widget.gestionGuardia,
+              mostrarRecordar: !widget.mostrarReportante,
+              onActualizarEstado: (estado) =>
+                  _actualizarEstado(incidencia, estado),
+              onRecordar: () => _recordar(incidencia),
+              onEsperaCumplida: vm.refrescar,
             ),
           ),
-        ],
-      ),
+        ),
+        if (vm.hayMas)
+          OutlinedButton(
+            onPressed: vm.cargandoMas ? null : vm.cargarMas,
+            child:
+                Text(vm.cargandoMas ? 'Cargando…' : 'Cargar más incidencias'),
+          ),
+      ],
     );
   }
 }
@@ -880,6 +854,30 @@ class _FiltrosIncidencias extends StatelessWidget {
   final VoidCallback onBuscar;
   final VoidCallback? onRegistrar;
 
+  List<FiltroActivo> _filtrosActivos() {
+    final busqueda = busquedaController.text.trim();
+    return [
+      if (estado != 'TODOS')
+        FiltroActivo(
+          etiqueta: _etiquetaEstadoIncidencia(estado),
+          onQuitar: () => onEstado('TODOS'),
+        ),
+      if (tipo != 'TODOS')
+        FiltroActivo(
+          etiqueta: _etiquetaTipoIncidencia(tipo),
+          onQuitar: () => onTipo('TODOS'),
+        ),
+      if (busqueda.isNotEmpty)
+        FiltroActivo(
+          etiqueta: 'Busca: $busqueda',
+          onQuitar: () {
+            busquedaController.clear();
+            onBuscar();
+          },
+        ),
+    ];
+  }
+
   String _resumenFiltros() {
     final estadoTexto = _etiquetaEstadoIncidencia(estado);
     final tipoTexto =
@@ -930,6 +928,7 @@ class _FiltrosIncidencias extends StatelessWidget {
         const SizedBox(height: 10),
         PanelFiltros(
           titulo: 'Filtros',
+          activos: _filtrosActivos(),
           detalle: _resumenFiltros(),
           onLimpiar: onLimpiar,
           children: [
