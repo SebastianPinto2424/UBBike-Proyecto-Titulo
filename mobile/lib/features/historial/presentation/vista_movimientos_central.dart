@@ -14,7 +14,10 @@ import 'package:ubbike/shared/modelos/rol_usuario.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
+import 'package:ubbike/shared/widgets/tarjeta_movimiento.dart';
+import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
 
 class VistaMovimientosCentral extends ConsumerStatefulWidget {
   const VistaMovimientosCentral({super.key});
@@ -42,7 +45,9 @@ class _VistaMovimientosCentralState
   String estadoMovimiento = 'TODOS';
   String origenMovimiento = 'TODOS';
   String? bicicleteroId;
+  String? bicicleteroNombre;
   String? guardiaId;
+  String? guardiaNombre;
   DateTime? fechaDesde;
   DateTime? fechaHasta;
   String? formatoExportacion;
@@ -163,6 +168,86 @@ class _VistaMovimientosCentralState
     );
   }
 
+  List<FiltroActivo> _filtrosActivos() {
+    final busqueda = filtroController.text.trim();
+    return [
+      if (periodo != 'SEMANA')
+        FiltroActivo(
+          etiqueta: etiquetaPeriodoFiltro(periodo),
+          onQuitar: () {
+            setState(() => periodo = 'SEMANA');
+            _recargar();
+          },
+        ),
+      if (fechaDesde != null || fechaHasta != null)
+        FiltroActivo(
+          etiqueta: _textoRangoFechas(),
+          onQuitar: () {
+            setState(() {
+              fechaDesde = null;
+              fechaHasta = null;
+            });
+            _recargar();
+          },
+        ),
+      if (tipoMovimiento != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaTipoMovimientoFiltro(tipoMovimiento),
+          onQuitar: () {
+            setState(() => tipoMovimiento = 'TODOS');
+            _recargar();
+          },
+        ),
+      if (estadoMovimiento != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaEstadoMovimientoFiltro(estadoMovimiento),
+          onQuitar: () {
+            setState(() => estadoMovimiento = 'TODOS');
+            _recargar();
+          },
+        ),
+      if (origenMovimiento != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaOrigenMovimientoFiltro(origenMovimiento),
+          onQuitar: () {
+            setState(() => origenMovimiento = 'TODOS');
+            _recargar();
+          },
+        ),
+      if (bicicleteroId != null)
+        FiltroActivo(
+          etiqueta: bicicleteroNombre ?? 'Bicicletero seleccionado',
+          onQuitar: () {
+            setState(() {
+              bicicleteroId = null;
+              bicicleteroNombre = null;
+            });
+            _recargar();
+          },
+        ),
+      if (guardiaId != null)
+        FiltroActivo(
+          etiqueta: guardiaNombre ?? 'Guardia seleccionado',
+          onQuitar: () {
+            setState(() {
+              guardiaId = null;
+              guardiaNombre = null;
+            });
+            _recargar();
+          },
+        ),
+      if (busqueda.isNotEmpty)
+        FiltroActivo(
+          etiqueta: 'Busca: $busqueda',
+          onQuitar: () {
+            temporizadorBusqueda?.cancel();
+            filtroController.clear();
+            _recargar();
+          },
+        ),
+    ];
+  }
+
   String _resumenFiltros() {
     final busqueda = filtroController.text.trim();
     final partes = [
@@ -187,7 +272,9 @@ class _VistaMovimientosCentralState
     estadoMovimiento = 'TODOS';
     origenMovimiento = 'TODOS';
     bicicleteroId = null;
+    bicicleteroNombre = null;
     guardiaId = null;
+    guardiaNombre = null;
     fechaDesde = null;
     fechaHasta = null;
     _recargar();
@@ -414,7 +501,14 @@ class _VistaMovimientosCentralState
                         ),
                       ],
                       onChanged: (v) {
-                        setState(() => bicicleteroId = v);
+                        setState(() {
+                          bicicleteroId = v;
+                          bicicleteroNombre = v == null
+                              ? null
+                              : opciones.bicicleteros
+                                  .firstWhere((b) => b.id == v)
+                                  .nombre;
+                        });
                         _recargar();
                       },
                     );
@@ -442,7 +536,14 @@ class _VistaMovimientosCentralState
                         ),
                       ],
                       onChanged: (v) {
-                        setState(() => guardiaId = v);
+                        setState(() {
+                          guardiaId = v;
+                          guardiaNombre = v == null
+                              ? null
+                              : opciones.guardias
+                                  .firstWhere((g) => g.id == v)
+                                  .nombre;
+                        });
                         _recargar();
                       },
                     );
@@ -458,121 +559,114 @@ class _VistaMovimientosCentralState
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const TituloApartado(titulo: 'Historial'),
-        const SizedBox(height: 10),
-        TextField(
-          controller: filtroController,
-          textInputAction: TextInputAction.search,
-          onChanged: (_) => _programarBusqueda(),
-          onSubmitted: (_) => _recargar(),
-          decoration: InputDecoration(
-            labelText: 'Buscar por bicicleta, bicicletero o guardia',
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: filtroController.text.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: 'Limpiar búsqueda',
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      temporizadorBusqueda?.cancel();
-                      filtroController.clear();
-                      _recargar();
-                    },
-                  ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        PanelFiltros(
-          titulo: 'Filtros',
-          detalle: _resumenFiltros(),
-          onLimpiar: _limpiarFiltros,
-          children: _controlesFiltros(),
-        ),
-        if (_puedeExportar) ...[
-          const SizedBox(height: 10),
-          PanelExportarReporte(
-            exportando: exportando,
-            expandido: exportarAbierto,
-            formatoSeleccionado: formatoExportacion,
-            onToggle: () {
-              setState(() => exportarAbierto = !exportarAbierto);
-            },
-            onFormato: (formato) {
-              setState(() => formatoExportacion = formato);
-            },
-            onDescargar: () => _exportarSeleccionado(formatoExportacion),
-          ),
-        ],
-        const SizedBox(height: 16),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async => _recargar(),
-            child: FutureBuilder<List<MovimientoApp>>(
-              future: futuroMovimientos,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      TarjetaAccion(
-                        icono: Icons.error_outline,
-                        titulo: 'No se pudieron cargar movimientos',
-                        detalle: 'Toca para reintentar.',
-                        color: ColoresUbb.rojoInstitucional,
-                        onTap: _recargar,
+    return FutureBuilder<List<MovimientoApp>>(
+      future: futuroMovimientos,
+      builder: (context, snapshot) {
+        return ListaConFiltros(
+          onRefrescar: () async => _recargar(),
+          cabecera: [
+            const TituloApartado(titulo: 'Historial'),
+            const SizedBox(height: 10),
+            TextField(
+              controller: filtroController,
+              textInputAction: TextInputAction.search,
+              onChanged: (_) => _programarBusqueda(),
+              onSubmitted: (_) => _recargar(),
+              decoration: InputDecoration(
+                labelText: 'Buscar por bicicleta, bicicletero o guardia',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: filtroController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Limpiar búsqueda',
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          temporizadorBusqueda?.cancel();
+                          filtroController.clear();
+                          _recargar();
+                        },
                       ),
-                    ],
-                  );
-                }
-                final movimientos = snapshot.data ?? [];
-                if (movimientos.isEmpty) {
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      EstadoLista(
-                        icono: Icons.history,
-                        titulo: 'Sin movimientos',
-                        detalle:
-                            'Los ingresos y retiros que coincidan aparecerán aquí.',
-                      ),
-                    ],
-                  );
-                }
-                return ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: movimientos.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == movimientos.length) {
-                      return _PieListaMovimientos(
-                        mostrados: movimientos.length,
-                        total: totalMovimientos,
-                        hayMas: hayMasPaginas,
-                        cargando: cargandoMas,
-                        onCargarMas: _cargarSiguientePagina,
-                      );
-                    }
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: TarjetaMovimientoCentral(
-                        movimiento: movimientos[index],
-                        mostrarIdentidad: true,
-                      ),
-                    );
-                  },
-                );
-              },
+              ),
             ),
-          ),
+            const SizedBox(height: 10),
+            PanelFiltros(
+              titulo: 'Filtros',
+              activos: _filtrosActivos(),
+              detalle: _resumenFiltros(),
+              onLimpiar: _limpiarFiltros,
+              children: _controlesFiltros(),
+            ),
+            if (_puedeExportar) ...[
+              const SizedBox(height: 10),
+              PanelExportarReporte(
+                exportando: exportando,
+                expandido: exportarAbierto,
+                formatoSeleccionado: formatoExportacion,
+                onToggle: () {
+                  setState(() => exportarAbierto = !exportarAbierto);
+                },
+                onFormato: (formato) {
+                  setState(() => formatoExportacion = formato);
+                },
+                onDescargar: () => _exportarSeleccionado(formatoExportacion),
+              ),
+            ],
+          ],
+          contenido: _contenidoMovimientos(snapshot),
+        );
+      },
+    );
+  }
+
+  Widget _contenidoMovimientos(AsyncSnapshot<List<MovimientoApp>> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const SliverCargando();
+    }
+
+    if (snapshot.hasError) {
+      return SliverToBoxAdapter(
+        child: TarjetaAccion(
+          icono: Icons.error_outline,
+          titulo: 'No se pudieron cargar movimientos',
+          detalle: 'Toca para reintentar.',
+          color: ColoresUbb.rojoInstitucional,
+          onTap: _recargar,
         ),
-      ],
+      );
+    }
+
+    final movimientos = snapshot.data ?? [];
+    if (movimientos.isEmpty) {
+      return const SliverEspacioRestante(
+        child: EstadoLista(
+          icono: Icons.history,
+          titulo: 'Sin movimientos',
+          detalle: 'Los ingresos y retiros que coincidan aparecerán aquí.',
+        ),
+      );
+    }
+
+    return SliverList.builder(
+      itemCount: movimientos.length + 1,
+      itemBuilder: (context, index) {
+        if (index == movimientos.length) {
+          return _PieListaMovimientos(
+            mostrados: movimientos.length,
+            total: totalMovimientos,
+            hayMas: hayMasPaginas,
+            cargando: cargandoMas,
+            onCargarMas: _cargarSiguientePagina,
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TarjetaMovimientoCentral(
+            movimiento: movimientos[index],
+            mostrarIdentidad: true,
+          ),
+        );
+      },
     );
   }
 }

@@ -6,7 +6,10 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
+import 'package:ubbike/shared/widgets/tarjeta_movimiento.dart';
+import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
 
 class VistaMovimientosUsuario extends ConsumerStatefulWidget {
   const VistaMovimientosUsuario({super.key});
@@ -52,14 +55,48 @@ class _VistaMovimientosUsuarioState
     ].join(' | ');
   }
 
+  List<FiltroActivo> _filtrosActivos(FiltrosMovimientosUsuario filtros) {
+    final busqueda = filtroController.text.trim();
+    return [
+      if (filtros.periodo != 'MES')
+        FiltroActivo(
+          etiqueta: etiquetaPeriodoFiltro(filtros.periodo),
+          onQuitar: () => vm.cambiarFiltros(periodo: 'MES'),
+        ),
+      if (filtros.tipo != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaTipoMovimientoFiltro(filtros.tipo),
+          onQuitar: () => vm.cambiarFiltros(tipo: 'TODOS'),
+        ),
+      if (filtros.estado != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaEstadoMovimientoFiltro(filtros.estado),
+          onQuitar: () => vm.cambiarFiltros(estado: 'TODOS'),
+        ),
+      if (filtros.origen != 'TODOS')
+        FiltroActivo(
+          etiqueta: etiquetaOrigenMovimientoFiltro(filtros.origen),
+          onQuitar: () => vm.cambiarFiltros(origen: 'TODOS'),
+        ),
+      if (busqueda.isNotEmpty)
+        FiltroActivo(
+          etiqueta: 'Busca: $busqueda',
+          onQuitar: () {
+            filtroController.clear();
+            _recargar();
+          },
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final estado = ref.watch(movimientosUsuarioVmProvider);
     final filtros = ref.watch(filtrosMovimientosUsuarioProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return ListaConFiltros(
+      onRefrescar: () async => _recargar(),
+      cabecera: [
         const TituloApartado(titulo: 'Mis movimientos'),
         const SizedBox(height: 10),
         TextField(
@@ -84,6 +121,7 @@ class _VistaMovimientosUsuarioState
         const SizedBox(height: 10),
         PanelFiltros(
           titulo: 'Filtros',
+          activos: _filtrosActivos(filtros),
           detalle: _resumenFiltros(filtros),
           onLimpiar: _limpiarFiltros,
           children: [
@@ -146,84 +184,60 @@ class _VistaMovimientosUsuarioState
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async => _recargar(),
-            child: Builder(
-              builder: (context) {
-                final ultimoDato = estado.valueOrNull;
-                final cargandoInicial = estado.isLoading && ultimoDato == null;
-                if (cargandoInicial) {
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    children: const [
-                      SizedBox(
-                        height: 180,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    ],
-                  );
-                }
-                if (estado.hasError && ultimoDato == null) {
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    children: [
-                      TarjetaAccion(
-                        icono: Icons.error_outline,
-                        titulo: 'No se pudieron cargar movimientos',
-                        detalle: 'Toca para reintentar.',
-                        color: ColoresUbb.rojoInstitucional,
-                        onTap: _recargar,
-                      ),
-                    ],
-                  );
-                }
-                final movimientos = ultimoDato ?? const <MovimientoApp>[];
-                if (movimientos.isEmpty) {
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    children: const [
-                      EstadoLista(
-                        icono: Icons.history,
-                        titulo: 'Sin movimientos',
-                        detalle: 'Tus ingresos y retiros aparecerán aquí.',
-                      ),
-                    ],
-                  );
-                }
-                return ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  children: [
-                    ...movimientos.map(
-                      (movimiento) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: TarjetaMovimientoCentral(
-                          movimiento: movimiento,
-                          mostrarIdentidad: false,
-                        ),
-                      ),
-                    ),
-                    if (vm.desactualizado)
-                      const Text(
-                          'No pudimos actualizar. Se muestran los últimos datos.'),
-                    if (vm.hayMas)
-                      OutlinedButton(
-                        onPressed: vm.cargandoMas ? null : vm.cargarMas,
-                        child: Text(vm.cargandoMas
-                            ? 'Cargando…'
-                            : 'Cargar más movimientos'),
-                      ),
-                  ],
-                );
-              },
+      ],
+      contenido: _contenidoMovimientos(estado),
+    );
+  }
+
+  Widget _contenidoMovimientos(AsyncValue<List<MovimientoApp>> estado) {
+    final ultimoDato = estado.valueOrNull;
+
+    if (estado.isLoading && ultimoDato == null) {
+      return const SliverCargando();
+    }
+
+    if (estado.hasError && ultimoDato == null) {
+      return SliverToBoxAdapter(
+        child: TarjetaAccion(
+          icono: Icons.error_outline,
+          titulo: 'No se pudieron cargar movimientos',
+          detalle: 'Toca para reintentar.',
+          color: ColoresUbb.rojoInstitucional,
+          onTap: _recargar,
+        ),
+      );
+    }
+
+    final movimientos = ultimoDato ?? const <MovimientoApp>[];
+    if (movimientos.isEmpty) {
+      return const SliverEspacioRestante(
+        child: EstadoLista(
+          icono: Icons.history,
+          titulo: 'Sin movimientos',
+          detalle: 'Tus ingresos y retiros aparecerán aquí.',
+        ),
+      );
+    }
+
+    return SliverList.list(
+      children: [
+        ...movimientos.map(
+          (movimiento) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: TarjetaMovimientoCentral(
+              movimiento: movimiento,
+              mostrarIdentidad: false,
             ),
           ),
         ),
+        if (vm.desactualizado)
+          const Text('No pudimos actualizar. Se muestran los últimos datos.'),
+        if (vm.hayMas)
+          OutlinedButton(
+            onPressed: vm.cargandoMas ? null : vm.cargarMas,
+            child:
+                Text(vm.cargandoMas ? 'Cargando…' : 'Cargar más movimientos'),
+          ),
       ],
     );
   }
