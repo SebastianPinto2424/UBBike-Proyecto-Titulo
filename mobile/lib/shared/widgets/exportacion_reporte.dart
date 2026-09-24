@@ -7,11 +7,12 @@ import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 import 'package:ubbike/shared/widgets/vista_previa_reporte.dart';
-import 'package:ubbike/features/historial/presentation/widgets_movimientos.dart';
+
 import 'package:ubbike/shared/utils/utiles_comun.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/servicios/descarga_reporte.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
+import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
 
 typedef FiltrosReporte = ({
   String? filtro,
