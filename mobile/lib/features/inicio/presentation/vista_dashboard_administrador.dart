@@ -18,6 +18,7 @@ class VistaDashboardAdministrador extends ConsumerWidget {
     this.onAbrirSolicitudes,
     this.onAbrirIncidencias,
     this.onAbrirUsuarios,
+    this.onAbrirBicicleteros,
   });
 
   final VoidCallback? onAbrirMovimientos;
@@ -25,6 +26,7 @@ class VistaDashboardAdministrador extends ConsumerWidget {
   final VoidCallback? onAbrirSolicitudes;
   final VoidCallback? onAbrirIncidencias;
   final VoidCallback? onAbrirUsuarios;
+  final VoidCallback? onAbrirBicicleteros;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,7 +101,7 @@ class VistaDashboardAdministrador extends ConsumerWidget {
                         const SizedBox(height: 16),
                         EstadoBicicleterosOperativo(
                           bicicleteros: central.bicicleteros,
-                          onVerGuardias: onAbrirGuardias,
+                          onVerDetalle: onAbrirBicicleteros,
                         ),
                         const SizedBox(height: 16),
                         EstadoCampusOperativo(datos: central),

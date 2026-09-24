@@ -631,11 +631,11 @@ class EstadoBicicleterosOperativo extends StatelessWidget {
   const EstadoBicicleterosOperativo({
     super.key,
     required this.bicicleteros,
-    this.onVerGuardias,
+    this.onVerDetalle,
   });
 
   final List<BicicleteroApp> bicicleteros;
-  final VoidCallback? onVerGuardias;
+  final VoidCallback? onVerDetalle;
 
   @override
   Widget build(BuildContext context) {
@@ -651,9 +651,9 @@ class EstadoBicicleterosOperativo extends StatelessWidget {
             const Expanded(
               child: TituloApartado(titulo: 'Estado de bicicleteros'),
             ),
-            if (onVerGuardias != null)
+            if (onVerDetalle != null)
               TextButton(
-                onPressed: onVerGuardias,
+                onPressed: onVerDetalle,
                 child: const Text('Ver detalle'),
               ),
           ],

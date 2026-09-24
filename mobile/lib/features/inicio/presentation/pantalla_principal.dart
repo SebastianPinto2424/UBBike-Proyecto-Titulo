@@ -27,6 +27,7 @@ import 'package:ubbike/features/inicio/presentation/vista_inicio_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_ingreso_guardia.dart';
 import 'package:ubbike/features/inicio/presentation/vista_dashboard_central.dart';
 import 'package:ubbike/features/inicio/presentation/vista_dashboard_administrador.dart';
+import 'package:ubbike/features/admin/presentation/vista_gestion_bicicleteros.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_usuarios.dart';
 import 'package:ubbike/features/admin/presentation/vista_menu_gestion.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_central.dart';
@@ -317,6 +318,18 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       context,
       titulo: 'Atención',
       pantalla: const VistaSoporteAdministrador(initialIndex: 0),
+    );
+  }
+
+  void _abrirDestinoBicicleterosAdmin() {
+    setState(() {
+      indice = 4;
+      indicesVisitados.add(indice);
+    });
+    abrirSeccionGestion(
+      context,
+      titulo: 'Bicicleteros',
+      pantalla: const VistaGestionBicicleteros(),
     );
   }
 
@@ -714,6 +727,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
           onAbrirIncidencias: () =>
               _abrirDestinoIncidencia(RolUsuario.administrador),
           onAbrirUsuarios: _abrirDestinoUsuariosAdmin,
+          onAbrirBicicleteros: _abrirDestinoBicicleterosAdmin,
         ),
         VistaBicicletas(
           key: ValueKey('bicicletas-admin-$tabBicicletas'),

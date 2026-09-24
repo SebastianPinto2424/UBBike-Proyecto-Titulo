@@ -87,7 +87,7 @@ class VistaDashboardCentral extends ConsumerWidget {
                         const SizedBox(height: 16),
                         EstadoBicicleterosOperativo(
                           bicicleteros: datos.bicicleteros,
-                          onVerGuardias: onAbrirGuardias,
+                          onVerDetalle: null,
                         ),
                         const SizedBox(height: 16),
                         EstadoCampusOperativo(datos: datos),
