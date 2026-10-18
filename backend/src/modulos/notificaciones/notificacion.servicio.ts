@@ -16,6 +16,7 @@ type DatosCrearNotificacion = {
   mensaje: string;
   tipo?: TipoNotificacion;
   datos?: Record<string, unknown>;
+  soloRegistro?: boolean;
 };
 
 type DatosNotificarRoles = {
@@ -69,10 +70,15 @@ export const crearNotificacion = async (
       titulo: datos.titulo,
       mensaje: datos.mensaje,
       tipo,
-      datos: datos.datos as Prisma.InputJsonValue | undefined
+      datos: datos.datos as Prisma.InputJsonValue | undefined,
+      leida: datos.soloRegistro ?? false
     },
     db
   );
+
+  if (datos.soloRegistro) {
+    return notificacion;
+  }
 
   if (tiposVisiblesApp.includes(tipo)) {
     await encolarEntrega(
@@ -107,6 +113,9 @@ export const crearNotificacion = async (
 
 export const registrarDispositivo = (usuarioId: string, token: string, plataforma: string) =>
   dispositivoRepositorio.guardarToken(usuarioId, token, plataforma);
+
+export const olvidarDispositivosDeUsuario = (usuarioId: string) =>
+  dispositivoRepositorio.eliminarTodosDeUsuario(usuarioId);
 
 export const eliminarDispositivo = (usuarioId: string, token: string) =>
   dispositivoRepositorio.eliminarToken(usuarioId, token);
