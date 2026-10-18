@@ -1,5 +1,6 @@
-import 'package:ubbike/shared/modelos/usuario_app.dart';
 import 'package:ubbike/features/auth/data/autenticacion_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class AutenticacionRepository {
   const AutenticacionRepository(this._api);
@@ -12,19 +13,11 @@ class AutenticacionRepository {
   }) =>
       _api.iniciarSesion(correo: correo, contrasena: contrasena);
 
-  Future<UsuarioApp> obtenerPerfil() async {
-    final usuario = await _api.obtenerPerfil();
-    return UsuarioApp.fromJson(usuario);
-  }
-
   Future<ResultadoLogin> refrescarToken({
     required String usuarioId,
     required String refreshToken,
   }) =>
       _api.refrescarToken(usuarioId: usuarioId, refreshToken: refreshToken);
-
-  Future<void> cerrarSesion({String? refreshToken}) =>
-      _api.cerrarSesion(refreshToken: refreshToken);
 
   Future<String> registrar({
     required String nombre,
@@ -71,3 +64,9 @@ class AutenticacionRepository {
         contrasenaNueva: contrasenaNueva,
       );
 }
+
+final autenticacionRepositoryProvider =
+    Provider<AutenticacionRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return AutenticacionRepository(AutenticacionApi(cliente: cliente));
+});
