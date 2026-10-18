@@ -12,8 +12,10 @@ import {
 } from '../correos/correo.servicio';
 import {
   crearNotificacion,
-  notificarUsuariosPorRol
+  notificarUsuariosPorRol,
+  olvidarDispositivosDeUsuario
 } from '../notificaciones/notificacion.servicio';
+import { cerrarSesionesTiempoReal } from '../../tiempo-real/tiempo-real';
 import { TipoNotificacion } from '../notificaciones/tipo-notificacion';
 import { mapearUsuarioPublico } from '../usuarios/usuario.mapeador';
 import { RolUsuario } from '../usuarios/rol-usuario';
@@ -147,6 +149,16 @@ export const registrarUsuario = async (datos: DatosRegistro) => {
   };
 };
 
+const cerrarOtrasSesiones = async (usuarioId: string) => {
+  const actualizado = await autenticacionRepositorio.actualizar(usuarioId, {
+    versionSesion: { increment: 1 }
+  });
+  await revocarTodosLosRefreshTokens(usuarioId);
+  await olvidarDispositivosDeUsuario(usuarioId);
+  cerrarSesionesTiempoReal(usuarioId);
+  return actualizado.versionSesion;
+};
+
 export const iniciarSesion = async (datos: DatosLogin) => {
   const usuario = await autenticacionRepositorio.buscarPorCorreo(datos.correo.toLowerCase());
 
@@ -215,9 +227,10 @@ export const iniciarSesion = async (datos: DatosLogin) => {
     entidadId: usuario.id
   });
 
-  const token = crearTokenSesion(usuario.id, usuario.rol, usuario.versionSesion);
+  const versionSesion = await cerrarOtrasSesiones(usuario.id);
+  const token = crearTokenSesion(usuario.id, usuario.rol, versionSesion);
   const refreshToken = crearRefreshToken();
-  await guardarRefreshToken(usuario.id, refreshToken, usuario.versionSesion);
+  await guardarRefreshToken(usuario.id, refreshToken, versionSesion);
 
   return {
     usuario: mapearUsuarioPublico(usuario),
