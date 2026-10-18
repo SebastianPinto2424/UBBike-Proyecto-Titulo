@@ -12,7 +12,12 @@ jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
   registrarAuditoria: jest.fn().mockResolvedValue(undefined)
 }));
 
-import { actualizarEstadoIncidencia } from '../../src/modulos/incidencias/incidencia.servicio';
+import {
+  actualizarEstadoIncidencia,
+  crearIncidencia
+} from '../../src/modulos/incidencias/incidencia.servicio';
+import { crearNotificacion } from '../../src/modulos/notificaciones/notificacion.servicio';
+import { TipoIncidencia } from '../../src/modulos/incidencias/tipo-incidencia';
 import { EstadoIncidencia } from '../../src/modulos/incidencias/estado-incidencia';
 import { RolUsuario } from '../../src/modulos/usuarios/rol-usuario';
 
@@ -54,5 +59,61 @@ describe('actualizarEstadoIncidencia', () => {
         estado: EstadoIncidencia.PENDIENTE
       })
     ).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+describe('crearIncidencia', () => {
+  it('confirma con una notificación a quien reporta', async () => {
+    const bicicletero = {
+      id: 'bic-uuid-1',
+      nombre: 'Bicicletero FACE',
+      ubicacion: 'FACE',
+      activo: true
+    };
+    prismaMock.bicicletero.findUnique.mockResolvedValue(bicicletero as never);
+    prismaMock.usuario.findMany.mockResolvedValue([]);
+    prismaMock.incidencia.create.mockResolvedValue({
+      id: 'inc-uuid-2',
+      tipo: TipoIncidencia.OTRO,
+      descripcion: 'Candado roto en la entrada',
+      estado: EstadoIncidencia.PENDIENTE,
+      respuesta: null,
+      creadaEn: new Date(),
+      actualizadaEn: new Date(),
+      resueltaEn: null,
+      ultimoRecordatorioEn: null,
+      recordatorios: 0,
+      reportadaPorUsuarioId: 'user-uuid-1',
+      reportadaPorUsuario: {
+        id: 'user-uuid-1',
+        nombre: 'Ana',
+        correo: 'ana@alumnos.ubiobio.cl',
+        rut: null,
+        rol: RolUsuario.ESTUDIANTE
+      },
+      gestionadaPorUsuario: null,
+      bicicletero,
+      bicicleta: null,
+      fotos: []
+    } as never);
+
+    await crearIncidencia({
+      usuarioId: 'user-uuid-1',
+      rol: RolUsuario.ESTUDIANTE,
+      bicicleteroId: 'bic-uuid-1',
+      tipo: TipoIncidencia.OTRO,
+      descripcion: 'Candado roto en la entrada'
+    });
+
+    const avisos = jest.mocked(crearNotificacion).mock.calls.map(([aviso]) => aviso);
+    expect(avisos).toContainEqual(
+      expect.objectContaining({
+        usuarioId: 'user-uuid-1',
+        titulo: 'Incidencia registrada',
+        tipo: 'INCIDENCIA',
+        datos: expect.objectContaining({ incidenciaId: 'inc-uuid-2' }),
+        soloRegistro: true
+      })
+    );
   });
 });
