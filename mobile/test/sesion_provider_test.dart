@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 const usuarioJson = {
   'id': 'u',
@@ -84,5 +84,22 @@ void main() {
         .iniciar(token: 'b', usuario: UsuarioApp.fromJson(usuarioJson));
     expect(
         await const FlutterSecureStorage().read(key: 'ubbike_refresh'), isNull);
+  });
+
+  test('al abrirse la cuenta en otro dispositivo se cierra con el motivo',
+      () async {
+    final c = ProviderContainer(overrides: [
+      sesionHttpProvider.overrideWithValue(MockClient((r) async =>
+          http.Response(jsonEncode({'usuario': usuarioJson}), 200))),
+    ]);
+    addTearDown(c.dispose);
+    expect(await c.read(sesionProvider.future), isA<SesionActiva>());
+
+    await c.read(sesionProvider.notifier).cerrarPorOtroDispositivo();
+
+    final sesion = c.read(sesionProvider).value;
+    expect(sesion, isA<SesionVacia>());
+    expect((sesion as SesionVacia).motivo, mensajeSesionEnOtroDispositivo);
+    expect(await const FlutterSecureStorage().read(key: 'ubbike_jwt'), isNull);
   });
 }
