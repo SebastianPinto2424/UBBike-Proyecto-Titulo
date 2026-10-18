@@ -259,8 +259,8 @@ class ClienteApi {
 
     if (textoLower.contains('must be a valid email')) {
       return campo == null
-          ? 'Ingresa un correo valido. Ej: usuario@ubiobio.cl'
-          : 'Ingresa un $campo valido. Ej: usuario@ubiobio.cl';
+          ? 'Ingresa un correo válido. Ej: usuario@ubiobio.cl'
+          : 'Ingresa un $campo válido. Ej: usuario@ubiobio.cl';
     }
     if (textoLower.contains('is not allowed to be empty') ||
         textoLower.contains('is required')) {
@@ -301,7 +301,7 @@ class ClienteApi {
       'nombre' => 'nombre',
       'rut' => 'RUT',
       'descripcion' => 'descripcion',
-      'bicicletaDescripcion' => 'descripcion de bicicleta',
+      'bicicletaDescripcion' => 'descripción de bicicleta',
       'comentario' => 'comentario',
       'motivo' => 'motivo',
       'mensaje' => 'mensaje',
