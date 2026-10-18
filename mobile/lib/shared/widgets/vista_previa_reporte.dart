@@ -11,6 +11,8 @@ class VistaPreviaReporte extends StatelessWidget {
     required this.totalRegistros,
     required this.resumenFiltros,
     this.columnasAdicionales = const [],
+    this.textoConfirmar = 'Descargar',
+    this.iconoConfirmar = Icons.download_outlined,
   });
 
   final String formato;
@@ -20,6 +22,8 @@ class VistaPreviaReporte extends StatelessWidget {
   final String resumenFiltros;
 
   final List<String> columnasAdicionales;
+  final String textoConfirmar;
+  final IconData iconoConfirmar;
 
   static const _maximoFilas = 20;
 
@@ -126,8 +130,8 @@ class VistaPreviaReporte extends StatelessWidget {
                 onPressed: totalRegistros == 0
                     ? null
                     : () => Navigator.pop(context, true),
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Descargar'),
+                icon: Icon(iconoConfirmar),
+                label: Text(textoConfirmar),
               ),
             ),
           ]),
