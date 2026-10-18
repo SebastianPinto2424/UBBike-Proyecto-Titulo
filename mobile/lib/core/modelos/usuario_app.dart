@@ -1,4 +1,4 @@
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
+import 'package:ubbike/core/modelos/rol_usuario.dart';
 
 class UsuarioApp {
   const UsuarioApp({
