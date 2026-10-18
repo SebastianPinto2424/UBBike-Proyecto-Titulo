@@ -9,8 +9,10 @@ import type {
   CodigoQrTemporal,
   Usuario
 } from '../../generated/prisma/client';
+import { EventosTiempoReal, emitirTiempoReal, salaUsuario } from '../../tiempo-real/tiempo-real';
 import { TipoMovimiento } from '../historial/tipo-movimiento';
 import { RolUsuario } from '../usuarios/rol-usuario';
+import { EstadoQr } from './estado-qr';
 import * as qrRepositorio from './qr.repositorio';
 
 const duracionQrSegundos = entorno.qr.duracionSegundos;
@@ -36,6 +38,16 @@ type CodigoQrCompleto = CodigoQrTemporal & {
   bicicleta: BicicletaConBicicleteroActual;
   bicicletero: Bicicletero | null;
 };
+
+type EventoEstadoQr = {
+  qrId: string;
+  estado: EstadoQr;
+  tipo: string;
+  motivo?: string | null;
+};
+
+export const notificarEstadoQr = (usuarioId: string, evento: EventoEstadoQr) =>
+  emitirTiempoReal([salaUsuario(usuarioId)], EventosTiempoReal.QR, evento);
 
 const buscarBicicletaParaQr = async (usuarioId: string, bicicletaId?: string) => {
   const bicicleta = await qrRepositorio.buscarBicicletaParaQr(usuarioId, bicicletaId);
@@ -151,7 +163,10 @@ const validarBicicleteroGuardia = async (
   );
 
   if (!asignacion) {
-    throw new ErrorHttp(403, 'El QR corresponde a otro bicicletero o no está asignado a tu turno');
+    throw new ErrorHttp(
+      403,
+      `Este QR es para ${bicicleteroQr.nombre}, que no corresponde a tu turno`
+    );
   }
 };
 
@@ -166,8 +181,14 @@ export const validarQrTemporal = async (token: string, contexto?: ContextoValida
     );
 
     if (marcado.count !== 1) {
-      throw new ErrorHttp(409, 'QR ya fue tomado por otro validador');
+      throw new ErrorHttp(409, 'Otro guardia ya está revisando este QR');
     }
+
+    notificarEstadoQr(codigo.usuario.id, {
+      qrId: codigo.id,
+      estado: EstadoQr.ESCANEADO,
+      tipo: codigo.tipo
+    });
   }
 
   return {
@@ -200,6 +221,51 @@ export const validarQrTemporal = async (token: string, contexto?: ContextoValida
   };
 };
 
+export const consultarEstadoQr = async (qrId: string, usuarioId: string) => {
+  const codigo = await qrRepositorio.buscarCodigoDeUsuario(qrId, usuarioId);
+  if (!codigo) {
+    throw new ErrorHttp(404, 'Este código no es un QR válido de UBBike');
+  }
+
+  const base = { qrId: codigo.id, tipo: codigo.tipo };
+  if (!codigo.usado) {
+    return { ...base, estado: codigo.escaneadoPorGuardiaId ? EstadoQr.ESCANEADO : 'ACTIVO' };
+  }
+
+  const movimiento = codigo.escaneadoEn
+    ? await qrRepositorio.buscarMovimientoDeQr({ ...codigo, escaneadoEn: codigo.escaneadoEn })
+    : null;
+  if (!movimiento) {
+    return { ...base, estado: 'REEMPLAZADO' };
+  }
+
+  return {
+    ...base,
+    estado: movimiento.estado === 'CONFIRMADO' ? EstadoQr.CONFIRMADO : EstadoQr.DENEGADO,
+    motivo: movimiento.motivoDenegacion
+  };
+};
+
+export const liberarQrTemporal = async (token: string, contexto: ContextoValidacionQr) => {
+  const codigo = await qrRepositorio.buscarCodigoCompletoPorToken(token);
+  if (!codigo) {
+    return;
+  }
+
+  const liberado = await qrRepositorio.liberarEscaneoDeGuardia(
+    codigo.id,
+    contexto.validadorUsuarioId
+  );
+
+  if (liberado.count === 1) {
+    notificarEstadoQr(codigo.usuario.id, {
+      qrId: codigo.id,
+      estado: EstadoQr.LIBERADO,
+      tipo: codigo.tipo
+    });
+  }
+};
+
 export const obtenerCodigoQrValido = async (
   token: string,
   db?: ClientePrisma
@@ -207,15 +273,15 @@ export const obtenerCodigoQrValido = async (
   const codigo = await qrRepositorio.buscarCodigoCompletoPorToken(token, db);
 
   if (!codigo) {
-    throw new ErrorHttp(404, 'QR no encontrado');
+    throw new ErrorHttp(404, 'Este código no es un QR válido de UBBike');
   }
 
   if (codigo.usado) {
-    throw new ErrorHttp(409, 'QR ya fue usado o reemplazado');
+    throw new ErrorHttp(409, 'Este QR ya se usó o fue reemplazado por uno más reciente');
   }
 
   if (codigo.expiraEn.getTime() < Date.now()) {
-    throw new ErrorHttp(410, 'QR expirado. Debe regenerarse');
+    throw new ErrorHttp(410, 'Este QR expiró. Pide a la persona que genere uno nuevo');
   }
 
   return codigo;
@@ -229,11 +295,11 @@ export const obtenerCodigoQrEscaneadoParaMovimiento = async (
   const codigo = await qrRepositorio.buscarCodigoCompletoPorToken(token, db);
 
   if (!codigo) {
-    throw new ErrorHttp(404, 'QR no encontrado');
+    throw new ErrorHttp(404, 'Este código no es un QR válido de UBBike');
   }
 
   if (codigo.usado) {
-    throw new ErrorHttp(409, 'QR ya fue usado o reemplazado');
+    throw new ErrorHttp(409, 'Este QR ya se usó o fue reemplazado por uno más reciente');
   }
 
   if (!codigo.escaneadoPorGuardiaId) {
@@ -241,7 +307,7 @@ export const obtenerCodigoQrEscaneadoParaMovimiento = async (
   }
 
   if (codigo.escaneadoPorGuardiaId !== contexto.validadorUsuarioId) {
-    throw new ErrorHttp(409, 'QR ya fue tomado por otro validador');
+    throw new ErrorHttp(409, 'Otro guardia ya está revisando este QR');
   }
 
   await validarBicicleteroGuardia(codigo, contexto);
