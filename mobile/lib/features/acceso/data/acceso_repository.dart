@@ -1,6 +1,8 @@
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/features/acceso/data/acceso_api.dart';
 import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class AccesoRepository {
   const AccesoRepository(this._api);
@@ -15,6 +17,8 @@ class AccesoRepository {
 
   Future<QrValidadoApp> validarQr(String token) => _api.validarQr(token);
 
+  Future<void> liberarQr(String token) => _api.liberarQr(token);
+
   Future<MovimientoApp> confirmarQr(String token, {String? comentario}) =>
       _api.confirmarQr(token, comentario: comentario);
 
@@ -24,42 +28,11 @@ class AccesoRepository {
   }) =>
       _api.denegarQr(token: token, motivo: motivo);
 
-  Future<MovimientoApp> registrarManual({
-    String? nombre,
-    String? correo,
-    String? rut,
-    String? bicicletaId,
-    String? bicicleteroId,
-    required String tipo,
-    bool denegar = false,
-    String? motivo,
-    String? comentario,
-    String? bicicletaDescripcion,
-    String? bicicletaMarca,
-    String? bicicletaModelo,
-    String? bicicletaColor,
-    String? bicicletaAro,
-    String? bicicletaNumeroSerie,
-    String? bicicletaFotoUrl,
-    bool crearBicicletaNueva = false,
-  }) =>
-      _api.registrarManual(
-        nombre: nombre,
-        correo: correo,
-        rut: rut,
-        bicicletaId: bicicletaId,
-        bicicleteroId: bicicleteroId,
-        tipo: tipo,
-        denegar: denegar,
-        motivo: motivo,
-        comentario: comentario,
-        bicicletaDescripcion: bicicletaDescripcion,
-        bicicletaMarca: bicicletaMarca,
-        bicicletaModelo: bicicletaModelo,
-        bicicletaColor: bicicletaColor,
-        bicicletaAro: bicicletaAro,
-        bicicletaNumeroSerie: bicicletaNumeroSerie,
-        bicicletaFotoUrl: bicicletaFotoUrl,
-        crearBicicletaNueva: crearBicicletaNueva,
-      );
+  Future<MovimientoApp> registrarManual(SolicitudRegistroManual solicitud) =>
+      _api.registrarManual(solicitud);
 }
+
+final accesoRepositoryProvider = Provider<AccesoRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return AccesoRepository(AccesoApi(cliente: cliente));
+});
