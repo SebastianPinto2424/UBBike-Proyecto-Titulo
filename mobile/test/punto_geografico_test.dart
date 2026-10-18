@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/configuracion/configuracion_mapa.dart';
-import 'package:ubbike/shared/modelos/punto_geografico.dart';
+import 'package:ubbike/core/modelos/punto_geografico.dart';
 import 'package:ubbike/shared/utils/opciones_bicicletero.dart';
 
 void main() {

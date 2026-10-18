@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
-import 'package:ubbike/shared/widgets/panel_operativo_widgets.dart';
+import 'package:ubbike/shared/widgets/bicicleteros_operativos_widgets.dart';
 
 void main() {
   testWidgets('sin destino de bicicleteros el boton Ver detalle no se muestra',

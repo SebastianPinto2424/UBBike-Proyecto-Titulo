@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:ubbike/shared/servicios/ubicacion_servicio.dart';
+import 'package:ubbike/core/servicios/ubicacion_servicio.dart';
 
 class _Plataforma extends GeolocatorPlatform {
   bool habilitado = true;

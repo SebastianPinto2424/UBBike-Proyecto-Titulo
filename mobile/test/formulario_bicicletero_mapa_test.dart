@@ -9,15 +9,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ubbike/core/configuracion/configuracion_mapa.dart';
 import 'package:ubbike/core/providers/mapa_provider.dart';
-import 'package:ubbike/core/providers/repositorios_provider.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/admin/data/geocodificacion_repository.dart';
 import 'package:ubbike/features/admin/presentation/formulario_bicicletero_sheet.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/modelos/lugar_encontrado.dart';
-import 'package:ubbike/shared/modelos/punto_geografico.dart';
-import 'package:ubbike/shared/servicios/ubicacion_servicio.dart';
+import 'package:ubbike/core/modelos/punto_geografico.dart';
+import 'package:ubbike/core/servicios/ubicacion_servicio.dart';
 
 late Uint8List _imagen;
 

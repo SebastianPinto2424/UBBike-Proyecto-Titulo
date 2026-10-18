@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/rol_usuario.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 UsuarioApp _usuario({
   String nombre = 'Administrador UBBike',

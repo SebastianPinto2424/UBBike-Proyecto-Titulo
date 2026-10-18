@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
-import 'package:ubbike/shared/widgets/exportacion_reporte.dart';
+import 'package:ubbike/features/historial/presentation/exportacion_reporte.dart';
 
 MovimientoApp _movimiento({
   String? marca,
