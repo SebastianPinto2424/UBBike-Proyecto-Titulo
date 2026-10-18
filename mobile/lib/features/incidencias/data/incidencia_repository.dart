@@ -1,6 +1,8 @@
 import 'package:ubbike/features/incidencias/data/incidencia_api.dart';
-import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
+import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/pagina_cursor.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class IncidenciaRepository {
   const IncidenciaRepository(this._api);
@@ -31,12 +33,14 @@ class IncidenciaRepository {
     required String tipo,
     required String descripcion,
     String? bicicletaId,
+    List<String> fotos = const <String>[],
   }) =>
       _api.crear(
         bicicleteroId: bicicleteroId,
         tipo: tipo,
         descripcion: descripcion,
         bicicletaId: bicicletaId,
+        fotos: fotos,
       );
 
   Future<IncidenciaApp> actualizarEstado({
@@ -53,3 +57,8 @@ class IncidenciaRepository {
   Future<IncidenciaApp> recordar({required String incidenciaId}) =>
       _api.recordar(incidenciaId: incidenciaId);
 }
+
+final incidenciaRepositoryProvider = Provider<IncidenciaRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return IncidenciaRepository(IncidenciaApi(cliente: cliente));
+});
