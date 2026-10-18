@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
-import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
+import 'package:ubbike/features/bicicletas/data/bicicleta_repository.dart';
+import 'package:ubbike/features/acceso/data/solicitud_guardia_repository.dart';
+import 'package:ubbike/features/incidencias/data/incidencia_repository.dart';
+import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class FiltrosIncidencias {
   const FiltrosIncidencias({
@@ -33,8 +37,6 @@ final filtrosIncidenciasProvider =
     StateProvider.autoDispose<FiltrosIncidencias>(
   (ref) => const FiltrosIncidencias(),
 );
-
-final incidenciasVersionProvider = StateProvider<int>((ref) => 0);
 
 class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
   Timer? _debounceBusqueda;
@@ -179,12 +181,14 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     required String tipo,
     required String descripcion,
     String? bicicletaId,
+    List<String> fotos = const <String>[],
   }) async {
     await ref.read(incidenciaRepositoryProvider).crear(
           bicicleteroId: bicicleteroId,
           tipo: tipo,
           descripcion: descripcion,
           bicicletaId: bicicletaId,
+          fotos: fotos,
         );
     recargar();
   }
@@ -236,7 +240,7 @@ final datosFormularioIncidenciaProvider = FutureProvider.autoDispose.family<
         : null;
     final bicicleteros = args.gestionGuardia
         ? [if (datosBicicletero != null) datosBicicletero]
-        : await solicitudGuardiaRepository.listarBicicleteros();
+        : await ref.read(bicicleterosRepositoryProvider).listar();
     final bicicletas = args.permitirBicicletaPropia
         ? await ref.read(bicicletaRepositoryProvider).listar()
         : <BicicletaApp>[];
