@@ -118,4 +118,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('el boton de confirmar refleja la accion elegida',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: VistaPreviaReporte(
+            formato: 'PDF',
+            encabezados: ['Tipo'],
+            filas: [
+              ['INGRESO'],
+            ],
+            totalRegistros: 1,
+            resumenFiltros: 'Semana',
+            textoConfirmar: 'Compartir',
+            iconoConfirmar: Icons.ios_share,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Compartir'), findsOneWidget);
+    expect(find.text('Descargar'), findsNothing);
+    expect(find.byIcon(Icons.ios_share), findsOneWidget);
+  });
 }
