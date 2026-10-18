@@ -1,6 +1,28 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 const int maxFotoDataUrlLength = 7000000;
+
+const _mensajeFormato = 'La foto debe ser JPG, PNG o WEBP.';
+const _mensajePeso = 'La foto es muy pesada. Elige una imagen más liviana.';
+
+typedef FotoPreparada = ({String? dataUrl, String? error});
+
+FotoPreparada prepararFoto(Uint8List bytes, {int? maximoBytes}) {
+  final mime = detectarMimeDesdeBytes(bytes);
+  if (!mimesFotoPermitidos.contains(mime)) {
+    return (dataUrl: null, error: _mensajeFormato);
+  }
+  if (maximoBytes != null && bytes.length > maximoBytes) {
+    return (dataUrl: null, error: _mensajePeso);
+  }
+
+  final dataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
+  if (dataUrl.length > maxFotoDataUrlLength) {
+    return (dataUrl: null, error: _mensajePeso);
+  }
+  return (dataUrl: dataUrl, error: null);
+}
 
 const Set<String> mimesFotoPermitidos = {
   'image/jpeg',
@@ -34,5 +56,5 @@ String detectarMimeDesdeBytes(Uint8List bytes) {
       bytes[11] == 0x50) {
     return 'image/webp';
   }
-  return 'image/jpeg';
+  return '';
 }
