@@ -33,6 +33,8 @@ dependencies:
   latlong2: ^0.9.1
   url_launcher: ^6.3.2
   file_saver: ^0.4.0
+  share_plus: ^12.0.2
+  camera: ^0.12.0+2
 
 dev_dependencies:
   flutter_test:
