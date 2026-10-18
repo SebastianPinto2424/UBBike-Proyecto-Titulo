@@ -6,7 +6,7 @@ import 'package:http/testing.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
-import 'package:ubbike/features/inicio/application/controlador_notificaciones_inicio.dart';
+import 'package:ubbike/features/notificaciones/application/controlador_notificaciones.dart';
 import 'package:ubbike/features/notificaciones/data/notificacion_api.dart';
 import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
 
@@ -66,7 +66,7 @@ void main() {
           }),
           200);
     }));
-    final controlador = ControladorNotificacionesInicio(
+    final controlador = ControladorNotificaciones(
         notificacionRepository:
             NotificacionRepository(NotificacionApi(cliente: cliente)));
     addTearDown(controlador.dispose);
