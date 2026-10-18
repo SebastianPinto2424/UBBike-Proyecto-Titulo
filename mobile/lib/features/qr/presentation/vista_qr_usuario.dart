@@ -1,31 +1,38 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ubbike/features/bicicletas/application/bicicletas_vm.dart';
-import 'package:ubbike/features/qr/application/qr_usuario_vm.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ubbike/core/providers/conexion_provider.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
+import 'package:ubbike/core/servicios/ubicacion_servicio.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/features/qr/application/qr_usuario_vm.dart';
 import 'package:ubbike/features/qr/data/qr_modelos.dart';
+import 'package:ubbike/features/qr/presentation/panel_qr_usuario.dart';
+import 'package:ubbike/features/qr/presentation/seleccion_bicicletero_qr.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/servicios/ubicacion_servicio.dart';
 import 'package:ubbike/shared/utils/cercania_bicicletero.dart';
-import 'package:ubbike/shared/widgets/chip_estado.dart';
-import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/features/qr/presentation/qr_widgets.dart';
-import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
+import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
 class VistaQrUsuario extends ConsumerStatefulWidget {
-  const VistaQrUsuario({super.key});
+  const VistaQrUsuario({super.key, this.onVerHistorial});
+
+  final VoidCallback? onVerHistorial;
 
   @override
   ConsumerState<VistaQrUsuario> createState() => _VistaQrUsuarioState();
 }
 
 class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
+  static const _segundosAntesDelHistorial = 4;
+  static const _esperaAntesDeOfrecerNuevoQr = Duration(seconds: 60);
+  static const _intervaloConsultaEstado = Duration(seconds: 4);
+
   QrUsuarioVm get vm => ref.read(qrUsuarioVmProvider);
   final UbicacionServicio ubicacionServicio = const UbicacionServicio();
   QrTemporalApp? qrActual;
@@ -37,11 +44,137 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
   bool generando = false;
   int _generacionQr = 0;
   int _cargaEnCurso = 0;
+  EstadoQr? estadoQr;
+  String? motivoQr;
+  int segundosParaHistorial = 0;
+  Timer? _temporizadorHistorial;
+  Timer? _temporizadorEspera;
+  Timer? _consultaEstado;
+  bool esperaLarga = false;
 
   @override
   void initState() {
     super.initState();
     _cargarDatos();
+  }
+
+  @override
+  void dispose() {
+    _temporizadorHistorial?.cancel();
+    _detenerEspera();
+    super.dispose();
+  }
+
+  void _detenerEspera() {
+    _temporizadorEspera?.cancel();
+    _consultaEstado?.cancel();
+  }
+
+  Future<void> _sincronizarEstado() async {
+    final qr = qrActual;
+    if (qr == null || estadoQr?.esFinal == true) {
+      return;
+    }
+    try {
+      final evento = await vm.consultarEstado(qr.id);
+      if (evento != null && evento.estado != estadoQr) {
+        _alRecibirEventoQr(evento);
+      }
+    } catch (_) {}
+  }
+
+  void _alRecibirEventoQr(EventoQrApp? evento) {
+    final qr = qrActual;
+    if (!mounted || evento == null || qr == null || evento.qrId != qr.id) {
+      return;
+    }
+    if (estadoQr?.esFinal == true) {
+      return;
+    }
+
+    if (evento.estado == EstadoQr.liberado) {
+      if (estadoQr != EstadoQr.escaneado) {
+        return;
+      }
+      _detenerEspera();
+      setState(() {
+        estadoQr = null;
+        motivoQr = null;
+        esperaLarga = false;
+      });
+      context.mostrarInfo(
+        'El guardia volverá a escanear tu QR. Si ya expiró, genera uno nuevo.',
+      );
+      return;
+    }
+
+    _detenerEspera();
+    setState(() {
+      estadoQr = evento.estado;
+      motivoQr = evento.motivo;
+      esperaLarga = false;
+    });
+
+    if (evento.estado == EstadoQr.escaneado) {
+      _temporizadorEspera = Timer(_esperaAntesDeOfrecerNuevoQr, () {
+        if (mounted) setState(() => esperaLarga = true);
+      });
+      _consultaEstado = Timer.periodic(
+        _intervaloConsultaEstado,
+        (_) => unawaited(_sincronizarEstado()),
+      );
+    } else if (evento.estado == EstadoQr.confirmado) {
+      unawaited(HapticFeedback.mediumImpact());
+      _iniciarCuentaAlHistorial();
+    } else if (evento.estado == EstadoQr.denegado) {
+      unawaited(HapticFeedback.heavyImpact());
+    }
+  }
+
+  void _generarNuevoQr() {
+    _detenerEspera();
+    setState(() {
+      estadoQr = null;
+      motivoQr = null;
+      esperaLarga = false;
+    });
+    unawaited(_generarQr());
+  }
+
+  void _iniciarCuentaAlHistorial() {
+    _temporizadorHistorial?.cancel();
+    setState(() => segundosParaHistorial = _segundosAntesDelHistorial);
+    _temporizadorHistorial =
+        Timer.periodic(const Duration(seconds: 1), (temporizador) {
+      if (!mounted) {
+        temporizador.cancel();
+        return;
+      }
+      if (segundosParaHistorial <= 1) {
+        _irAlHistorial();
+        return;
+      }
+      setState(() => segundosParaHistorial--);
+    });
+  }
+
+  void _irAlHistorial() {
+    _temporizadorHistorial?.cancel();
+    vm.notificarCambioBicicleta();
+    widget.onVerHistorial?.call();
+  }
+
+  Future<void> _actualizarBicicleteros() async {
+    try {
+      final lista = await vm.listarBicicleteros();
+      if (!mounted) return;
+      final seleccionadoId = bicicleteroSeleccionado?.id;
+      setState(() {
+        bicicleteros = lista;
+        bicicleteroSeleccionado =
+            lista.where((item) => item.id == seleccionadoId).firstOrNull;
+      });
+    } catch (_) {}
   }
 
   Future<void> _cargarDatos() async {
@@ -125,14 +258,30 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<EventoQrApp?>(eventoQrProvider, (_, evento) {
+      _alRecibirEventoQr(evento);
+    });
+    ref.listen<int>(bicicleterosVersionProvider, (_, __) {
+      if (mounted && !cargandoDatos) unawaited(_actualizarBicicleteros());
+    });
+    ref.listen<EstadoConexion>(conexionProvider, (anterior, actual) {
+      if (actual == EstadoConexion.conectado && anterior != actual) {
+        unawaited(_sincronizarEstado());
+      }
+    });
     ref.listen<int>(bicicletasVersionProvider, (_, __) {
-      if (!mounted) {
+      if (!mounted || estadoQr == EstadoQr.escaneado) {
         return;
       }
 
+      _temporizadorHistorial?.cancel();
+      _detenerEspera();
       setState(() {
+        esperaLarga = false;
         cargandoDatos = true;
         qrActual = null;
+        estadoQr = null;
+        motivoQr = null;
       });
       _cargarDatos();
     });
@@ -148,6 +297,7 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
     final tipoOperacion =
         bicicleta?.dentroBicicletero == true ? 'RETIRO' : 'INGRESO';
     final debeSeleccionarBicicletero = tipoOperacion == 'INGRESO';
+    final enProceso = estadoQr != null;
 
     return RefreshIndicator(
       onRefresh: () => _cargarDatos(),
@@ -171,64 +321,72 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
               alignment: Alignment.topCenter,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child:
-                    (debeSeleccionarBicicletero && sugerenciaCercania != null)
-                        ? Padding(
-                            key: const ValueKey('banner-sugerencia'),
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _BannerSugerenciaBicicletero(
-                              sugerencia: sugerenciaCercania!,
-                              onAceptar: _aceptarSugerencia,
-                              onDescartar: _descartarSugerencia,
-                            ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('banner-vacio')),
+                child: (debeSeleccionarBicicletero &&
+                        !enProceso &&
+                        sugerenciaCercania != null)
+                    ? Padding(
+                        key: const ValueKey('banner-sugerencia'),
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: BannerSugerenciaBicicletero(
+                          sugerencia: sugerenciaCercania!,
+                          onAceptar: _aceptarSugerencia,
+                          onDescartar: _descartarSugerencia,
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('banner-vacio')),
               ),
             ),
-            if (debeSeleccionarBicicletero)
-              _SelectorBicicleteroQr(
+            if (debeSeleccionarBicicletero && !enProceso)
+              SelectorBicicleteroQr(
                 bicicleteros: bicicleteros,
                 bicicleteroSeleccionado: bicicleteroSeleccionado,
                 onChanged: _cambiarBicicleteroSeleccionado,
               ),
             const SizedBox(height: 24),
-            _PanelQrUsuario(
+            PanelQrUsuario(
               qr: qr,
               segundosRestantes: segundosRestantes,
               mostrarAyudaBicicletero: debeSeleccionarBicicletero,
+              estado: estadoQr,
+              motivo: motivoQr,
+              segundosParaHistorial: segundosParaHistorial,
+              onVerHistorial: _irAlHistorial,
+              onIntentarDeNuevo: _generarNuevoQr,
+              onGenerarNuevoEnEspera: esperaLarga ? _generarNuevoQr : null,
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: ColoresUbb.azulApp,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+            if (!enProceso)
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: ColoresUbb.azulApp,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: generando ||
+                        cargandoDatos ||
+                        (debeSeleccionarBicicletero &&
+                            bicicleteroSeleccionado == null)
+                    ? null
+                    : _generarQr,
+                icon: generando
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.refresh, color: Colors.white),
+                label: Text(
+                  qr == null || segundosRestantes == 0
+                      ? 'Generar QR'
+                      : 'Regenerar QR',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
+                ),
               ),
-              onPressed: generando ||
-                      cargandoDatos ||
-                      (debeSeleccionarBicicletero &&
-                          bicicleteroSeleccionado == null)
-                  ? null
-                  : _generarQr,
-              icon: generando
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.refresh, color: Colors.white),
-              label: Text(
-                qr == null || segundosRestantes == 0
-                    ? 'Generar QR'
-                    : 'Regenerar QR',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),
-              ),
-            ),
           ],
         ],
       ),
@@ -247,7 +405,11 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
 
       if (mounted) {
         _generacionQr++;
-        setState(() => qrActual = qr);
+        setState(() {
+          qrActual = qr;
+          estadoQr = null;
+          motivoQr = null;
+        });
         _programarActualizacion(_generacionQr);
       }
     } on ExcepcionApi catch (error) {
@@ -273,316 +435,5 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
         _programarActualizacion(generacion);
       }
     });
-  }
-}
-
-class _BannerSugerenciaBicicletero extends StatelessWidget {
-  const _BannerSugerenciaBicicletero({
-    required this.sugerencia,
-    required this.onAceptar,
-    required this.onDescartar,
-  });
-
-  final SugerenciaBicicletero sugerencia;
-  final VoidCallback onAceptar;
-  final VoidCallback onDescartar;
-
-  String get _distanciaFormateada {
-    final metros = sugerencia.distanciaMetros;
-    return metros < 1000
-        ? '${metros.round()} m'
-        : '${(metros / 1000).toStringAsFixed(1)} km';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ColoresUbb.azulApp.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColoresUbb.azulApp.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.near_me_outlined, color: ColoresUbb.azulApp),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Estás cerca de ${sugerencia.bicicletero.nombre}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: ColoresUbb.azulNoche,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'A $_distanciaFormateada de tu ubicación. ¿Usar este bicicletero?',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: ColoresUbb.textoSecundario,
-                      ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColoresUbb.azulApp,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        minimumSize: Size.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: onAceptar,
-                      child: const Text('Aceptar'),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: onDescartar,
-                      child: const Text('Ahora no'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SelectorBicicleteroQr extends StatelessWidget {
-  const _SelectorBicicleteroQr({
-    required this.bicicleteros,
-    required this.bicicleteroSeleccionado,
-    required this.onChanged,
-  });
-
-  final List<BicicleteroApp> bicicleteros;
-  final BicicleteroApp? bicicleteroSeleccionado;
-  final ValueChanged<BicicleteroApp?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Seleccione el bicicletero a utilizar',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: ColoresUbb.azulNoche,
-                fontWeight: FontWeight.w900,
-              ),
-        ),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return DropdownAnclado<BicicleteroApp>(
-              isExpanded: true,
-              borderRadius: BorderRadius.circular(16),
-              menuMaxHeight: 300,
-              value: bicicleteroSeleccionado,
-              decoration: decoracionCampoFormularioBicicleta(
-                labelText: 'Bicicletero',
-                prefixIcon: const Icon(
-                  Icons.location_on_outlined,
-                  color: ColoresUbb.azulApp,
-                ),
-              ),
-              dropdownColor: Colors.white,
-              items: bicicleteros
-                  .map(
-                    (bicicletero) => DropdownMenuItem(
-                      value: bicicletero,
-                      enabled: bicicletero.cuposDisponibles > 0,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${bicicletero.nombre} (${bicicletero.cuposDisponibles} cupos)',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: TextStyle(
-                                color: bicicletero.cuposDisponibles > 0
-                                    ? null
-                                    : ColoresUbb.textoSecundario,
-                              ),
-                            ),
-                          ),
-                          if (bicicletero.cuposDisponibles == 0)
-                            const Icon(
-                              Icons.block_outlined,
-                              size: 16,
-                              color: ColoresUbb.rojoInstitucional,
-                            ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: onChanged,
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _PanelQrUsuario extends StatelessWidget {
-  const _PanelQrUsuario({
-    required this.qr,
-    required this.segundosRestantes,
-    required this.mostrarAyudaBicicletero,
-  });
-
-  final QrTemporalApp? qr;
-  final int segundosRestantes;
-  final bool mostrarAyudaBicicletero;
-
-  @override
-  Widget build(BuildContext context) {
-    final qrActual = qr;
-
-    return SizedBox(
-      width: double.infinity,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 396),
-        child: Card(
-          elevation: 4,
-          shadowColor: Colors.black.withValues(alpha: 0.05),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: Colors.grey.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: qrActual == null
-                  ? _QrPlaceholder(
-                      mostrarAyudaBicicletero: mostrarAyudaBicicletero,
-                    )
-                  : _QrActivo(
-                      token: qrActual.token,
-                      segundosRestantes: segundosRestantes,
-                      duracionTotal: qrActual.duracionSegundos,
-                    ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QrPlaceholder extends StatelessWidget {
-  const _QrPlaceholder({required this.mostrarAyudaBicicletero});
-
-  final bool mostrarAyudaBicicletero;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      key: const ValueKey('qr-placeholder'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: ColoresUbb.azulApp.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.qr_code_2,
-              color: ColoresUbb.azulApp,
-              size: 42,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'QR no generado',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
-          if (mostrarAyudaBicicletero) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Selecciona el bicicletero y genera el QR.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: ColoresUbb.textoSecundario,
-                  ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _QrActivo extends StatelessWidget {
-  const _QrActivo({
-    required this.token,
-    required this.segundosRestantes,
-    required this.duracionTotal,
-  });
-
-  final String token;
-  final int segundosRestantes;
-  final int duracionTotal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      key: const ValueKey('qr-activo'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        QrTemporal(
-          token: token,
-          segundosRestantes: segundosRestantes,
-        ),
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: duracionTotal > 0
-                ? (segundosRestantes / duracionTotal).clamp(0.0, 1.0)
-                : 0,
-            minHeight: 6,
-            backgroundColor: ColoresUbb.bordeFuerte,
-            valueColor: AlwaysStoppedAnimation(
-              segundosRestantes > 5
-                  ? ColoresUbb.azulApp
-                  : ColoresUbb.rojoInstitucional,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        ChipEstado(
-          texto: segundosRestantes > 0
-              ? 'Expira en $segundosRestantes s'
-              : 'QR expirado',
-          color: segundosRestantes > 0
-              ? ColoresUbb.azulApp
-              : ColoresUbb.rojoInstitucional,
-        ),
-      ],
-    );
   }
 }
