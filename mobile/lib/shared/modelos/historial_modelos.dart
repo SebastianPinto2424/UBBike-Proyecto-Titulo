@@ -1,6 +1,6 @@
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 class PaginaMovimientosApp {
   const PaginaMovimientosApp({
