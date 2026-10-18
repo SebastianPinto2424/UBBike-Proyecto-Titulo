@@ -1,5 +1,5 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 class ResultadoLogin {
   const ResultadoLogin(
@@ -39,11 +39,6 @@ class AutenticacionApi {
     );
   }
 
-  Future<Map<String, dynamic>> obtenerPerfil() async {
-    final respuesta = await cliente.get('/autenticacion/yo');
-    return respuesta['usuario'] as Map<String, dynamic>;
-  }
-
   Future<ResultadoLogin> refrescarToken({
     required String usuarioId,
     required String refreshToken,
@@ -58,15 +53,6 @@ class AutenticacionApi {
       refreshToken: respuesta['refreshToken'] as String?,
       usuario: UsuarioApp.fromJson({}),
     );
-  }
-
-  Future<void> cerrarSesion({String? refreshToken}) async {
-    try {
-      await cliente.post(
-        '/autenticacion/logout',
-        body: refreshToken != null ? {'refreshToken': refreshToken} : {},
-      );
-    } catch (_) {}
   }
 
   Future<String> registrar({
