@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
@@ -10,6 +9,7 @@ import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 import 'package:ubbike/shared/widgets/tarjeta_movimiento.dart';
 import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
+import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 
 class VistaMovimientosUsuario extends ConsumerStatefulWidget {
   const VistaMovimientosUsuario({super.key});
@@ -107,7 +107,7 @@ class _VistaMovimientosUsuarioState
             suffixIcon: filtroController.text.isEmpty
                 ? null
                 : IconButton(
-                    tooltip: 'Limpiar busqueda',
+                    tooltip: 'Limpiar búsqueda',
                     onPressed: () {
                       filtroController.clear();
                       _recargar();
