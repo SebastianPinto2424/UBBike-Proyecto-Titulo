@@ -2,13 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
-import 'package:ubbike/features/admin/application/gestion_usuarios_vm.dart';
-import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 import 'package:ubbike/features/inicio/application/dashboard_central_vm.dart';
-import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/modelos/dashboard_modelos.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class DatosDashboardAdministrador {
   const DatosDashboardAdministrador({
@@ -56,6 +54,8 @@ class DashboardAdministradorVm
         solicitudesGuardiaVersionProvider, (_, __) => refresco.solicitar());
     ref.listen<int>(
         movimientosVersionProvider, (_, __) => refresco.solicitar());
+    ref.listen<int>(
+        bicicleterosVersionProvider, (_, __) => refresco.solicitar());
     ref.listen<int>(usuariosVersionProvider, (_, __) => refresco.solicitar());
     return _cargar(periodo);
   }
