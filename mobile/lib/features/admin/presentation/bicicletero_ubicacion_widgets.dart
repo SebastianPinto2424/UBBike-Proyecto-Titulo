@@ -8,15 +8,14 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:ubbike/core/configuracion/configuracion_mapa.dart';
 import 'package:ubbike/core/providers/mapa_provider.dart';
-import 'package:ubbike/core/providers/repositorios_provider.dart';
+import 'package:ubbike/features/admin/application/buscador_lugares_vm.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart'
-    show decoracionCampoFormularioBicicleta;
 import 'package:ubbike/shared/modelos/lugar_encontrado.dart';
-import 'package:ubbike/shared/modelos/punto_geografico.dart';
+import 'package:ubbike/core/modelos/punto_geografico.dart';
 import 'package:ubbike/shared/utils/opciones_bicicletero.dart';
 import 'package:ubbike/shared/widgets/mapa_ubicacion.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 
 class PanelUbicacionBicicletero extends ConsumerStatefulWidget {
   const PanelUbicacionBicicletero({
@@ -125,8 +124,7 @@ class _PanelUbicacionBicicleteroState
     if (!mounted) return;
     setState(() => _buscandoLugares = true);
     try {
-      final lugares =
-          await ref.read(geocodificacionRepositoryProvider).buscar(valor);
+      final lugares = await ref.read(buscadorLugaresVmProvider).buscar(valor);
       if (mounted) setState(() => _resultados = lugares);
     } catch (_) {
       if (mounted) {
