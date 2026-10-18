@@ -23,6 +23,8 @@ final clienteApiProvider = Provider<ClienteApi>((ref) {
     },
     alActualizarTokens: (token, refreshToken) =>
         ref.read(sesionProvider.notifier).actualizarToken(token, refreshToken),
-    alExpirarSesion: () => ref.read(sesionProvider.notifier).olvidar(),
+    alExpirarSesion: () => ref.read(sesionProvider.notifier).olvidar(
+          motivo: mensajeSesionExpirada,
+        ),
   );
 });
