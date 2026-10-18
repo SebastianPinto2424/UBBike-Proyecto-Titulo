@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { ErrorHttp } from '../../comun/errors/error-http';
 import { limitarPagina, validarCursor } from '../../comun/utils/paginacion';
 import type { ClientePrisma } from '../../configuracion/prisma';
@@ -16,10 +17,19 @@ import {
   crearCorreoIncidenciaResuelta,
   enviarCorreo
 } from '../correos/correo.servicio';
-import { EventosTiempoReal, emitirTiempoReal, salaRol } from '../../tiempo-real/tiempo-real';
+import {
+  EventosTiempoReal,
+  emitirTiempoReal,
+  salaRol,
+  salaUsuario
+} from '../../tiempo-real/tiempo-real';
 import { EstadoIncidencia } from './estado-incidencia';
 import * as incidenciaRepositorio from './incidencia.repositorio';
 import type { IncidenciaCompleta } from './incidencia.repositorio';
+import {
+  eliminarArchivosFotosIncidencia,
+  guardarFotosIncidencia
+} from './foto-incidencia.servicio';
 import { TipoIncidencia } from './tipo-incidencia';
 
 type DatosCrearIncidencia = {
@@ -29,6 +39,7 @@ type DatosCrearIncidencia = {
   bicicletaId?: string | null;
   tipo: TipoIncidencia;
   descripcion: string;
+  fotos?: string[];
   ip?: string | null;
   userAgent?: string | null;
 };
@@ -151,6 +162,12 @@ const mapearIncidencia = (incidencia: IncidenciaCompleta, contexto: ContextoInci
     segundosParaRecordar,
     reportadaPorUsuario: mapearUsuarioIncidencia(incidencia.reportadaPorUsuario),
     gestionadaPorUsuario: mapearUsuarioIncidencia(incidencia.gestionadaPorUsuario),
+    fotos: incidencia.fotos.map((foto) => ({
+      id: foto.id,
+      url: foto.fotoUrl,
+      mimeType: foto.mimeType,
+      tamanoBytes: foto.tamanoBytes
+    })),
     bicicletero: {
       id: incidencia.bicicletero.id,
       nombre: incidencia.bicicletero.nombre,
@@ -294,73 +311,106 @@ const enviarCorreosCentralIncidencia = async (
 
 export const crearIncidencia = async (datos: DatosCrearIncidencia) => {
   const efectos: EfectosDiferidos = [];
-  const resultado = await incidenciaRepositorio.ejecutarEnTransaccion(async (db) => {
-    const bicicletero = await asegurarBicicleteroExiste(datos.bicicleteroId, db);
-    if (datos.rol === RolUsuario.GUARDIA) {
-      const asignados = await obtenerBicicleterosAsignadosGuardia(datos.usuarioId, db);
+  const fotosGuardadas = await guardarFotosIncidencia(randomUUID(), datos.fotos ?? []);
+  const nombresFotos = fotosGuardadas.map((foto) => foto.fotoNombreArchivo);
 
-      if (!asignados.includes(bicicletero.id)) {
-        throw new ErrorHttp(403, 'Solo puedes reportar incidencias de tu bicicletero asignado');
-      }
-    }
+  try {
+    const resultado = await incidenciaRepositorio.ejecutarEnTransaccion(async (db) => {
+      const bicicletero = await asegurarBicicleteroExiste(datos.bicicleteroId, db);
+      if (datos.rol === RolUsuario.GUARDIA) {
+        const asignados = await obtenerBicicleterosAsignadosGuardia(datos.usuarioId, db);
 
-    const bicicleta = await asegurarBicicletaValida(datos, db);
-    const incidencia = await incidenciaRepositorio.crear(
-      {
-        reportadaPorUsuarioId: datos.usuarioId,
-        bicicleteroId: bicicletero.id,
-        bicicletaId: bicicleta?.id ?? null,
-        tipo: datos.tipo,
-        descripcion: datos.descripcion
-      },
-      db
-    );
-
-    await notificarUsuariosPorRol(
-      {
-        roles: [RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR],
-        titulo: 'Nueva incidencia reportada',
-        mensaje: `Hay un reporte operativo pendiente en ${bicicletero.nombre}.`,
-        tipo: TipoNotificacion.INCIDENCIA,
-        datos: { incidenciaId: incidencia.id, bicicleteroId: bicicletero.id },
-        excluirUsuarioId: datos.usuarioId
-      },
-      db,
-      efectos
-    );
-
-    await registrarAuditoria(
-      {
-        actorUsuarioId: datos.usuarioId,
-        accion: 'INCIDENCIA_CREADA',
-        entidad: 'incidencias',
-        entidadId: incidencia.id,
-        ip: datos.ip,
-        userAgent: datos.userAgent,
-        datos: {
-          tipo: datos.tipo,
-          bicicleteroId: bicicletero.id,
-          bicicletaId: bicicleta?.id ?? null
+        if (!asignados.includes(bicicletero.id)) {
+          throw new ErrorHttp(403, 'Solo puedes reportar incidencias de tu bicicletero asignado');
         }
-      },
-      db
+      }
+
+      const bicicleta = await asegurarBicicletaValida(datos, db);
+      const incidencia = await incidenciaRepositorio.crear(
+        {
+          reportadaPorUsuarioId: datos.usuarioId,
+          bicicleteroId: bicicletero.id,
+          bicicletaId: bicicleta?.id ?? null,
+          tipo: datos.tipo,
+          descripcion: datos.descripcion,
+          ...(fotosGuardadas.length > 0
+            ? {
+                fotos: {
+                  create: fotosGuardadas.map((foto) => ({
+                    fotoUrl: foto.fotoUrl,
+                    nombreArchivo: foto.fotoNombreArchivo,
+                    mimeType: foto.fotoMimeType,
+                    tamanoBytes: foto.fotoTamanoBytes
+                  }))
+                }
+              }
+            : {})
+        },
+        db
+      );
+
+      await notificarUsuariosPorRol(
+        {
+          roles: [RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR],
+          titulo: 'Nueva incidencia reportada',
+          mensaje: `Hay un reporte operativo pendiente en ${bicicletero.nombre}.`,
+          tipo: TipoNotificacion.INCIDENCIA,
+          datos: { incidenciaId: incidencia.id, bicicleteroId: bicicletero.id },
+          excluirUsuarioId: datos.usuarioId
+        },
+        db,
+        efectos
+      );
+
+      await crearNotificacion(
+        {
+          usuarioId: datos.usuarioId,
+          titulo: 'Incidencia registrada',
+          mensaje: `Tu reporte (${etiquetaTipoIncidencia(datos.tipo)}) en ${bicicletero.nombre} quedó registrado y fue enviado a central.`,
+          tipo: TipoNotificacion.INCIDENCIA,
+          datos: { incidenciaId: incidencia.id, bicicleteroId: bicicletero.id },
+          soloRegistro: true
+        },
+        db,
+        efectos
+      );
+
+      await registrarAuditoria(
+        {
+          actorUsuarioId: datos.usuarioId,
+          accion: 'INCIDENCIA_CREADA',
+          entidad: 'incidencias',
+          entidadId: incidencia.id,
+          ip: datos.ip,
+          userAgent: datos.userAgent,
+          datos: {
+            tipo: datos.tipo,
+            bicicleteroId: bicicletero.id,
+            bicicletaId: bicicleta?.id ?? null
+          }
+        },
+        db
+      );
+
+      await enviarCorreosCentralIncidencia(incidencia, db, false, datos.usuarioId);
+      return mapearIncidencia(incidencia, { usuarioId: datos.usuarioId, rol: datos.rol });
+    });
+
+    ejecutarEfectosDiferidos(efectos);
+    emitirTiempoReal(
+      [
+        salaRol(RolUsuario.GUARDIA),
+        salaRol(RolUsuario.ADMIN_CENTRAL),
+        salaRol(RolUsuario.ADMINISTRADOR)
+      ],
+      EventosTiempoReal.INCIDENCIA
     );
 
-    await enviarCorreosCentralIncidencia(incidencia, db, false, datos.usuarioId);
-    return mapearIncidencia(incidencia, { usuarioId: datos.usuarioId, rol: datos.rol });
-  });
-
-  ejecutarEfectosDiferidos(efectos);
-  emitirTiempoReal(
-    [
-      salaRol(RolUsuario.GUARDIA),
-      salaRol(RolUsuario.ADMIN_CENTRAL),
-      salaRol(RolUsuario.ADMINISTRADOR)
-    ],
-    EventosTiempoReal.INCIDENCIA
-  );
-
-  return resultado;
+    return resultado;
+  } catch (error) {
+    await eliminarArchivosFotosIncidencia(nombresFotos);
+    throw error;
+  }
 };
 
 const LIMITE_MAX_INCIDENCIAS = 100;
@@ -478,8 +528,10 @@ export const actualizarEstadoIncidencia = async (datos: DatosActualizarIncidenci
   });
 
   ejecutarEfectosDiferidos(efectos);
+  const reportanteId = resultado.reportadaPorUsuario?.id;
   emitirTiempoReal(
     [
+      ...(reportanteId ? [salaUsuario(reportanteId)] : []),
       salaRol(RolUsuario.GUARDIA),
       salaRol(RolUsuario.ADMIN_CENTRAL),
       salaRol(RolUsuario.ADMINISTRADOR)
@@ -552,8 +604,10 @@ export const recordarIncidencia = async (datos: DatosRecordarIncidencia) => {
   });
 
   ejecutarEfectosDiferidos(efectos);
+  const reportanteId = resultado.reportadaPorUsuario?.id;
   emitirTiempoReal(
     [
+      ...(reportanteId ? [salaUsuario(reportanteId)] : []),
       salaRol(RolUsuario.GUARDIA),
       salaRol(RolUsuario.ADMIN_CENTRAL),
       salaRol(RolUsuario.ADMINISTRADOR)
