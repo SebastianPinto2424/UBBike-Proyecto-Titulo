@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,10 +8,10 @@ import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/widgets/encabezado_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/vista_ingreso_guardia.dart';
-import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
 import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
 import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
+import 'package:ubbike/features/acceso/presentation/selector_bicicletero_guardia.dart';
 
 class VistaInicioGuardia extends ConsumerStatefulWidget {
   const VistaInicioGuardia({
@@ -48,6 +49,13 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
     });
   }
 
+  void _refrescarEnSilencio() {
+    setState(() {
+      futuroBicicletero = vm.obtenerBicicleteroGestionado();
+      futuroBicicleteros = vm.listarBicicleteros();
+    });
+  }
+
   void _alCambiarBicicletero() {
     setState(() {
       futuroBicicletero = vm.obtenerBicicleteroGestionado();
@@ -56,6 +64,15 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
 
   @override
   Widget build(BuildContext context) {
+    for (final version in [
+      bicicleterosVersionProvider,
+      movimientosVersionProvider
+    ]) {
+      ref.listen<int>(version, (_, __) {
+        if (mounted) _refrescarEnSilencio();
+      });
+    }
+
     return ColoredBox(
       color: ColoresUbb.fondo,
       child: RefreshIndicator(
