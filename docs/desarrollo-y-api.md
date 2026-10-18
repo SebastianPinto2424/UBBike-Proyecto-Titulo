@@ -60,6 +60,10 @@ POST /autenticacion/logout
 `cambiar-contrasena-sesion` revoca todas las sesiones del usuario (sube `versionSesion`
 e invalida los refresh tokens), por lo que tras usarlo hay que iniciar sesion de nuevo.
 
+Cada cuenta mantiene una sola sesion activa: `login` sube `versionSesion`, revoca los
+refresh tokens anteriores, olvida los dispositivos push registrados y cierra en tiempo
+real la sesion abierta en cualquier otro dispositivo.
+
 Bicicletas:
 
 ```text
@@ -90,11 +94,19 @@ QR y accesos:
 
 ```text
 POST /qr/generar
+GET  /qr/:id/estado
 POST /qr/validar
+POST /qr/liberar
 POST /accesos/qr/confirmar
 POST /accesos/qr/denegar
 POST /accesos/manual
 ```
+
+`liberar` lo usa el guardia al escanear nuevamente: suelta el QR escaneado para que
+vuelva a quedar disponible. `estado` solo lo consulta el dueño del QR y permite a la
+app recuperar el resultado (escaneado, confirmado, denegado o liberado) si se perdio
+el evento en tiempo real. El resultado de un movimiento por QR o manual se informa
+al usuario por correo.
 
 Guardias y solicitudes:
 
@@ -117,10 +129,12 @@ POST  /incidencias/:id/recordar
 PATCH /incidencias/:id/estado
 ```
 
+`POST /incidencias` acepta hasta 3 fotos de evidencia (JPG, PNG o WEBP).
 `recordar` solo lo puede usar quien reporto la incidencia, con una espera de
 5 minutos entre recordatorios. Al crear o recordar se notifica a ADMIN_CENTRAL y
 ADMINISTRADOR (nunca al guardia ni a quien ejecuta la accion), y se envia correo
-de respaldo. Cerrar una incidencia exige una respuesta, que se envia al reportante.
+de respaldo. Al crear, quien reporta solo recibe el registro en sus notificaciones,
+sin push. Cerrar una incidencia exige una respuesta, que se envia al reportante.
 
 Historial y reportes:
 
@@ -275,7 +289,9 @@ El backend considera:
 - Asignaciones activas de guardia a bicicletero.
 - Movimientos de ingreso/retiro con estado confirmado o denegado.
 - Solicitudes de guardia.
-- Notificaciones por usuario.
+- Incidencias con hasta 3 fotos de evidencia.
+- Notificaciones por usuario y dispositivos registrados para push.
+- Entregas pendientes de correo y push.
 - Auditoria de acciones relevantes.
 
 Los nombres de modelos, modulos y funciones del backend se mantienen en espanol cuando no chocan con convenciones propias de Node, Express o Prisma.
