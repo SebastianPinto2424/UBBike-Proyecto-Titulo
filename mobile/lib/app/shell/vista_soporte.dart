@@ -6,7 +6,7 @@ import 'package:ubbike/features/acceso/presentation/vista_solicitar_guardia.dart
 import 'package:ubbike/features/acceso/presentation/vista_escaner_qr_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_gestion_manual_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_alertas_guardia.dart';
-import 'package:ubbike/features/acceso/presentation/vista_operaciones_guardias_central.dart';
+import 'package:ubbike/features/historial/presentation/vista_operaciones_guardias_central.dart';
 import 'package:ubbike/features/acceso/presentation/vista_solicitudes_central.dart';
 import 'package:ubbike/features/incidencias/presentation/vista_incidencias.dart';
 
@@ -113,7 +113,9 @@ class VistaSoporteAdministrador extends StatelessWidget {
 }
 
 class VistaQrAdmin extends StatelessWidget {
-  const VistaQrAdmin({super.key});
+  const VistaQrAdmin({super.key, this.onVerHistorial});
+
+  final VoidCallback? onVerHistorial;
 
   @override
   Widget build(BuildContext context) {
@@ -123,10 +125,10 @@ class VistaQrAdmin extends StatelessWidget {
         tabCompacto(Icons.qr_code_scanner, 'Validar'),
         tabCompacto(Icons.edit_note_outlined, 'Manual'),
       ],
-      vistas: const [
-        VistaQrUsuario(),
-        VistaEscanerQrGuardia(),
-        VistaGestionManualGuardia(),
+      vistas: [
+        VistaQrUsuario(onVerHistorial: onVerHistorial),
+        const VistaEscanerQrGuardia(),
+        const VistaGestionManualGuardia(),
       ],
     );
   }
