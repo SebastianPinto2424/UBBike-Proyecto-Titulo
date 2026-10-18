@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_bicicleteros.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_usuarios.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_central.dart';
-import 'package:ubbike/features/incidencias/presentation/vista_soporte.dart';
+import 'package:ubbike/app/shell/vista_soporte.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 
