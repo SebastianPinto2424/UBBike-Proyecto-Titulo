@@ -1,13 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
+import 'package:ubbike/features/admin/data/bicicleteros_admin_repository.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 class GestionBicicleterosVm
     extends AutoDisposeAsyncNotifier<List<BicicleteroApp>> {
   @override
   Future<List<BicicleteroApp>> build() {
+    ref.listen<int>(
+        bicicleterosVersionProvider, (_, __) => _refrescarEnSilencio());
     return ref.read(bicicleterosAdminRepositoryProvider).listar();
+  }
+
+  Future<void> _refrescarEnSilencio() async {
+    try {
+      final bicicleteros =
+          await ref.read(bicicleterosAdminRepositoryProvider).listar();
+      state = AsyncData(bicicleteros);
+    } catch (_) {}
   }
 
   void recargar() {
