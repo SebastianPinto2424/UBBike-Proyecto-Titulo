@@ -64,6 +64,7 @@ En produccion el proyecto corre sin Docker, con este stack:
 - Apache como servidor HTTPS y proxy reverso.
 - Node.js 20 para el backend, mantenido activo con pm2.
 - PostgreSQL institucional externo.
+- Redis local para los refresh tokens y el limite de intentos.
 - Flutter Web compilado como archivos estaticos.
 
 El codigo vive en `/opt/ubbike`. Las plantillas incluidas en el repo son:
@@ -94,7 +95,21 @@ SEED_DEMO_DATA=false
 SWAGGER_ENABLED=false
 UPLOADS_DIR=/opt/ubbike/uploads
 UPLOADS_PUBLIC_PATH=/uploads
+REQUIRE_REDIS_RATE_LIMIT=true
+REDIS_URL=redis://127.0.0.1:6379
 ```
+
+### Redis
+
+El backend no arranca en produccion sin Redis. Se instala en el mismo servidor y queda escuchando solo en localhost:
+
+```bash
+sudo apt install -y redis-server
+sudo service redis-server start
+redis-cli ping
+```
+
+`redis-cli ping` debe responder `PONG`. Como el contenedor no tiene systemd, si se reinicia hay que volver a ejecutar `sudo service redis-server start` antes de `pm2 restart ubbike-backend`.
 
 ### Compilacion del backend
 
@@ -198,6 +213,7 @@ El certificado autofirmado cifra y autentica la conexion para la APK, pero los n
 ```bash
 curl -I https://DOMINIO_O_IP_PUBLICA
 curl https://DOMINIO_O_IP_PUBLICA/salud
+redis-cli ping
 pm2 status
 pm2 logs ubbike-backend
 ```
@@ -207,6 +223,7 @@ pm2 logs ubbike-backend
 - `JWT_SECRET` debe tener al menos 32 caracteres y ser unico.
 - `SEED_DEMO_DATA=false` en produccion.
 - PostgreSQL no debe exponerse publicamente desde el servidor de la app.
+- Redis debe quedar escuchando solo en `127.0.0.1`.
 - No publicar `.env`, certificados, llaves privadas, APKs ni credenciales de Firebase.
 - Usar HTTPS para web, API, WebSocket y APK.
 
