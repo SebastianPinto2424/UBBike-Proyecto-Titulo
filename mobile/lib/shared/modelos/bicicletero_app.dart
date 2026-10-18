@@ -27,7 +27,7 @@ class BicicleteroApp {
     return BicicleteroApp(
       id: json['id'] as String,
       nombre: json['nombre'] as String,
-      ubicacion: json['ubicacion'] as String? ?? 'Ubicacion no informada',
+      ubicacion: json['ubicacion'] as String? ?? 'Ubicación no informada',
       latitud: (json['latitud'] as num?)?.toDouble(),
       longitud: (json['longitud'] as num?)?.toDouble(),
       capacidad: json['capacidad'] as int? ?? 0,
