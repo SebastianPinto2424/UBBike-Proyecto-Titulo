@@ -328,7 +328,7 @@ String? validarColorBicicleta(String? valor) {
 String? validarNumeroSerieBicicleta(String? valor) {
   final texto = valor?.trim() ?? '';
   if (texto.isEmpty) {
-    return 'Ingresa el numero de serie.';
+    return 'Ingresa el número de serie.';
   }
   if (texto.length < 4) {
     return 'Debe tener al menos 4 caracteres.';
@@ -348,7 +348,7 @@ String? validarAroBicicleta(String? valor) {
     return 'Selecciona el aro.';
   }
   if (normalizarAroBicicleta(texto) == null) {
-    return 'Selecciona un aro valido.';
+    return 'Selecciona un aro válido.';
   }
   return null;
 }
