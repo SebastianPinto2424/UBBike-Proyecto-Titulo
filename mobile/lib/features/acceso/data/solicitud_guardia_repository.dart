@@ -1,14 +1,13 @@
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_api.dart';
-import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
+import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class SolicitudGuardiaRepository {
   const SolicitudGuardiaRepository(this._api);
 
   final SolicitudGuardiaApi _api;
-
-  Future<List<BicicleteroApp>> listarBicicleteros() =>
-      _api.listarBicicleteros();
 
   Future<BicicleteroApp?> obtenerBicicleteroGestionado() =>
       _api.obtenerBicicleteroGestionado();
@@ -53,3 +52,9 @@ class SolicitudGuardiaRepository {
       _api.actualizarEstado(
           solicitudId: solicitudId, estado: estado, nota: nota);
 }
+
+final solicitudGuardiaRepositoryProvider =
+    Provider<SolicitudGuardiaRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return SolicitudGuardiaRepository(SolicitudGuardiaApi(cliente: cliente));
+});
