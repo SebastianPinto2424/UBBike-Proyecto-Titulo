@@ -7,6 +7,12 @@ import {
   contarOcupadosPorBicicletero
 } from './bicicletero.ocupacion';
 import * as bicicleteroRepositorio from './bicicletero.repositorio';
+import { EventosTiempoReal, emitirATodos } from '../../tiempo-real/tiempo-real';
+
+const avisarCambioBicicleteros = <T>(resultado: T): T => {
+  emitirATodos(EventosTiempoReal.BICICLETEROS);
+  return resultado;
+};
 
 export const listarBicicleteros = async () => {
   const [bicicleteros, ocupadosPorId] = await Promise.all([
@@ -44,7 +50,7 @@ export const crearBicicletero = async (datos: DatosCrearBicicletero) => {
     });
 
     const ocupados = await bicicleteroRepositorio.contarOcupados(reactivado.id);
-    return construirStatsBicicletero(reactivado, ocupados);
+    return avisarCambioBicicleteros(construirStatsBicicletero(reactivado, ocupados));
   }
 
   const bicicletero = await bicicleteroRepositorio.crear({
@@ -55,7 +61,7 @@ export const crearBicicletero = async (datos: DatosCrearBicicletero) => {
     longitud: datos.longitud ?? null
   });
 
-  return construirStatsBicicletero(bicicletero, 0);
+  return avisarCambioBicicleteros(construirStatsBicicletero(bicicletero, 0));
 };
 
 const buscarBicicleteroExistente = async (bicicleteroId: string, db: ClientePrisma) => {
@@ -81,55 +87,59 @@ export const actualizarBicicletero = async (
   bicicleteroId: string,
   datos: DatosActualizarBicicletero
 ) =>
-  prisma.$transaction(async (db) => {
-    await buscarBicicleteroExistente(bicicleteroId, db);
-    const ocupados = await contarOcupadosBicicletero(bicicleteroId, db);
-    if (datos.capacidad !== undefined && datos.capacidad < ocupados) {
-      throw new ErrorHttp(409, 'La capacidad no puede ser menor que la ocupación actual');
-    }
+  prisma
+    .$transaction(async (db) => {
+      await buscarBicicleteroExistente(bicicleteroId, db);
+      const ocupados = await contarOcupadosBicicletero(bicicleteroId, db);
+      if (datos.capacidad !== undefined && datos.capacidad < ocupados) {
+        throw new ErrorHttp(409, 'La capacidad no puede ser menor que la ocupación actual');
+      }
 
-    const bicicletero = await bicicleteroRepositorio.actualizar(
-      bicicleteroId,
-      {
-        nombre: datos.nombre,
-        ubicacion: datos.ubicacion,
-        capacidad: datos.capacidad,
-        ...(datos.latitud !== undefined ? { latitud: datos.latitud } : {}),
-        ...(datos.longitud !== undefined ? { longitud: datos.longitud } : {})
-      },
-      db
-    );
+      const bicicletero = await bicicleteroRepositorio.actualizar(
+        bicicleteroId,
+        {
+          nombre: datos.nombre,
+          ubicacion: datos.ubicacion,
+          capacidad: datos.capacidad,
+          ...(datos.latitud !== undefined ? { latitud: datos.latitud } : {}),
+          ...(datos.longitud !== undefined ? { longitud: datos.longitud } : {})
+        },
+        db
+      );
 
-    return construirStatsBicicletero(bicicletero, ocupados);
-  });
+      return construirStatsBicicletero(bicicletero, ocupados);
+    })
+    .then(avisarCambioBicicleteros);
 
 export const eliminarBicicletero = async (bicicleteroId: string) =>
-  prisma.$transaction(async (db) => {
-    await buscarBicicleteroExistente(bicicleteroId, db);
+  prisma
+    .$transaction(async (db) => {
+      await buscarBicicleteroExistente(bicicleteroId, db);
 
-    const ocupados = await contarOcupadosBicicletero(bicicleteroId, db);
+      const ocupados = await contarOcupadosBicicletero(bicicleteroId, db);
 
-    if (ocupados > 0) {
-      throw new ErrorHttp(
-        409,
-        ocupados === 1
-          ? 'No puedes eliminar un bicicletero con 1 bicicleta dentro. Registra primero su retiro.'
-          : `No puedes eliminar un bicicletero con ${ocupados} bicicletas dentro. Registra primero sus retiros.`
-      );
-    }
+      if (ocupados > 0) {
+        throw new ErrorHttp(
+          409,
+          ocupados === 1
+            ? 'No puedes eliminar un bicicletero con 1 bicicleta dentro. Registra primero su retiro.'
+            : `No puedes eliminar un bicicletero con ${ocupados} bicicletas dentro. Registra primero sus retiros.`
+        );
+      }
 
-    const [asignaciones, solicitudes] = await Promise.all([
-      db.asignacionGuardia.count({ where: { bicicleteroId, activa: true } }),
-      db.solicitudGuardia.count({
-        where: { bicicleteroId, estado: { in: ['PENDIENTE', 'NOTIFICADA', 'EN_CAMINO'] } }
-      })
-    ]);
-    if (asignaciones || solicitudes)
-      throw new ErrorHttp(
-        409,
-        'Cierra las solicitudes y libera los guardias antes de eliminar el bicicletero'
-      );
-    await bicicleteroRepositorio.actualizar(bicicleteroId, { activo: false }, db);
+      const [asignaciones, solicitudes] = await Promise.all([
+        db.asignacionGuardia.count({ where: { bicicleteroId, activa: true } }),
+        db.solicitudGuardia.count({
+          where: { bicicleteroId, estado: { in: ['PENDIENTE', 'NOTIFICADA', 'EN_CAMINO'] } }
+        })
+      ]);
+      if (asignaciones || solicitudes)
+        throw new ErrorHttp(
+          409,
+          'Cierra las solicitudes y libera los guardias antes de eliminar el bicicletero'
+        );
+      await bicicleteroRepositorio.actualizar(bicicleteroId, { activo: false }, db);
 
-    return { message: 'Bicicletero eliminado correctamente' };
-  });
+      return { message: 'Bicicletero eliminado correctamente' };
+    })
+    .then(avisarCambioBicicleteros);
