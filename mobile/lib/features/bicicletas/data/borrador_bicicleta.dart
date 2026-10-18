@@ -1,12 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:ubbike/core/servicios/almacen_seguro.dart';
 
 const _storageKeyBorrador = 'ubbike_borrador_bicicleta';
 
-const _storage = FlutterSecureStorage(
-  aOptions: AndroidOptions(encryptedSharedPreferences: true),
-);
+const _storage = AlmacenSeguro();
 
 class BorradorBicicleta {
   const BorradorBicicleta({
