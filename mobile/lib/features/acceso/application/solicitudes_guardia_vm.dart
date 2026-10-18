@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
-import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
+import 'package:ubbike/features/acceso/data/solicitud_guardia_repository.dart';
+import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
+import 'package:ubbike/shared/data/bicicleteros_repository.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 class SolicitudesGuardiaVm {
@@ -10,7 +11,7 @@ class SolicitudesGuardiaVm {
   final Ref _ref;
 
   Future<List<BicicleteroApp>> listarBicicleteros() =>
-      _ref.read(solicitudGuardiaRepositoryProvider).listarBicicleteros();
+      _ref.read(bicicleterosRepositoryProvider).listar();
 
   Future<BicicleteroApp?> obtenerBicicleteroGestionado() => _ref
       .read(solicitudGuardiaRepositoryProvider)
@@ -73,5 +74,3 @@ class SolicitudesGuardiaVm {
 final solicitudesGuardiaVmProvider = Provider.autoDispose<SolicitudesGuardiaVm>(
   (ref) => SolicitudesGuardiaVm(ref),
 );
-
-final solicitudesGuardiaVersionProvider = StateProvider<int>((ref) => 0);
