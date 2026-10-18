@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
+import 'package:ubbike/features/auth/data/autenticacion_repository.dart';
 import 'package:ubbike/features/auth/data/autenticacion_api.dart';
 
 class AutenticacionVm {

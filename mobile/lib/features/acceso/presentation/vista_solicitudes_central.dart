@@ -5,13 +5,14 @@ import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
+import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
 import 'package:ubbike/shared/utils/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/shared/widgets/filtros_widgets.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class VistaSolicitudesCentral extends ConsumerStatefulWidget {
   const VistaSolicitudesCentral({super.key});

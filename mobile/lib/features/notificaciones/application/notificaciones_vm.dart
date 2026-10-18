@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
+import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
 import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 

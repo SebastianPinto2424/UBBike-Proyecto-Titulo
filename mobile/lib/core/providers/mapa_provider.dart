@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ubbike/shared/servicios/ubicacion_servicio.dart';
+import 'package:ubbike/core/servicios/ubicacion_servicio.dart';
 
 final ubicacionServicioProvider = Provider((ref) => const UbicacionServicio());
 

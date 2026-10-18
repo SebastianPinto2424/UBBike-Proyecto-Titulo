@@ -9,6 +9,9 @@ import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/central_widgets.dart';
 import 'package:ubbike/shared/widgets/encabezado_widgets.dart';
 import 'package:ubbike/shared/widgets/panel_operativo_widgets.dart';
+import 'package:ubbike/shared/widgets/atencion_operativa_widgets.dart';
+import 'package:ubbike/shared/widgets/bicicleteros_operativos_widgets.dart';
+import 'package:ubbike/shared/widgets/actividad_operativa_widgets.dart';
 
 class VistaDashboardAdministrador extends ConsumerWidget {
   const VistaDashboardAdministrador({

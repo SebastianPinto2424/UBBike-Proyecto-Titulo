@@ -1,4 +1,4 @@
-import 'package:ubbike/shared/modelos/punto_geografico.dart';
+import 'package:ubbike/core/modelos/punto_geografico.dart';
 
 class LugarEncontrado {
   const LugarEncontrado({

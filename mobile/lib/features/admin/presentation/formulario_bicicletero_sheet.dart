@@ -4,12 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/admin/presentation/bicicletero_ubicacion_widgets.dart';
-import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart'
-    show decoracionCampoFormularioBicicleta;
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/modelos/punto_geografico.dart';
+import 'package:ubbike/core/modelos/punto_geografico.dart';
 import 'package:ubbike/shared/utils/opciones_bicicletero.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 
 typedef DatosFormularioBicicletero = ({
   String nombre,

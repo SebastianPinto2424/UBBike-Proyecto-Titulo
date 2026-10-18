@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:ubbike/core/configuracion/configuracion_mapa.dart';
 import 'package:ubbike/core/providers/mapa_provider.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/modelos/punto_geografico.dart';
+import 'package:ubbike/core/modelos/punto_geografico.dart';
 
 class MapaUbicacion extends ConsumerStatefulWidget {
   const MapaUbicacion(
