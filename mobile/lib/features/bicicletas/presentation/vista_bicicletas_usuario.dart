@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ubbike/features/bicicletas/application/bicicletas_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
@@ -15,10 +15,17 @@ import 'package:ubbike/shared/widgets/vista_con_tabs.dart';
 import 'package:ubbike/features/bicicletas/presentation/bicicletas_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
-import 'package:ubbike/features/historial/presentation/vista_movimientos_usuario.dart';
+import 'package:ubbike/features/bicicletas/application/bicicletas_vm.dart';
+import 'package:ubbike/shared/widgets/boton_registrar_compacto.dart';
 
 class VistaBicicletas extends ConsumerStatefulWidget {
-  const VistaBicicletas({super.key, this.initialIndex = 0});
+  const VistaBicicletas({
+    super.key,
+    required this.vistaMovimientos,
+    this.initialIndex = 0,
+  });
+
+  final Widget vistaMovimientos;
 
   final int initialIndex;
 
@@ -54,6 +61,10 @@ class _VistaBicicletasState extends ConsumerState<VistaBicicletas>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(movimientosVersionProvider, (_, __) {
+      if (mounted) _recargar();
+    });
+
     return VistaConTabs(
       initialIndex: widget.initialIndex,
       tabs: [
@@ -62,7 +73,7 @@ class _VistaBicicletasState extends ConsumerState<VistaBicicletas>
       ],
       vistas: [
         _vistaMisBicicletas(),
-        const VistaMovimientosUsuario(),
+        widget.vistaMovimientos,
       ],
     );
   }
@@ -353,38 +364,6 @@ class _EstadoVacioBicicletas extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class BotonRegistrarCompacto extends StatelessWidget {
-  const BotonRegistrarCompacto({
-    super.key,
-    required this.texto,
-    required this.onPressed,
-  });
-
-  final String texto;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(0, 40),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        backgroundColor: ColoresUbb.azulApp,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      onPressed: onPressed,
-      icon: const Icon(Icons.add, size: 18),
-      label: Text(
-        texto,
-        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
     );
   }
