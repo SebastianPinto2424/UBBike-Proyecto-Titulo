@@ -29,7 +29,10 @@ export const EventosTiempoReal = {
   MOVIMIENTO: 'movimiento',
   SOLICITUD: 'solicitud',
   INCIDENCIA: 'incidencia',
-  USUARIO: 'usuario'
+  USUARIO: 'usuario',
+  QR: 'qr',
+  SESION: 'sesion',
+  BICICLETEROS: 'bicicleteros'
 } as const;
 
 export const salaUsuario = (usuarioId: string) => `usuario:${usuarioId}`;
@@ -101,6 +104,21 @@ export const inicializarTiempoReal = (servidor: ServidorHttp): Server => {
   });
 
   return io;
+};
+
+export const cerrarSesionesTiempoReal = (usuarioId: string): void => {
+  if (!io) {
+    return;
+  }
+
+  const sala = salaUsuario(usuarioId);
+  io.to(sala).emit(EventosTiempoReal.SESION, { motivo: 'OTRO_DISPOSITIVO' });
+  const servidor = io;
+  setTimeout(() => servidor.in(sala).disconnectSockets(true), 1000).unref();
+};
+
+export const emitirATodos = (evento: string): void => {
+  io?.emit(evento, {});
 };
 
 export const emitirTiempoReal = (salas: string[], evento: string, payload?: unknown): void => {
