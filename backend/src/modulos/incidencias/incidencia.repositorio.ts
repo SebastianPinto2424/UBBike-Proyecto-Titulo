@@ -7,7 +7,8 @@ export const includeIncidenciaCompleta = {
   reportadaPorUsuario: true,
   gestionadaPorUsuario: true,
   bicicletero: true,
-  bicicleta: true
+  bicicleta: true,
+  fotos: { orderBy: { creadaEn: 'asc' } }
 } satisfies Prisma.IncidenciaInclude;
 
 export type IncidenciaCompleta = Prisma.IncidenciaGetPayload<{
