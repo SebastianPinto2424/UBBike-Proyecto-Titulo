@@ -16,6 +16,7 @@ erDiagram
   USUARIOS ||--o{ SOLICITUDES_GUARDIA : atiende
   USUARIOS ||--o{ CODIGOS_QR_TEMPORALES : escanea_como_guardia
   USUARIOS ||--o{ NOTIFICACIONES : recibe
+  USUARIOS ||--o{ DISPOSITIVOS_TOKENS : registra
   USUARIOS ||--o{ INCIDENCIAS : reporta
   USUARIOS ||--o{ INCIDENCIAS : gestiona
   USUARIOS ||--o{ AUDITORIA_EVENTOS : ejecuta
@@ -30,6 +31,8 @@ erDiagram
   BICICLETEROS ||--o{ SOLICITUDES_GUARDIA : recibe
   BICICLETEROS ||--o{ INCIDENCIAS : contiene
 
+  INCIDENCIAS ||--o{ INCIDENCIAS_FOTOS : adjunta
+
   USUARIOS {
     uuid id PK
     varchar nombre
@@ -39,6 +42,7 @@ erDiagram
     varchar contrasena_hash
     boolean correo_verificado
     boolean registro_parcial
+    boolean debe_cambiar_contrasena
     boolean cuenta_activa
     integer version_sesion
     varchar token_verificacion_correo
@@ -47,6 +51,7 @@ erDiagram
     timestamptz token_cambio_contrasena_expira_en
     timestamptz creado_en
     timestamptz actualizado_en
+    timestamptz eliminado_en
   }
 
   BICICLETAS {
@@ -108,6 +113,7 @@ erDiagram
     timestamptz respondida_por_guardia_en
     timestamptz en_camino_en
     timestamptz resuelta_en
+    text nota_cierre_central
     timestamptz creada_en
     timestamptz actualizada_en
   }
@@ -151,6 +157,15 @@ erDiagram
     timestamptz creada_en
   }
 
+  DISPOSITIVOS_TOKENS {
+    uuid id PK
+    uuid usuario_id FK
+    varchar token UK
+    varchar plataforma
+    timestamptz creado_en
+    timestamptz actualizado_en
+  }
+
   INCIDENCIAS {
     uuid id PK
     uuid reportada_por_usuario_id FK
@@ -162,8 +177,20 @@ erDiagram
     enum estado
     text respuesta
     timestamptz resuelta_en
+    timestamptz ultimo_recordatorio_en
+    integer recordatorios
     timestamptz creada_en
     timestamptz actualizada_en
+  }
+
+  INCIDENCIAS_FOTOS {
+    uuid id PK
+    uuid incidencia_id FK
+    text foto_url
+    varchar nombre_archivo
+    varchar mime_type
+    integer tamano_bytes
+    timestamptz creada_en
   }
 
   AUDITORIA_EVENTOS {
@@ -228,6 +255,10 @@ erDiagram
   administración. `ultimo_recordatorio_en` y `recordatorios` sostienen esa
   función: guardan cuándo se envió el último aviso y cuántos van, con una espera
   mínima de 5 minutos entre uno y otro.
+- Una incidencia puede adjuntar hasta 3 fotos de evidencia en
+  `incidencias_fotos`. Igual que en las bicicletas, el archivo se guarda fuera
+  de la base de datos y en la tabla se persisten URL y metadatos. Al eliminar
+  la incidencia se eliminan sus fotos en cascada.
 - Los eventos críticos quedan registrados en `auditoria_eventos` para
   trazabilidad operativa y revisión posterior.
 - `entregas_pendientes` conserva los trabajos de correo y push hasta que un
