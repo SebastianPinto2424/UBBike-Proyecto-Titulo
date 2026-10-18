@@ -2,7 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
+import 'package:ubbike/core/servicios/registro_dispositivo_push.dart';
 
 @pragma('vm:entry-point')
 Future<void> manejarMensajeSegundoPlano(RemoteMessage mensaje) async {}
@@ -87,7 +87,7 @@ class FcmService {
     );
   }
 
-  Future<void> registrarToken(NotificacionRepository repositorio) async {
+  Future<void> registrarToken(RegistroDispositivoPush repositorio) async {
     if (kIsWeb) {
       return;
     }
@@ -113,7 +113,7 @@ class FcmService {
     }
   }
 
-  Future<void> eliminarToken(NotificacionRepository repositorio) async {
+  Future<void> eliminarToken(RegistroDispositivoPush repositorio) async {
     if (kIsWeb) {
       return;
     }
