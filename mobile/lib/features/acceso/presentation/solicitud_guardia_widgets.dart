@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:ubbike/core/tema/colores_ubb.dart';
+
 import 'package:ubbike/core/servicios/excepcion_api.dart';
+import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/features/acceso/presentation/dialogo_nota_cierre.dart';
+import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
+import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/widgets/bloque_mensaje.dart';
 import 'package:ubbike/shared/widgets/boton_con_espera.dart';
+import 'package:ubbike/shared/widgets/central_widgets.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
-import 'package:ubbike/shared/widgets/central_widgets.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
 
 class TarjetaSolicitudGuardia extends StatelessWidget {
   const TarjetaSolicitudGuardia({
@@ -127,7 +130,7 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
             if (solicitud.ultimaNotificacionUsuarioEn != null) ...[
               const SizedBox(height: 8),
               FilaDato(
-                etiqueta: 'Ultimo recordatorio',
+                etiqueta: 'Último recordatorio',
                 valor: _formatearFechaHoraSolicitud(
                   solicitud.ultimaNotificacionUsuarioEn!,
                 ),
@@ -280,7 +283,7 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
   Future<void> _cerrarComoCentral(BuildContext context, String estado) async {
     final nota = await showDialog<String>(
       context: context,
-      builder: (_) => _DialogoNotaCierre(estado: estado),
+      builder: (_) => DialogoNotaCierre(estado: estado),
     );
     if (nota == null || !context.mounted) {
       return;
@@ -296,145 +299,6 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
         context.mostrarError(error.mensaje);
       }
     }
-  }
-}
-
-class _DialogoNotaCierre extends StatefulWidget {
-  const _DialogoNotaCierre({required this.estado});
-
-  final String estado;
-
-  @override
-  State<_DialogoNotaCierre> createState() => _DialogoNotaCierreState();
-}
-
-class _DialogoNotaCierreState extends State<_DialogoNotaCierre> {
-  final formKeyNotaCierre = GlobalKey<FormState>();
-  late final TextEditingController controller;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  void _confirmar() {
-    if (formKeyNotaCierre.currentState?.validate() != true) {
-      return;
-    }
-
-    Navigator.of(context).pop(controller.text.trim());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        widget.estado == 'RESUELTA'
-            ? 'Marcar solicitud como resuelta'
-            : 'Cerrar solicitud sin resolver',
-      ),
-      content: Form(
-        key: formKeyNotaCierre,
-        child: TextFormField(
-          controller: controller,
-          minLines: 3,
-          maxLines: 5,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Motivo del cierre',
-            hintText: 'Ej: El guardia no respondió, se cerró desde central.',
-            alignLabelWithHint: true,
-          ),
-          validator: (valor) => (valor == null || valor.trim().isEmpty)
-              ? 'Escribe un motivo para cerrar la solicitud.'
-              : null,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: _confirmar,
-          child: const Text('Confirmar'),
-        ),
-      ],
-    );
-  }
-}
-
-class BloqueMensajeSolicitud extends StatelessWidget {
-  const BloqueMensajeSolicitud({
-    super.key,
-    required this.titulo,
-    required this.mensaje,
-  });
-
-  final String titulo;
-  final String mensaje;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: ColoresUbb.superficieAzulSuave,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColoresUbb.azulApp.withValues(alpha: 0.25)),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 4,
-              decoration: const BoxDecoration(
-                color: ColoresUbb.azulApp,
-                borderRadius:
-                    BorderRadius.horizontal(left: Radius.circular(12)),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titulo,
-                      style: textTheme.labelMedium?.copyWith(
-                        color: ColoresUbb.azulApp,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      mensaje,
-                      style: textTheme.titleSmall?.copyWith(
-                        color: ColoresUbb.azulNoche,
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
