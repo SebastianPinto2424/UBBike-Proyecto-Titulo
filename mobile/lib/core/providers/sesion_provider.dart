@@ -1,13 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'package:ubbike/core/servicios/almacen_seguro.dart';
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
-import 'package:ubbike/features/auth/data/autenticacion_api.dart';
-import 'package:ubbike/features/auth/data/autenticacion_repository.dart';
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/servicios/sesion_api.dart';
+import 'package:ubbike/core/modelos/rol_usuario.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 sealed class SesionState {
   const SesionState();
@@ -18,7 +17,9 @@ class SesionCargando extends SesionState {
 }
 
 class SesionVacia extends SesionState {
-  const SesionVacia();
+  const SesionVacia({this.motivo});
+
+  final String? motivo;
 }
 
 class SesionActiva extends SesionState {
@@ -33,6 +34,14 @@ class SesionActiva extends SesionState {
   final String? refreshToken;
 }
 
+const mensajeSesionExpirada =
+    'Tu sesión terminó. Si iniciaste sesión con esta cuenta en otro '
+    'dispositivo, aquí se cerró. Ingresa nuevamente.';
+
+const mensajeSesionEnOtroDispositivo =
+    'Iniciaste sesión con esta cuenta en otro dispositivo, por eso se '
+    'cerró aquí.';
+
 const _storageKeyToken = 'ubbike_jwt';
 const _storageKeyRefreshToken = 'ubbike_refresh';
 const _storageKeyUsuarioId = 'ubbike_usuario_id';
@@ -40,9 +49,7 @@ const _storageKeyUsuarioNombre = 'ubbike_usuario_nombre';
 const _storageKeyUsuarioCorreo = 'ubbike_usuario_correo';
 const _storageKeyUsuarioRol = 'ubbike_usuario_rol';
 
-const _storage = FlutterSecureStorage(
-  aOptions: AndroidOptions(encryptedSharedPreferences: true),
-);
+const _storage = AlmacenSeguro();
 
 class SesionNotifier extends AsyncNotifier<SesionState> {
   int _epoca = 0;
@@ -79,9 +86,7 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
           });
         },
       );
-      final usuario =
-          await AutenticacionRepository(AutenticacionApi(cliente: api))
-              .obtenerPerfil();
+      final usuario = await SesionApi(cliente: api).obtenerPerfil();
       if (epoca != _epoca) return state.valueOrNull ?? const SesionVacia();
       return SesionActiva(
           usuario: usuario, token: token!, refreshToken: refresh);
@@ -154,9 +159,7 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
       alActualizarTokens: actualizarToken,
       alExpirarSesion: olvidar,
     );
-    final usuario =
-        await AutenticacionRepository(AutenticacionApi(cliente: api))
-            .obtenerPerfil();
+    final usuario = await SesionApi(cliente: api).obtenerPerfil();
     final vigente = state.valueOrNull;
     if (epoca != _epoca ||
         vigente is! SesionActiva ||
@@ -175,18 +178,21 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
     await olvidar();
     if (actual is! SesionActiva) return;
     try {
-      await AutenticacionRepository(AutenticacionApi(
+      await SesionApi(
           cliente: ClienteApi(
         httpClient: httpClient,
         obtenerToken: () => actual.token,
         timeout: const Duration(seconds: 5),
-      ))).cerrarSesion(refreshToken: actual.refreshToken);
+      )).cerrarSesion(refreshToken: actual.refreshToken);
     } catch (_) {}
   }
 
-  Future<void> olvidar() async {
+  Future<void> cerrarPorOtroDispositivo() =>
+      olvidar(motivo: mensajeSesionEnOtroDispositivo);
+
+  Future<void> olvidar({String? motivo}) async {
     _epoca++;
-    state = const AsyncData(SesionVacia());
+    state = AsyncData(SesionVacia(motivo: motivo));
     await _persistir(_limpiarStorage);
   }
 
