@@ -3,10 +3,13 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
-import 'package:ubbike/features/historial/data/historial_modelos.dart';
+import 'package:ubbike/features/historial/data/historial_repository.dart';
+import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/modelos/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class FiltrosMovimientosUsuario {
   const FiltrosMovimientosUsuario({
@@ -44,8 +47,6 @@ final filtrosMovimientosUsuarioProvider =
     StateProvider.autoDispose<FiltrosMovimientosUsuario>(
   (ref) => const FiltrosMovimientosUsuario(),
 );
-
-final movimientosVersionProvider = StateProvider<int>((ref) => 0);
 
 class MovimientosUsuarioVm
     extends AutoDisposeAsyncNotifier<List<MovimientoApp>> {
@@ -250,6 +251,9 @@ class MovimientosCentralVm {
 
   Future<OpcionesHistorialApp> opciones() =>
       _ref.read(historialRepositoryProvider).opciones();
+
+  Future<List<BicicleteroApp>> listarBicicleteros() =>
+      _ref.read(bicicleterosRepositoryProvider).listar();
 
   Future<Uint8List> exportarExcel({
     String? filtro,
