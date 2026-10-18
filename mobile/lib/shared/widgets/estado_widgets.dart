@@ -141,3 +141,46 @@ class DropdownAnclado<T> extends StatelessWidget {
     );
   }
 }
+
+class ErrorFormulario extends StatelessWidget {
+  const ErrorFormulario({super.key, required this.mensaje});
+
+  final String mensaje;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ColoresUbb.rojoInstitucional.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ColoresUbb.rojoInstitucional.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: ColoresUbb.rojoInstitucional,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                mensaje,
+                style: const TextStyle(
+                  color: ColoresUbb.rojoInstitucional,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
