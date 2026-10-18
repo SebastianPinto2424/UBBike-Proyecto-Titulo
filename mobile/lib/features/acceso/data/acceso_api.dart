@@ -29,6 +29,10 @@ class AccesoApi {
     return QrValidadoApp.desdeJson(respuesta['qr'] as Map<String, dynamic>);
   }
 
+  Future<void> liberarQr(String token) async {
+    await cliente.post('/qr/liberar', body: {'token': token});
+  }
+
   Future<MovimientoApp> confirmarQr(String token, {String? comentario}) async {
     final respuesta = await cliente.post(
       '/accesos/qr/confirmar',
@@ -59,56 +63,12 @@ class AccesoApi {
     );
   }
 
-  Future<MovimientoApp> registrarManual({
-    String? nombre,
-    String? correo,
-    String? rut,
-    String? bicicletaId,
-    String? bicicleteroId,
-    required String tipo,
-    bool denegar = false,
-    String? motivo,
-    String? comentario,
-    String? bicicletaDescripcion,
-    String? bicicletaMarca,
-    String? bicicletaModelo,
-    String? bicicletaColor,
-    String? bicicletaAro,
-    String? bicicletaNumeroSerie,
-    String? bicicletaFotoUrl,
-    bool crearBicicletaNueva = false,
-  }) async {
+  Future<MovimientoApp> registrarManual(
+    SolicitudRegistroManual solicitud,
+  ) async {
     final respuesta = await cliente.post(
       '/accesos/manual',
-      body: {
-        if (nombre != null && nombre.isNotEmpty) 'nombre': nombre,
-        if (correo != null && correo.isNotEmpty) 'correo': correo,
-        if (rut != null && rut.isNotEmpty) 'rut': rut,
-        if (bicicletaId != null && bicicletaId.isNotEmpty)
-          'bicicletaId': bicicletaId,
-        if (bicicleteroId != null && bicicleteroId.isNotEmpty)
-          'bicicleteroId': bicicleteroId,
-        'tipo': tipo,
-        'denegar': denegar,
-        'motivo': motivo,
-        if (comentario != null && comentario.isNotEmpty)
-          'comentario': comentario,
-        if (bicicletaDescripcion != null && bicicletaDescripcion.isNotEmpty)
-          'bicicletaDescripcion': bicicletaDescripcion,
-        if (bicicletaMarca != null && bicicletaMarca.isNotEmpty)
-          'bicicletaMarca': bicicletaMarca,
-        if (bicicletaModelo != null && bicicletaModelo.isNotEmpty)
-          'bicicletaModelo': bicicletaModelo,
-        if (bicicletaColor != null && bicicletaColor.isNotEmpty)
-          'bicicletaColor': bicicletaColor,
-        if (bicicletaAro != null && bicicletaAro.isNotEmpty)
-          'bicicletaAro': bicicletaAro,
-        if (bicicletaNumeroSerie != null && bicicletaNumeroSerie.isNotEmpty)
-          'bicicletaNumeroSerie': bicicletaNumeroSerie,
-        if (bicicletaFotoUrl != null && bicicletaFotoUrl.isNotEmpty)
-          'bicicletaFotoUrl': bicicletaFotoUrl,
-        'crearBicicletaNueva': crearBicicletaNueva,
-      },
+      body: solicitud.aJson(),
     );
     return MovimientoApp.desdeJson(
       respuesta['movimiento'] as Map<String, dynamic>,
