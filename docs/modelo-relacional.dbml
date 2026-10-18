@@ -168,6 +168,16 @@ Table incidencias {
   actualizadaEn DateTime [not null]
 }
 
+Table incidencias_fotos {
+  id String [pk]
+  incidenciaId String [not null]
+  fotoUrl String [not null]
+  nombreArchivo String [not null]
+  mimeType String [not null]
+  tamanoBytes Int [not null]
+  creadaEn DateTime [default: `now()`, not null]
+}
+
 Table auditoria_eventos {
   id String [pk]
   actorUsuarioId String
@@ -287,5 +297,7 @@ Ref: incidencias.gestionadaPorUsuarioId > usuarios.id [delete: Cascade]
 Ref: incidencias.bicicleteroId > bicicleteros.id
 
 Ref: incidencias.bicicletaId > bicicletas.id
+
+Ref: incidencias_fotos.incidenciaId > incidencias.id [delete: Cascade]
 
 Ref: auditoria_eventos.actorUsuarioId > usuarios.id [delete: Set Null]
