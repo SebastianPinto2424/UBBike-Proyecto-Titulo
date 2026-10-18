@@ -1,5 +1,5 @@
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 class QrValidadoApp {
   const QrValidadoApp({
@@ -76,5 +76,72 @@ class CoincidenciaManualApp {
           .map((item) => BicicletaApp.desdeJson(item as Map<String, dynamic>))
           .toList(),
     );
+  }
+}
+
+class SolicitudRegistroManual {
+  const SolicitudRegistroManual({
+    required this.tipo,
+    this.nombre,
+    this.correo,
+    this.rut,
+    this.bicicletaId,
+    this.bicicleteroId,
+    this.denegar = false,
+    this.motivo,
+    this.comentario,
+    this.bicicletaDescripcion,
+    this.bicicletaMarca,
+    this.bicicletaModelo,
+    this.bicicletaColor,
+    this.bicicletaAro,
+    this.bicicletaNumeroSerie,
+    this.bicicletaFotoUrl,
+    this.crearBicicletaNueva = false,
+  });
+
+  final String tipo;
+  final String? nombre;
+  final String? correo;
+  final String? rut;
+  final String? bicicletaId;
+  final String? bicicleteroId;
+  final bool denegar;
+  final String? motivo;
+  final String? comentario;
+  final String? bicicletaDescripcion;
+  final String? bicicletaMarca;
+  final String? bicicletaModelo;
+  final String? bicicletaColor;
+  final String? bicicletaAro;
+  final String? bicicletaNumeroSerie;
+  final String? bicicletaFotoUrl;
+  final bool crearBicicletaNueva;
+
+  Map<String, dynamic> aJson() {
+    final opcionales = {
+      'nombre': nombre,
+      'correo': correo,
+      'rut': rut,
+      'bicicletaId': bicicletaId,
+      'bicicleteroId': bicicleteroId,
+      'comentario': comentario,
+      'bicicletaDescripcion': bicicletaDescripcion,
+      'bicicletaMarca': bicicletaMarca,
+      'bicicletaModelo': bicicletaModelo,
+      'bicicletaColor': bicicletaColor,
+      'bicicletaAro': bicicletaAro,
+      'bicicletaNumeroSerie': bicicletaNumeroSerie,
+      'bicicletaFotoUrl': bicicletaFotoUrl,
+    };
+    return {
+      for (final campo in opcionales.entries)
+        if (campo.value != null && campo.value!.isNotEmpty)
+          campo.key: campo.value,
+      'tipo': tipo,
+      'denegar': denegar,
+      'motivo': motivo,
+      'crearBicicletaNueva': crearBicicletaNueva,
+    };
   }
 }
