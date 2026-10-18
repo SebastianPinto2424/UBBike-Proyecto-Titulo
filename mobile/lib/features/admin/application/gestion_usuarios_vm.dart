@@ -2,11 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
-
-final usuariosVersionProvider = StateProvider<int>((ref) => 0);
+import 'package:ubbike/features/admin/data/usuarios_admin_repository.dart';
+import 'package:ubbike/core/modelos/rol_usuario.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 enum FiltroEstadoCuenta { todos, activos, denegados }
 

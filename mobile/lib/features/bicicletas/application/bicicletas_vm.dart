@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
+import 'package:ubbike/features/bicicletas/data/bicicleta_repository.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class BicicletasVm {
   const BicicletasVm(this._ref);
@@ -81,8 +82,6 @@ class BicicletasVm {
     _notificarCambio();
   }
 }
-
-final bicicletasVersionProvider = StateProvider<int>((ref) => 0);
 
 final bicicletasVmProvider = Provider.autoDispose<BicicletasVm>(
   (ref) => BicicletasVm(ref),
