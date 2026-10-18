@@ -1,19 +1,11 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/features/acceso/data/solicitud_guardia_modelos.dart';
+import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
 
 class SolicitudGuardiaApi {
   const SolicitudGuardiaApi({required this.cliente});
 
   final ClienteApi cliente;
-
-  Future<List<BicicleteroApp>> listarBicicleteros() async {
-    final respuesta = await cliente.get('/bicicleteros');
-    final datos = respuesta['bicicleteros'] as List<dynamic>;
-    return datos
-        .map((item) => BicicleteroApp.desdeJson(item as Map<String, dynamic>))
-        .toList();
-  }
 
   Future<BicicleteroApp?> obtenerBicicleteroGestionado() async {
     final respuesta = await cliente.get('/guardias/me/bicicletero');
