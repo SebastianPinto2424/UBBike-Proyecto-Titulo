@@ -78,4 +78,17 @@ describe('crearNotificacion con efectos diferidos', () => {
     expect(enviarPushAUsuario).not.toHaveBeenCalled();
     expect(prismaMock.entregaPendiente.create).not.toHaveBeenCalled();
   });
+
+  it('solo registra la notificacion, ya leida, sin push ni aviso en tiempo real', async () => {
+    const efectos: EfectosDiferidos = [];
+
+    await crearNotificacion({ ...datosNotificacion, soloRegistro: true }, undefined, efectos);
+    ejecutarEfectosDiferidos(efectos);
+
+    expect(prismaMock.notificacion.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ leida: true })
+    });
+    expect(emitirTiempoReal).not.toHaveBeenCalled();
+    expect(prismaMock.entregaPendiente.create).not.toHaveBeenCalled();
+  });
 });
