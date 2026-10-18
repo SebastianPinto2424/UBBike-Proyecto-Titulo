@@ -69,6 +69,39 @@ export const marcarEscaneadoPorGuardia = (
     }
   });
 
+export const liberarEscaneoDeGuardia = (
+  qrId: string,
+  validadorUsuarioId: string,
+  client: ClientePrisma = prisma
+) =>
+  client.codigoQrTemporal.updateMany({
+    where: { id: qrId, usado: false, escaneadoPorGuardiaId: validadorUsuarioId },
+    data: { escaneadoPorGuardiaId: null, escaneadoEn: null }
+  });
+
+export const buscarCodigoDeUsuario = (
+  qrId: string,
+  usuarioId: string,
+  client: ClientePrisma = prisma
+) => client.codigoQrTemporal.findFirst({ where: { id: qrId, usuarioId } });
+
+export const buscarMovimientoDeQr = (
+  codigo: Pick<Prisma.CodigoQrTemporalGetPayload<object>, 'usuarioId' | 'bicicletaId' | 'tipo'> & {
+    escaneadoEn: Date;
+  },
+  client: ClientePrisma = prisma
+) =>
+  client.movimiento.findFirst({
+    where: {
+      usuarioId: codigo.usuarioId,
+      bicicletaId: codigo.bicicletaId,
+      tipo: codigo.tipo,
+      origen: 'QR',
+      creadoEn: { gte: codigo.escaneadoEn }
+    },
+    orderBy: { creadoEn: 'desc' }
+  });
+
 export const buscarCodigoCompletoPorToken = (token: string, client: ClientePrisma = prisma) =>
   client.codigoQrTemporal.findFirst({
     where: { token },
