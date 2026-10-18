@@ -1,5 +1,5 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
-import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
+import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 
 class IncidenciaApi {
@@ -57,6 +57,7 @@ class IncidenciaApi {
     required String tipo,
     required String descripcion,
     String? bicicletaId,
+    List<String> fotos = const <String>[],
   }) async {
     final respuesta = await cliente.post(
       '/incidencias',
@@ -66,6 +67,7 @@ class IncidenciaApi {
         'descripcion': descripcion,
         if (bicicletaId != null && bicicletaId.isNotEmpty)
           'bicicletaId': bicicletaId,
+        if (fotos.isNotEmpty) 'fotos': fotos,
       },
     );
 
