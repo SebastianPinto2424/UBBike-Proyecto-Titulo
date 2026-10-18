@@ -1,5 +1,5 @@
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 
 class SolicitudGuardiaApp {
   const SolicitudGuardiaApp({
