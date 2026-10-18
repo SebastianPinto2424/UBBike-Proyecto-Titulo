@@ -1,6 +1,8 @@
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/rol_usuario.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
 import 'package:ubbike/features/admin/data/usuarios_admin_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class UsuariosAdminRepository {
   const UsuariosAdminRepository(this._api);
@@ -59,3 +61,9 @@ class UsuariosAdminRepository {
   Future<void> eliminarUsuario(String usuarioId) =>
       _api.eliminarUsuario(usuarioId);
 }
+
+final usuariosAdminRepositoryProvider =
+    Provider<UsuariosAdminRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return UsuariosAdminRepository(UsuariosAdminApi(cliente: cliente));
+});

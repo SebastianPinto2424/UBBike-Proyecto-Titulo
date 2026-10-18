@@ -1,5 +1,7 @@
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/features/bicicletas/data/bicicleta_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class BicicletaRepository {
   const BicicletaRepository(this._api);
@@ -60,3 +62,8 @@ class BicicletaRepository {
 
   Future<void> desactivar(String bicicletaId) => _api.desactivar(bicicletaId);
 }
+
+final bicicletaRepositoryProvider = Provider<BicicletaRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return BicicletaRepository(BicicletaApi(cliente: cliente));
+});

@@ -2,7 +2,9 @@ import 'dart:typed_data';
 
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/features/historial/data/historial_api.dart';
-import 'package:ubbike/features/historial/data/historial_modelos.dart';
+import 'package:ubbike/shared/modelos/historial_modelos.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
 class HistorialRepository {
   const HistorialRepository(this._api);
@@ -107,3 +109,8 @@ class HistorialRepository {
         origen: origen,
       );
 }
+
+final historialRepositoryProvider = Provider<HistorialRepository>((ref) {
+  final cliente = ref.watch(clienteApiProvider);
+  return HistorialRepository(HistorialApi(cliente: cliente));
+});
