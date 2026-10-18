@@ -37,7 +37,7 @@ class VistaIngresoGuardia extends StatelessWidget {
       ],
       vistas: [
         VistaEscanerQrGuardia(onMovimientoRegistrado: onIrAHistorial),
-        const VistaGestionManualGuardia(),
+        VistaGestionManualGuardia(onMovimientoRegistrado: onIrAHistorial),
       ],
     );
   }
