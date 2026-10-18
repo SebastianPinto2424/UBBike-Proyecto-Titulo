@@ -1,5 +1,12 @@
 import '../helpers/env-setup';
 import { prismaMock } from '../helpers/prisma-mock';
+
+jest.mock('../../src/tiempo-real/tiempo-real', () => ({
+  ...jest.requireActual('../../src/tiempo-real/tiempo-real'),
+  emitirATodos: jest.fn()
+}));
+
+import { emitirATodos } from '../../src/tiempo-real/tiempo-real';
 import {
   actualizarBicicletero,
   crearBicicletero,
@@ -29,6 +36,7 @@ describe('crearBicicletero', () => {
 
     expect(resultado.ocupados).toBe(0);
     expect(resultado.cuposDisponibles).toBe(120);
+    expect(emitirATodos).toHaveBeenCalledWith('bicicleteros');
     expect(prismaMock.bicicletero.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         nombre: bicicleteroBase.nombre,
@@ -63,6 +71,7 @@ describe('actualizarBicicletero', () => {
     expect(resultado.capacidad).toBe(100);
     expect(resultado.ocupados).toBe(25);
     expect(resultado.cuposDisponibles).toBe(75);
+    expect(emitirATodos).toHaveBeenCalledWith('bicicleteros');
   });
 });
 
