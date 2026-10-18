@@ -15,6 +15,7 @@ export const crear = controladorAsync<SolicitudAutenticada>(async (req, res) => 
     bicicletaId: req.body.bicicletaId,
     tipo: req.body.tipo,
     descripcion: req.body.descripcion,
+    fotos: req.body.fotos,
     ip: req.ip,
     userAgent: req.get('user-agent')
   });
