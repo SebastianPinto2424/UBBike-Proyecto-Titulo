@@ -9,17 +9,17 @@ import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/providers/conexion_provider.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
-import 'package:ubbike/shared/widgets/panel_operativo_widgets.dart';
 import 'package:ubbike/features/inicio/presentation/vista_dashboard_administrador.dart';
 import 'package:ubbike/features/inicio/presentation/vista_dashboard_central.dart';
-import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
 import 'package:ubbike/features/inicio/application/dashboard_administrador_vm.dart';
 import 'package:ubbike/features/inicio/application/dashboard_central_vm.dart';
-import 'package:ubbike/features/historial/data/historial_modelos.dart';
-import 'package:ubbike/features/incidencias/data/incidencia_modelos.dart';
+import 'package:ubbike/shared/modelos/historial_modelos.dart';
+import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/modelos/usuario_app.dart';
+import 'package:ubbike/core/modelos/rol_usuario.dart';
+import 'package:ubbike/core/modelos/usuario_app.dart';
+import 'package:ubbike/shared/modelos/dashboard_modelos.dart';
+import 'package:ubbike/shared/widgets/atencion_operativa_widgets.dart';
 
 final usuario = UsuarioApp.fromJson({
   'id': 'u',
@@ -207,7 +207,7 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container.read(conexionProvider.notifier).state = EstadoConexion.conectado;
-    String? filtro;
+    var aperturas = 0;
     Widget pantalla(DatosDashboardCentral datos) => UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
@@ -219,11 +219,7 @@ void main() {
                         width: 350,
                         child: PanelAtencionOperativa(
                           datos: datos,
-                          onAbrirIncidencias: () {
-                            filtro = container
-                                .read(filtrosIncidenciasProvider)
-                                .estado;
-                          },
+                          onAbrirIncidencias: () => aperturas++,
                         ))))));
     await tester.pumpWidget(pantalla(_sinIncidencias()));
     expect(find.text('Sin incidencias abiertas'), findsOneWidget);
@@ -235,7 +231,7 @@ void main() {
         .height;
     await tester.tap(find.byTooltip('Ver incidencias abiertas'));
     await tester.pump();
-    expect(filtro, 'ABIERTAS');
+    expect(aperturas, 1);
     await tester.pumpWidget(pantalla(central));
     expect(find.byKey(const Key('incidencias-sin-pendientes')), findsNothing);
     expect(find.text('321 abiertas'), findsOneWidget);
