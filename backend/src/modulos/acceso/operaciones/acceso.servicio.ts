@@ -14,10 +14,12 @@ import {
 } from '../../correos/correo.servicio';
 import { EstadoMovimiento } from '../../historial/estado-movimiento';
 import { TipoMovimiento } from '../../historial/tipo-movimiento';
-import { obtenerCodigoQrEscaneadoParaMovimiento } from '../../qr/qr.servicio';
+import { EstadoQr } from '../../qr/estado-qr';
+import { notificarEstadoQr, obtenerCodigoQrEscaneadoParaMovimiento } from '../../qr/qr.servicio';
 import { RolUsuario } from '../../usuarios/rol-usuario';
 import {
   EventosTiempoReal,
+  emitirATodos,
   emitirTiempoReal,
   salaRol,
   salaUsuario
@@ -289,12 +291,30 @@ const notificarMovimiento = (
   emitirTiempoReal(
     [
       salaUsuario(movimientoCompleto.usuario.id),
+      salaRol(RolUsuario.GUARDIA),
       salaRol(RolUsuario.ADMIN_CENTRAL),
       salaRol(RolUsuario.ADMINISTRADOR)
     ],
     EventosTiempoReal.MOVIMIENTO
   );
+  if (movimientoCompleto.estado === EstadoMovimiento.CONFIRMADO) {
+    emitirATodos(EventosTiempoReal.BICICLETEROS);
+  }
 };
+
+const notificarResultadoQr = (
+  movimientoCompleto: Awaited<ReturnType<typeof accesoRepositorio.buscarMovimientoCompleto>>,
+  qrId: string
+) =>
+  notificarEstadoQr(movimientoCompleto.usuario.id, {
+    qrId,
+    estado:
+      movimientoCompleto.estado === EstadoMovimiento.CONFIRMADO
+        ? EstadoQr.CONFIRMADO
+        : EstadoQr.DENEGADO,
+    tipo: movimientoCompleto.tipo,
+    motivo: movimientoCompleto.motivoDenegacion
+  });
 
 const prepararCorreoMovimiento = async (
   movimientoCompleto: Awaited<ReturnType<typeof accesoRepositorio.buscarMovimientoCompleto>>,
@@ -410,7 +430,7 @@ const enviarCorreoCompletarRegistro = async (
 };
 
 export const confirmarQr = async (datos: DatosConfirmarQr) => {
-  const movimientoCompleto = await accesoRepositorio.ejecutarEnTransaccion(async (db) => {
+  const { movimientoCompleto, qrId } = await accesoRepositorio.ejecutarEnTransaccion(async (db) => {
     const codigo = await obtenerCodigoQrEscaneadoParaMovimiento(
       datos.token,
       {
@@ -437,7 +457,7 @@ export const confirmarQr = async (datos: DatosConfirmarQr) => {
       throw new ErrorHttp(409, 'QR ya fue usado o reemplazado');
     }
 
-    return registrarMovimiento({
+    const movimiento = await registrarMovimiento({
       usuario: codigo.usuario,
       bicicleta: codigo.bicicleta,
       bicicletero,
@@ -448,14 +468,16 @@ export const confirmarQr = async (datos: DatosConfirmarQr) => {
       comentario: datos.comentario,
       db
     });
+    return { movimientoCompleto: movimiento, qrId: codigo.id };
   });
 
   void notificarMovimiento(movimientoCompleto);
+  notificarResultadoQr(movimientoCompleto, qrId);
   return mapearMovimiento(movimientoCompleto);
 };
 
 export const denegarQr = async (datos: DatosDenegarQr) => {
-  const movimientoCompleto = await accesoRepositorio.ejecutarEnTransaccion(async (db) => {
+  const { movimientoCompleto, qrId } = await accesoRepositorio.ejecutarEnTransaccion(async (db) => {
     const codigo = await obtenerCodigoQrEscaneadoParaMovimiento(
       datos.token,
       {
@@ -479,7 +501,7 @@ export const denegarQr = async (datos: DatosDenegarQr) => {
       throw new ErrorHttp(409, 'QR ya fue usado o reemplazado');
     }
 
-    return registrarMovimiento({
+    const movimiento = await registrarMovimiento({
       usuario: codigo.usuario,
       bicicleta: codigo.bicicleta,
       bicicletero,
@@ -490,9 +512,11 @@ export const denegarQr = async (datos: DatosDenegarQr) => {
       motivo: datos.motivo,
       db
     });
+    return { movimientoCompleto: movimiento, qrId: codigo.id };
   });
 
   void notificarMovimiento(movimientoCompleto);
+  notificarResultadoQr(movimientoCompleto, qrId);
   return mapearMovimiento(movimientoCompleto);
 };
 
