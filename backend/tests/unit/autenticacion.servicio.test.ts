@@ -22,13 +22,23 @@ jest.mock('../../src/modulos/correos/correo.servicio', () => ({
 
 jest.mock('../../src/modulos/notificaciones/notificacion.servicio', () => ({
   crearNotificacion: jest.fn().mockResolvedValue(undefined),
-  notificarUsuariosPorRol: jest.fn().mockResolvedValue(undefined)
+  notificarUsuariosPorRol: jest.fn().mockResolvedValue(undefined),
+  olvidarDispositivosDeUsuario: jest.fn().mockResolvedValue(undefined)
+}));
+
+jest.mock('../../src/tiempo-real/tiempo-real', () => ({
+  ...jest.requireActual('../../src/tiempo-real/tiempo-real'),
+  cerrarSesionesTiempoReal: jest.fn()
 }));
 
 jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
   registrarAuditoria: jest.fn().mockResolvedValue(undefined)
 }));
 
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { olvidarDispositivosDeUsuario } from '../../src/modulos/notificaciones/notificacion.servicio';
+import { cerrarSesionesTiempoReal } from '../../src/tiempo-real/tiempo-real';
 import {
   iniciarSesion,
   registrarUsuario,
@@ -189,6 +199,31 @@ describe('iniciarSesion', () => {
     await expect(
       iniciarSesion({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'cualquier' })
     ).rejects.toMatchObject({ statusCode: 403 });
+  });
+});
+
+describe('iniciarSesion en un dispositivo nuevo', () => {
+  it('cierra la sesión de los demás dispositivos de la cuenta', async () => {
+    prismaMock.usuario.findUnique.mockResolvedValue({
+      ...usuarioBase,
+      correoVerificado: true,
+      versionSesion: 4
+    } as any);
+    prismaMock.usuario.update.mockResolvedValue({ ...usuarioBase, versionSesion: 5 } as any);
+    jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+
+    const resultado = await iniciarSesion({
+      correo: 'juan@alumnos.ubiobio.cl',
+      contrasena: 'ClaveSegura#2026'
+    });
+
+    expect(prismaMock.usuario.update).toHaveBeenCalledWith({
+      where: { id: 'uuid-1' },
+      data: { versionSesion: { increment: 1 } }
+    });
+    expect(olvidarDispositivosDeUsuario).toHaveBeenCalledWith('uuid-1');
+    expect(cerrarSesionesTiempoReal).toHaveBeenCalledWith('uuid-1');
+    expect((jwt.decode(resultado.token) as { versionSesion: number }).versionSesion).toBe(5);
   });
 });
 
