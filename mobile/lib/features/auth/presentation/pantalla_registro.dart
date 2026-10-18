@@ -8,7 +8,7 @@ import 'package:ubbike/shared/utils/identidad.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 import 'package:ubbike/shared/widgets/marca_ubbike.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/features/auth/presentation/widgets/estilos_formulario_auth.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario_auth.dart';
 
 class PantallaRegistro extends ConsumerStatefulWidget {
   const PantallaRegistro({super.key});
@@ -164,12 +164,12 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                           return 'El correo es obligatorio.';
                         }
                         if (correo.length > 160) {
-                          return 'Maximo 160 caracteres.';
+                          return 'Máximo 160 caracteres.';
                         }
                         final correoValido =
                             RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
                         if (!correoValido.hasMatch(correo)) {
-                          return 'Ingresa un correo valido. Ej: estudiante@alumnos.ubiobio.cl';
+                          return 'Ingresa un correo válido. Ej: estudiante@alumnos.ubiobio.cl';
                         }
                         if (!correo.endsWith('@ubiobio.cl') &&
                             !correo.endsWith('@alumnos.ubiobio.cl')) {
@@ -348,7 +348,7 @@ String? _validarNombreRegistroFrontend(String? valor) {
     return 'El nombre es obligatorio.';
   }
   if (texto.length > 120) {
-    return 'Maximo 120 caracteres.';
+    return 'Máximo 120 caracteres.';
   }
   if (!nombreCompletoValido(texto)) {
     return 'Ingresa dos nombres y dos apellidos (Nombre Nombre Apellido Apellido).';
