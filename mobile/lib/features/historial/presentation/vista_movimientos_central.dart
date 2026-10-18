@@ -2,22 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ubbike/features/historial/application/movimientos_vm.dart';
-import 'package:ubbike/shared/widgets/exportacion_reporte.dart';
 
+import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
+import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/historial/data/historial_modelos.dart';
+import 'package:ubbike/features/historial/application/movimientos_vm.dart';
+import 'package:ubbike/features/historial/presentation/controles_filtros_movimientos.dart';
+import 'package:ubbike/features/historial/presentation/exportacion_reporte.dart';
+import 'package:ubbike/features/historial/presentation/panel_exportar_reporte.dart';
+import 'package:ubbike/features/historial/presentation/pie_lista_movimientos.dart';
+import 'package:ubbike/shared/modelos/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
+import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
-import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 import 'package:ubbike/shared/widgets/tarjeta_movimiento.dart';
-import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
 
 class VistaMovimientosCentral extends ConsumerStatefulWidget {
   const VistaMovimientosCentral({super.key});
@@ -62,11 +66,7 @@ class _VistaMovimientosCentralState
     return rol == RolUsuario.adminCentral || rol == RolUsuario.administrador;
   }
 
-  bool get _puedeExportar {
-    final sesion = ref.read(sesionProvider).value;
-    final rol = sesion is SesionActiva ? sesion.usuario.rol : null;
-    return rol == RolUsuario.adminCentral || rol == RolUsuario.administrador;
-  }
+  bool get _puedeExportar => _esCentral;
 
   @override
   void initState() {
@@ -152,6 +152,13 @@ class _VistaMovimientosCentralState
     }
   }
 
+  Future<void> _refrescarEnSegundoPlano() async {
+    try {
+      final datos = await _obtenerPrimeraPagina();
+      if (mounted) setState(() => futuroMovimientos = Future.value(datos));
+    } catch (_) {}
+  }
+
   void _recargar() {
     temporizadorBusqueda?.cancel();
     setState(() {
@@ -174,67 +181,46 @@ class _VistaMovimientosCentralState
       if (periodo != 'SEMANA')
         FiltroActivo(
           etiqueta: etiquetaPeriodoFiltro(periodo),
-          onQuitar: () {
-            setState(() => periodo = 'SEMANA');
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() => periodo = 'SEMANA'),
         ),
       if (fechaDesde != null || fechaHasta != null)
         FiltroActivo(
           etiqueta: _textoRangoFechas(),
-          onQuitar: () {
-            setState(() {
-              fechaDesde = null;
-              fechaHasta = null;
-            });
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() {
+            fechaDesde = null;
+            fechaHasta = null;
+          }),
         ),
       if (tipoMovimiento != 'TODOS')
         FiltroActivo(
           etiqueta: etiquetaTipoMovimientoFiltro(tipoMovimiento),
-          onQuitar: () {
-            setState(() => tipoMovimiento = 'TODOS');
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() => tipoMovimiento = 'TODOS'),
         ),
       if (estadoMovimiento != 'TODOS')
         FiltroActivo(
           etiqueta: etiquetaEstadoMovimientoFiltro(estadoMovimiento),
-          onQuitar: () {
-            setState(() => estadoMovimiento = 'TODOS');
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() => estadoMovimiento = 'TODOS'),
         ),
       if (origenMovimiento != 'TODOS')
         FiltroActivo(
           etiqueta: etiquetaOrigenMovimientoFiltro(origenMovimiento),
-          onQuitar: () {
-            setState(() => origenMovimiento = 'TODOS');
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() => origenMovimiento = 'TODOS'),
         ),
       if (bicicleteroId != null)
         FiltroActivo(
           etiqueta: bicicleteroNombre ?? 'Bicicletero seleccionado',
-          onQuitar: () {
-            setState(() {
-              bicicleteroId = null;
-              bicicleteroNombre = null;
-            });
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() {
+            bicicleteroId = null;
+            bicicleteroNombre = null;
+          }),
         ),
       if (guardiaId != null)
         FiltroActivo(
           etiqueta: guardiaNombre ?? 'Guardia seleccionado',
-          onQuitar: () {
-            setState(() {
-              guardiaId = null;
-              guardiaNombre = null;
-            });
-            _recargar();
-          },
+          onQuitar: () => _aplicarFiltro(() {
+            guardiaId = null;
+            guardiaNombre = null;
+          }),
         ),
       if (busqueda.isNotEmpty)
         FiltroActivo(
@@ -264,6 +250,11 @@ class _VistaMovimientosCentralState
     return partes.join(' | ');
   }
 
+  void _aplicarFiltro(VoidCallback cambio) {
+    setState(cambio);
+    _recargar();
+  }
+
   void _limpiarFiltros() {
     temporizadorBusqueda?.cancel();
     filtroController.clear();
@@ -282,9 +273,8 @@ class _VistaMovimientosCentralState
 
   String _textoRangoFechas() {
     final desde =
-        fechaDesde == null ? 'Inicio' : _formatearFechaCorta(fechaDesde!);
-    final hasta =
-        fechaHasta == null ? 'Hoy' : _formatearFechaCorta(fechaHasta!);
+        fechaDesde == null ? 'Inicio' : formatearFechaCorta(fechaDesde!);
+    final hasta = fechaHasta == null ? 'Hoy' : formatearFechaCorta(fechaHasta!);
     return '$desde a $hasta';
   }
 
@@ -321,7 +311,10 @@ class _VistaMovimientosCentralState
     }
   }
 
-  Future<void> _exportarSeleccionado(String? formato) async {
+  Future<void> _exportarSeleccionado(
+    String? formato, {
+    AccionReporte accion = AccionReporte.descargar,
+  }) async {
     if (formato == null || exportando) {
       return;
     }
@@ -332,6 +325,7 @@ class _VistaMovimientosCentralState
         context: context,
         formato: formato,
         resumenFiltros: _resumenFiltros(),
+        accion: accion,
         filtros: (
           filtro: filtroController.text,
           periodo: periodo,
@@ -349,216 +343,12 @@ class _VistaMovimientosCentralState
     }
   }
 
-  List<Widget> _controlesFiltros() {
-    return [
-      EtiquetaFiltro(
-        texto: 'Período',
-        child: _ChipsFiltro(
-          opciones: const {
-            'DIA': 'Día',
-            'SEMANA': 'Semana',
-            'MES': 'Mes',
-            'ANIO': 'Año',
-          },
-          seleccionado: periodo,
-          onSeleccion: (valor) {
-            setState(() => periodo = valor);
-            _recargar();
-          },
-        ),
-      ),
-      const SizedBox(height: 12),
-      EtiquetaFiltro(
-        texto: 'Rango exacto',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _seleccionarFecha(esDesde: true),
-                    icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                    label: Text(
-                      fechaDesde == null
-                          ? 'Desde'
-                          : _formatearFechaCorta(fechaDesde!),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _seleccionarFecha(esDesde: false),
-                    icon: const Icon(Icons.event_available_outlined, size: 18),
-                    label: Text(
-                      fechaHasta == null
-                          ? 'Hasta'
-                          : _formatearFechaCorta(fechaHasta!),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (fechaDesde != null || fechaHasta != null) ...[
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      fechaDesde = null;
-                      fechaHasta = null;
-                    });
-                    _recargar();
-                  },
-                  child: const Text('Quitar rango'),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      const SizedBox(height: 12),
-      EtiquetaFiltro(
-        texto: 'Tipo de movimiento',
-        child: _ChipsFiltro(
-          opciones: const {
-            'TODOS': 'Todos',
-            'INGRESO': 'Ingresos',
-            'RETIRO': 'Retiros',
-          },
-          seleccionado: tipoMovimiento,
-          onSeleccion: (valor) {
-            setState(() => tipoMovimiento = valor);
-            _recargar();
-          },
-        ),
-      ),
-      const SizedBox(height: 12),
-      EtiquetaFiltro(
-        texto: 'Resultado',
-        child: _ChipsFiltro(
-          opciones: const {
-            'TODOS': 'Todos',
-            'CONFIRMADO': 'Confirmados',
-            'DENEGADO': 'Denegados',
-          },
-          seleccionado: estadoMovimiento,
-          onSeleccion: (valor) {
-            setState(() => estadoMovimiento = valor);
-            _recargar();
-          },
-        ),
-      ),
-      const SizedBox(height: 12),
-      EtiquetaFiltro(
-        texto: 'Origen',
-        child: _ChipsFiltro(
-          opciones: const {
-            'TODOS': 'Todos',
-            'QR': 'QR',
-            'MANUAL': 'Manual',
-          },
-          seleccionado: origenMovimiento,
-          onSeleccion: (valor) {
-            setState(() => origenMovimiento = valor);
-            _recargar();
-          },
-        ),
-      ),
-      if (_esCentral && futuroOpciones != null) ...[
-        const SizedBox(height: 12),
-        FutureBuilder<OpcionesHistorialApp>(
-          future: futuroOpciones,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const SizedBox.shrink();
-            }
-            final opciones = snapshot.data!;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return DropdownAnclado<String>(
-                      isExpanded: true,
-                      borderRadius: BorderRadius.circular(16),
-                      menuMaxHeight: 300,
-                      value: bicicleteroId,
-                      decoration:
-                          const InputDecoration(labelText: 'Bicicletero'),
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Todos'),
-                        ),
-                        ...opciones.bicicleteros.map(
-                          (b) => DropdownMenuItem(
-                            value: b.id,
-                            child: Text(b.nombre),
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        setState(() {
-                          bicicleteroId = v;
-                          bicicleteroNombre = v == null
-                              ? null
-                              : opciones.bicicleteros
-                                  .firstWhere((b) => b.id == v)
-                                  .nombre;
-                        });
-                        _recargar();
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return DropdownAnclado<String>(
-                      isExpanded: true,
-                      borderRadius: BorderRadius.circular(16),
-                      menuMaxHeight: 300,
-                      value: guardiaId,
-                      decoration: const InputDecoration(labelText: 'Guardia'),
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Todos'),
-                        ),
-                        ...opciones.guardias.map(
-                          (g) => DropdownMenuItem(
-                            value: g.id,
-                            child: Text(g.nombre),
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        setState(() {
-                          guardiaId = v;
-                          guardiaNombre = v == null
-                              ? null
-                              : opciones.guardias
-                                  .firstWhere((g) => g.id == v)
-                                  .nombre;
-                        });
-                        _recargar();
-                      },
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(movimientosVersionProvider, (_, __) {
+      unawaited(_refrescarEnSegundoPlano());
+    });
+
     return FutureBuilder<List<MovimientoApp>>(
       future: futuroMovimientos,
       builder: (context, snapshot) {
@@ -594,7 +384,39 @@ class _VistaMovimientosCentralState
               activos: _filtrosActivos(),
               detalle: _resumenFiltros(),
               onLimpiar: _limpiarFiltros,
-              children: _controlesFiltros(),
+              children: [
+                ControlesFiltrosMovimientos(
+                  periodo: periodo,
+                  tipo: tipoMovimiento,
+                  estado: estadoMovimiento,
+                  origen: origenMovimiento,
+                  fechaDesde: fechaDesde,
+                  fechaHasta: fechaHasta,
+                  bicicleteroId: bicicleteroId,
+                  guardiaId: guardiaId,
+                  opciones: _esCentral ? futuroOpciones : null,
+                  onPeriodo: (valor) => _aplicarFiltro(() => periodo = valor),
+                  onTipo: (valor) =>
+                      _aplicarFiltro(() => tipoMovimiento = valor),
+                  onEstado: (valor) =>
+                      _aplicarFiltro(() => estadoMovimiento = valor),
+                  onOrigen: (valor) =>
+                      _aplicarFiltro(() => origenMovimiento = valor),
+                  onSeleccionarFecha: _seleccionarFecha,
+                  onQuitarRango: () => _aplicarFiltro(() {
+                    fechaDesde = null;
+                    fechaHasta = null;
+                  }),
+                  onBicicletero: (id, nombre) => _aplicarFiltro(() {
+                    bicicleteroId = id;
+                    bicicleteroNombre = nombre;
+                  }),
+                  onGuardia: (id, nombre) => _aplicarFiltro(() {
+                    guardiaId = id;
+                    guardiaNombre = nombre;
+                  }),
+                ),
+              ],
             ),
             if (_puedeExportar) ...[
               const SizedBox(height: 10),
@@ -609,6 +431,10 @@ class _VistaMovimientosCentralState
                   setState(() => formatoExportacion = formato);
                 },
                 onDescargar: () => _exportarSeleccionado(formatoExportacion),
+                onCompartir: () => _exportarSeleccionado(
+                  formatoExportacion,
+                  accion: AccionReporte.compartir,
+                ),
               ),
             ],
           ],
@@ -650,7 +476,7 @@ class _VistaMovimientosCentralState
       itemCount: movimientos.length + 1,
       itemBuilder: (context, index) {
         if (index == movimientos.length) {
-          return _PieListaMovimientos(
+          return PieListaMovimientos(
             mostrados: movimientos.length,
             total: totalMovimientos,
             hayMas: hayMasPaginas,
@@ -669,92 +495,4 @@ class _VistaMovimientosCentralState
       },
     );
   }
-}
-
-class _PieListaMovimientos extends StatelessWidget {
-  const _PieListaMovimientos({
-    required this.mostrados,
-    required this.total,
-    required this.hayMas,
-    required this.cargando,
-    required this.onCargarMas,
-  });
-
-  final int mostrados;
-  final int total;
-  final bool hayMas;
-  final bool cargando;
-  final VoidCallback onCargarMas;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            hayMas
-                ? 'Mostrando $mostrados de $total movimientos'
-                : 'Mostrando los $total movimientos del filtro',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: ColoresUbb.textoSecundario,
-                ),
-          ),
-          if (hayMas) ...[
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: cargando ? null : onCargarMas,
-              icon: cargando
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.expand_more),
-              label: Text(cargando ? 'Cargando' : 'Cargar más'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ChipsFiltro extends StatelessWidget {
-  const _ChipsFiltro({
-    required this.opciones,
-    required this.seleccionado,
-    required this.onSeleccion,
-  });
-
-  final Map<String, String> opciones;
-  final String seleccionado;
-  final ValueChanged<String> onSeleccion;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: opciones.entries
-          .map(
-            (opcion) => FiltroChip(
-              label: opcion.value,
-              value: opcion.key,
-              selectedValue: seleccionado,
-              onTap: onSeleccion,
-            ),
-          )
-          .toList(),
-    );
-  }
-}
-
-String _formatearFechaCorta(DateTime fecha) {
-  final local = fecha.toLocal();
-  final dia = local.day.toString().padLeft(2, '0');
-  final mes = local.month.toString().padLeft(2, '0');
-  return '$dia/$mes/${local.year}';
 }
