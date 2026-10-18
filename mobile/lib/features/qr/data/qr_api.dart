@@ -22,4 +22,9 @@ class QrApi {
 
     return QrTemporalApp.desdeJson(respuesta['qr'] as Map<String, dynamic>);
   }
+
+  Future<EventoQrApp?> consultarEstado(String qrId) async {
+    final respuesta = await cliente.get('/qr/$qrId/estado');
+    return EventoQrApp.desdeJson(respuesta['qr'] as Map<String, dynamic>);
+  }
 }
