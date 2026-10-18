@@ -1,65 +1,24 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ubbike/features/historial/application/movimientos_vm.dart';
-import 'package:ubbike/features/historial/data/historial_modelos.dart';
-import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/modelos/movimiento_app.dart';
-import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
-import 'package:ubbike/shared/widgets/exportacion_reporte.dart';
-
+import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
-import 'package:ubbike/shared/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/widgets/filtros_widgets.dart';
-import 'package:ubbike/shared/widgets/tarjeta_movimiento.dart';
+import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/features/historial/application/movimientos_vm.dart';
+import 'package:ubbike/features/historial/application/resumen_guardias.dart';
+import 'package:ubbike/features/historial/presentation/detalle_guardia_sheet.dart';
+import 'package:ubbike/features/historial/presentation/exportacion_reporte.dart';
+import 'package:ubbike/features/historial/presentation/panel_exportar_reporte.dart';
+import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/modelos/historial_modelos.dart';
+import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
-
-class _ResumenGuardia {
-  int total = 0;
-  int denegaciones = 0;
-  final bicicleteros = <String>{};
-}
-
-String _detalleResumenGuardia(_ResumenGuardia resumen) {
-  final bicicleteros = resumen.bicicleteros.toList()..sort();
-  final visibles = bicicleteros.take(2).join(', ');
-  final restantes = bicicleteros.length - 2;
-  final detalleBicicleteros =
-      restantes > 0 ? '$visibles y $restantes más' : visibles;
-
-  return [
-    '${resumen.total} validaciones',
-    '${resumen.denegaciones} denegaciones',
-    if (detalleBicicleteros.isNotEmpty) detalleBicicleteros,
-  ].join(' | ');
-}
-
-Map<String, _ResumenGuardia> _agruparPorGuardia(
-  List<MovimientoApp> movimientos,
-) {
-  final resumen = <String, _ResumenGuardia>{};
-
-  for (final movimiento in movimientos) {
-    final guardia = resumen.putIfAbsent(
-      movimiento.guardiaNombre,
-      _ResumenGuardia.new,
-    );
-
-    guardia.total += 1;
-    if (movimiento.estado == 'DENEGADO') {
-      guardia.denegaciones += 1;
-    }
-    guardia.bicicleteros.add(movimiento.bicicleteroNombre);
-  }
-
-  return resumen;
-}
+import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/filtros_widgets.dart';
+import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
+import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 
 class VistaOperacionesGuardiasCentral extends ConsumerStatefulWidget {
   const VistaOperacionesGuardiasCentral({super.key});
@@ -71,7 +30,7 @@ class VistaOperacionesGuardiasCentral extends ConsumerStatefulWidget {
 
 class _VistaOperacionesGuardiasCentralState
     extends ConsumerState<VistaOperacionesGuardiasCentral> {
-  SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
+  MovimientosCentralVm get vm => ref.read(movimientosCentralVmProvider);
   final busquedaController = TextEditingController();
   Timer? temporizadorBusqueda;
   String periodo = 'DIA';
@@ -90,7 +49,7 @@ class _VistaOperacionesGuardiasCentralState
   void initState() {
     super.initState();
     futuroMovimientos = _obtenerMovimientos();
-    futuroOpciones = ref.read(movimientosCentralVmProvider).opciones();
+    futuroOpciones = vm.opciones();
     _cargarBicicleteros();
   }
 
@@ -116,14 +75,14 @@ class _VistaOperacionesGuardiasCentralState
 
   Future<List<MovimientoApp>> _obtenerMovimientos() {
     final busqueda = busquedaController.text.trim();
-    return ref.read(movimientosCentralVmProvider).listar(
-          filtro: busqueda.isEmpty ? null : busqueda,
-          periodo: periodo,
-          estado: estadoMovimiento,
-          bicicleteroId: bicicleteroSeleccionado?.id,
-          guardiaId: guardiaId,
-          limite: 100000,
-        );
+    return vm.listar(
+      filtro: busqueda.isEmpty ? null : busqueda,
+      periodo: periodo,
+      estado: estadoMovimiento,
+      bicicleteroId: bicicleteroSeleccionado?.id,
+      guardiaId: guardiaId,
+      limite: 100000,
+    );
   }
 
   void _recargar() {
@@ -227,7 +186,10 @@ class _VistaOperacionesGuardiasCentralState
     return rol == RolUsuario.adminCentral || rol == RolUsuario.administrador;
   }
 
-  Future<void> _exportarSeleccionado(String? formato) async {
+  Future<void> _exportarSeleccionado(
+    String? formato, {
+    AccionReporte accion = AccionReporte.descargar,
+  }) async {
     if (formato == null || exportando) {
       return;
     }
@@ -238,6 +200,7 @@ class _VistaOperacionesGuardiasCentralState
         context: context,
         formato: formato,
         resumenFiltros: _resumenFiltros(),
+        accion: accion,
         filtros: (
           filtro: busquedaController.text.trim().isEmpty
               ? null
@@ -255,61 +218,6 @@ class _VistaOperacionesGuardiasCentralState
     } finally {
       if (mounted) setState(() => exportando = false);
     }
-  }
-
-  void _mostrarDetalleGuardia(
-    String nombre,
-    _ResumenGuardia resumen,
-    List<MovimientoApp> movimientos,
-  ) {
-    final ordenados = [...movimientos]
-      ..sort((a, b) => b.creadoEn.compareTo(a.creadoEn));
-    final double alturaInicial =
-        (0.42 + ordenados.length * 0.12).clamp(0.42, 0.9).toDouble();
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: alturaInicial,
-        minChildSize: 0.4,
-        maxChildSize: 0.95,
-        builder: (_, controller) => ListView(
-          controller: controller,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            Text(
-              'Operaciones de $nombre',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _detalleResumenGuardia(resumen),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: ColoresUbb.textoSecundario,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 14),
-            ...ordenados.map(
-              (movimiento) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: TarjetaMovimientoCentral(
-                  movimiento: movimiento,
-                  mostrarIdentidad: true,
-                  mostrarGuardia: false,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -476,6 +384,10 @@ class _VistaOperacionesGuardiasCentralState
                   setState(() => formatoExportacion = formato);
                 },
                 onDescargar: () => _exportarSeleccionado(formatoExportacion),
+                onCompartir: () => _exportarSeleccionado(
+                  formatoExportacion,
+                  accion: AccionReporte.compartir,
+                ),
               ),
             ],
           ],
@@ -503,7 +415,7 @@ class _VistaOperacionesGuardiasCentralState
     }
 
     final movimientos = snapshot.data ?? [];
-    final resumen = _agruparPorGuardia(movimientos);
+    final resumen = agruparPorGuardia(movimientos);
     final entradas = resumen.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
@@ -525,11 +437,12 @@ class _VistaOperacionesGuardiasCentralState
               child: TarjetaAccion(
                 icono: Icons.verified_user_outlined,
                 titulo: entrada.key,
-                detalle: _detalleResumenGuardia(entrada.value),
+                detalle: detalleResumenGuardia(entrada.value),
                 color: entrada.value.denegaciones == 0
                     ? ColoresUbb.exito
                     : ColoresUbb.amarilloInstitucional,
-                onTap: () => _mostrarDetalleGuardia(
+                onTap: () => mostrarDetalleGuardia(
+                  context,
                   entrada.key,
                   entrada.value,
                   movimientos
