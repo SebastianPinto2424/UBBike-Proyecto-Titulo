@@ -287,6 +287,7 @@ model EntregaPendiente {
   creadaEn     DateTime  @default(now()) @map("creada_en") @db.Timestamptz(6)
   entregadaEn  DateTime? @map("entregada_en") @db.Timestamptz(6)
   agotada      Boolean   @default(false)
+
   @@index([entregadaEn, agotada, disponibleEn])
   @@map("entregas_pendientes")
 }
@@ -338,11 +339,26 @@ model Incidencia {
   gestionadaPorUsuario   Usuario?         @relation("IncidenciaGestor", fields: [gestionadaPorUsuarioId], references: [id], onDelete: SetNull)
   bicicletero            Bicicletero      @relation(fields: [bicicleteroId], references: [id])
   bicicleta              Bicicleta?       @relation(fields: [bicicletaId], references: [id])
+  fotos                  IncidenciaFoto[]
 
   @@index([estado, creadaEn], map: "idx_incidencias_estado_creada")
   @@index([bicicleteroId, estado], map: "idx_incidencias_bicicletero_estado")
   @@index([reportadaPorUsuarioId, creadaEn], map: "idx_incidencias_reportante_creada")
   @@map("incidencias")
+}
+
+model IncidenciaFoto {
+  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  incidenciaId  String     @map("incidencia_id") @db.Uuid
+  fotoUrl       String     @map("foto_url")
+  nombreArchivo String     @map("nombre_archivo") @db.VarChar(160)
+  mimeType      String     @map("mime_type") @db.VarChar(80)
+  tamanoBytes   Int        @map("tamano_bytes")
+  creadaEn      DateTime   @default(now()) @map("creada_en") @db.Timestamptz(6)
+  incidencia    Incidencia @relation(fields: [incidenciaId], references: [id], onDelete: Cascade)
+
+  @@index([incidenciaId], map: "idx_incidencias_fotos_incidencia")
+  @@map("incidencias_fotos")
 }
 
 model AuditoriaEvento {
