@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/providers/repositorios_provider.dart';
+import 'package:ubbike/features/bicicletas/data/bicicleta_repository.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
+import 'package:ubbike/shared/data/bicicleteros_repository.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 class InicioUsuarioVm {
@@ -13,7 +14,7 @@ class InicioUsuarioVm {
       _ref.read(bicicletaRepositoryProvider).obtenerActiva();
 
   Future<List<BicicleteroApp>> listarBicicleteros() =>
-      _ref.read(solicitudGuardiaRepositoryProvider).listarBicicleteros();
+      _ref.read(bicicleterosRepositoryProvider).listar();
 }
 
 final inicioUsuarioVmProvider = Provider.autoDispose<InicioUsuarioVm>(
