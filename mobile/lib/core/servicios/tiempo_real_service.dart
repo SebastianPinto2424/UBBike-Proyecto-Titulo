@@ -16,12 +16,19 @@ class TiempoRealService {
   final _incidenciasController = StreamController<void>.broadcast();
   final _movimientosController = StreamController<void>.broadcast();
   final _usuariosController = StreamController<void>.broadcast();
+  final _qrController = StreamController<Map<String, dynamic>>.broadcast();
+  final _sesionController = StreamController<void>.broadcast();
+  final _bicicleterosController = StreamController<void>.broadcast();
 
   Stream<void> get notificaciones => _notificacionesController.stream;
   Stream<void> get solicitudes => _solicitudesController.stream;
   Stream<void> get incidencias => _incidenciasController.stream;
   Stream<void> get movimientos => _movimientosController.stream;
   Stream<void> get usuarios => _usuariosController.stream;
+  Stream<void> get sesionCerrada => _sesionController.stream;
+  Stream<void> get bicicleteros => _bicicleterosController.stream;
+
+  Stream<Map<String, dynamic>> get qr => _qrController.stream;
 
   void conectar(String token) {
     final tokenLimpio = token.trim();
@@ -62,7 +69,8 @@ class TiempoRealService {
         _solicitudesController,
         _incidenciasController,
         _movimientosController,
-        _usuariosController
+        _usuariosController,
+        _bicicleterosController,
       ]) {
         if (!controller.isClosed) controller.add(null);
       }
@@ -96,6 +104,21 @@ class TiempoRealService {
         _usuariosController.add(null);
       }
     });
+    socket.on('bicicleteros', (_) {
+      if (!_bicicleterosController.isClosed) {
+        _bicicleterosController.add(null);
+      }
+    });
+    socket.on('sesion', (_) {
+      if (!_sesionController.isClosed) {
+        _sesionController.add(null);
+      }
+    });
+    socket.on('qr', (datos) {
+      if (datos is Map && !_qrController.isClosed) {
+        _qrController.add(Map<String, dynamic>.from(datos));
+      }
+    });
 
     _socket = socket;
     socket.connect();
@@ -119,5 +142,8 @@ class TiempoRealService {
     _incidenciasController.close();
     _movimientosController.close();
     _usuariosController.close();
+    _qrController.close();
+    _sesionController.close();
+    _bicicleterosController.close();
   }
 }
