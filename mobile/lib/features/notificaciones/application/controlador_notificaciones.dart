@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ubbike/core/servicios/registro_dispositivo_push.dart';
 import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
 import 'package:ubbike/shared/utils/refresco_coalescido.dart';
 
-class ControladorNotificacionesInicio extends ChangeNotifier {
-  ControladorNotificacionesInicio({
+class ControladorNotificaciones extends ChangeNotifier {
+  ControladorNotificaciones({
     required NotificacionRepository notificacionRepository,
     Stream<void>? eventosTiempoReal,
     Duration intervalo = const Duration(seconds: 30),
@@ -94,3 +96,15 @@ class ControladorNotificacionesInicio extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final crearControladorNotificacionesProvider =
+    Provider<ControladorNotificaciones Function(Stream<void> eventos)>(
+  (ref) => (eventos) => ControladorNotificaciones(
+        notificacionRepository: ref.read(notificacionRepositoryProvider),
+        eventosTiempoReal: eventos,
+      ),
+);
+
+final registroDispositivoPushProvider = Provider<RegistroDispositivoPush>(
+  (ref) => ref.watch(notificacionRepositoryProvider),
+);
