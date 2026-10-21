@@ -111,13 +111,12 @@ El codigo vive en `/opt/ubbike`. Las plantillas incluidas en el repo son:
 
 | Archivo | Uso |
 | --- | --- |
-| `backend/.env.production.example` | Variables requeridas por el backend en produccion. |
 | `deploy/apache/ubbike-https.conf.example` | VirtualHost Apache con HTTPS, Flutter Web y proxy al backend. |
 | `deploy/systemd/ubbike-backend.service.example` | Alternativa a pm2 con systemd, si se prefiere. |
 
 ### Variables de entorno
 
-Crear en el servidor `/opt/ubbike/backend/.env` usando `backend/.env.production.example` como base y completando los valores reales:
+Crear en el servidor `/opt/ubbike/backend/.env` con estas variables, completando los valores reales:
 
 ```env
 NODE_ENV=production
@@ -129,14 +128,27 @@ DB_USER=<USUARIO_DB>
 DB_PASSWORD=<PASSWORD_DB>
 DB_NAME=<NOMBRE_DB>
 JWT_SECRET=<SECRETO_LARGO_MINIMO_32_CARACTERES>
+JWT_EXPIRES_IN=2h
+JWT_ISSUER=ubbike-api
+JWT_AUDIENCE=ubbike-app
+REFRESH_TOKEN_EXPIRES_DAYS=30
 FRONTEND_URL=https://DOMINIO_O_IP_PUBLICA
 CORS_ORIGINS=https://DOMINIO_O_IP_PUBLICA
 SEED_DEMO_DATA=false
 SWAGGER_ENABLED=false
+QR_DURATION_SECONDS=15
 UPLOADS_DIR=/opt/ubbike/uploads
 UPLOADS_PUBLIC_PATH=/uploads
 REQUIRE_REDIS_RATE_LIMIT=true
 REDIS_URL=redis://127.0.0.1:6379
+SMTP_HOST=<SMTP_HOST>
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<SMTP_USER>
+SMTP_PASSWORD=<SMTP_PASSWORD>
+MAIL_FROM="UBBike <no-reply@ubiobio.cl>"
+FIREBASE_CREDENTIALS_PATH=
+FIREBASE_CREDENTIALS_BASE64=
 ```
 
 ### Redis
