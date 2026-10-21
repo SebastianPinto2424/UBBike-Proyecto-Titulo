@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 
 class BotonesDecisionMovimiento extends StatelessWidget {
   const BotonesDecisionMovimiento({
@@ -33,40 +34,21 @@ class BotonesDecisionMovimiento extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: activo ? onConfirmar : null,
-                icon: procesando
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle_outline),
-                label: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text('Confirmar $operacion'),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ColoresUbb.rojoInstitucional,
-                  side: const BorderSide(color: ColoresUbb.rojoInstitucional),
-                ),
-                onPressed: activo ? onRechazar : null,
-                icon: const Icon(Icons.block),
-                label: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text('Rechazar $operacion'),
-                ),
-              ),
-            ),
-          ],
+        BotonesAccion(
+          principalALaIzquierda: true,
+          secundaria: AccionBoton(
+            texto: 'Rechazar $operacion',
+            color: ColoresUbb.rojoInstitucional,
+            icono: Icons.block,
+            onPressed: activo ? onRechazar : null,
+          ),
+          principal: AccionBoton(
+            texto: 'Confirmar $operacion',
+            color: ColoresUbb.azulApp,
+            icono: Icons.check_circle_outline,
+            cargando: procesando,
+            onPressed: activo ? onConfirmar : null,
+          ),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
