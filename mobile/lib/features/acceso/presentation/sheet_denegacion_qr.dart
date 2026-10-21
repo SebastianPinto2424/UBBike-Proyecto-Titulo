@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 
 typedef MotivoRechazo = ({IconData icono, String titulo, String detalle});
@@ -144,43 +145,14 @@ class _SheetDenegacionState extends State<SheetDenegacion> {
                 ErrorFormulario(mensaje: error!),
                 const SizedBox(height: 12),
               ],
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColoresUbb.rojoInstitucional,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: enviando ? null : _enviar,
-                      icon: enviando
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.block),
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Rechazar $operacion'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: enviando ? null : () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                      label: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Cancelar'),
-                      ),
-                    ),
-                  ),
-                ],
+              BotonesAccion.confirmacion(
+                destructiva: true,
+                textoConfirmar: 'Rechazar',
+                iconoConfirmar: Icons.block,
+                iconoCancelar: Icons.close,
+                cargando: enviando,
+                onConfirmar: enviando ? null : _enviar,
+                onCancelar: enviando ? null : () => Navigator.pop(context),
               ),
             ],
           ),
