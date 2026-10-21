@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:ubbike/core/configuracion/configuracion_api.dart';
-import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/visor_foto.dart';
 
 Uint8List? decodificarFotoDataUrl(String? fotoDataUrl) {
   if (fotoDataUrl == null || !fotoDataUrl.startsWith('data:image')) {
@@ -41,57 +41,34 @@ Future<void> mostrarFotoBicicletaAmpliada(
 ) {
   final bytesFoto = decodificarFotoDataUrl(fotoReferencia);
   final imagen = bytesFoto != null
-      ? Image.memory(bytesFoto, fit: BoxFit.contain)
+      ? Image.memory(
+          bytesFoto,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        )
       : Image.network(
           resolverUrlFotoBicicleta(fotoReferencia),
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Icon(
-            Icons.broken_image_outlined,
-            color: ColoresUbb.textoSecundario,
-            size: 64,
+          filterQuality: FilterQuality.high,
+          loadingBuilder: (_, hijo, progreso) => progreso == null
+              ? hijo
+              : const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white70,
+              size: 64,
+            ),
           ),
         );
 
-  return showDialog<void>(
-    context: context,
-    builder: (context) {
-      final size = MediaQuery.sizeOf(context);
-      final ancho = (size.width - 32).clamp(280.0, 560.0);
-      final alto = (ancho * 0.72).clamp(220.0, size.height * 0.68);
-
-      return Dialog(
-        insetPadding: const EdgeInsets.all(16),
-        clipBehavior: Clip.antiAlias,
-        backgroundColor: Colors.white,
-        child: Stack(
-          children: [
-            SizedBox(
-              width: ancho,
-              height: alto,
-              child: InteractiveViewer(
-                minScale: 0.8,
-                maxScale: 4,
-                child: Center(child: imagen),
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Material(
-                color: Colors.black54,
-                shape: const CircleBorder(),
-                clipBehavior: Clip.antiAlias,
-                child: IconButton(
-                  tooltip: 'Cerrar',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    },
+  return Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => VisorFoto(imagen: imagen),
+    ),
   );
 }
 
