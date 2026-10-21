@@ -70,7 +70,7 @@ services:
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
       REDIS_URL: redis://redis:6379
       REQUIRE_REDIS_RATE_LIMIT: "true"
-      TRUST_PROXY: "false"
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -78,6 +78,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-UBBike <no-reply@ubbike.local>}
       FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
+      FIREBASE_CREDENTIALS_BASE64: ${FIREBASE_CREDENTIALS_BASE64:-}
       FRONTEND_URL: ${DOCKER_FRONTEND_URL:-http://localhost:8082}
       CORS_ORIGINS: ${DOCKER_CORS_ORIGINS:-http://localhost:8082,http://127.0.0.1:8082}
       UPLOADS_DIR: /app/uploads
