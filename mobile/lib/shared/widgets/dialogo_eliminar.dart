@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
+import 'package:ubbike/shared/widgets/dialogo_accion.dart';
 
 Future<bool> confirmarEliminacion(
   BuildContext context, {
@@ -14,14 +16,11 @@ Future<bool> confirmarEliminacion(
     builder: (context) {
       final tema = Theme.of(context);
 
-      return AlertDialog(
-        icon: const Icon(
-          Icons.delete_forever_outlined,
-          color: ColoresUbb.rojoInstitucional,
-          size: 44,
-        ),
-        title: Text(titulo, textAlign: TextAlign.center),
-        content: Column(
+      return DialogoAccion(
+        icono: Icons.delete_forever_outlined,
+        colorIcono: ColoresUbb.rojoInstitucional,
+        titulo: titulo,
+        contenido: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -50,44 +49,14 @@ Future<bool> confirmarEliminacion(
             ),
           ],
         ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  key: const Key('eliminar-cancelar'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ColoresUbb.azulApp,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Cancelar'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton(
-                  key: const Key('eliminar-confirmar'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ColoresUbb.rojoInstitucional,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => Navigator.pop(context, true),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(etiquetaConfirmar),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        acciones: BotonesAccion.confirmacion(
+          destructiva: true,
+          textoConfirmar: etiquetaConfirmar,
+          claveCancelar: const Key('eliminar-cancelar'),
+          claveConfirmar: const Key('eliminar-confirmar'),
+          onCancelar: () => Navigator.pop(context, false),
+          onConfirmar: () => Navigator.pop(context, true),
+        ),
       );
     },
   );
