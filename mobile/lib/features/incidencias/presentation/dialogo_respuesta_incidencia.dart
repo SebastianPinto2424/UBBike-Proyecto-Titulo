@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
+import 'package:ubbike/shared/widgets/dialogo_accion.dart';
 
 class DialogoRespuestaGestion extends StatefulWidget {
   const DialogoRespuestaGestion({
@@ -51,18 +53,13 @@ class _DialogoRespuestaGestionState extends State<DialogoRespuestaGestion> {
     final color = descartar ? ColoresUbb.rojoInstitucional : ColoresUbb.azulApp;
     final incidencia = widget.incidencia;
 
-    return AlertDialog(
-      scrollable: true,
-      icon: Icon(
-        descartar ? Icons.block_outlined : Icons.check_circle_outline,
-        color: color,
-        size: 44,
-      ),
-      title: Text(
-        descartar ? 'Descartar incidencia' : 'Marcar incidencia como resuelta',
-        textAlign: TextAlign.center,
-      ),
-      content: Form(
+    return DialogoAccion(
+      icono: descartar ? Icons.block_outlined : Icons.check_circle_outline,
+      colorIcono: color,
+      titulo: descartar
+          ? 'Descartar incidencia'
+          : 'Marcar incidencia como resuelta',
+      contenido: Form(
         key: formKeyRespuestaGestion,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -102,42 +99,12 @@ class _DialogoRespuestaGestionState extends State<DialogoRespuestaGestion> {
           ],
         ),
       ),
-      actionsAlignment: MainAxisAlignment.center,
-      actions: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ColoresUbb.azulApp,
-                  side: const BorderSide(color: ColoresUbb.azulApp),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text('Cancelar'),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: _guardar,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(descartar ? 'Descartar' : 'Marcar resuelta'),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+      acciones: BotonesAccion.confirmacion(
+        destructiva: descartar,
+        textoConfirmar: descartar ? 'Descartar' : 'Marcar resuelta',
+        onCancelar: () => Navigator.of(context).pop(null),
+        onConfirmar: _guardar,
+      ),
     );
   }
 }
