@@ -4,6 +4,7 @@ import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/utils/identidad.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario_auth.dart';
 
 class SheetEditarCuenta extends StatefulWidget {
@@ -189,31 +190,11 @@ class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
                 },
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: ColoresUbb.azulApp,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _guardar,
-                      icon: const Icon(Icons.person_add_alt_1_outlined),
-                      label: const Text('Crear'),
-                    ),
-                  ),
-                ],
+              BotonesAccion.confirmacion(
+                textoConfirmar: 'Crear',
+                iconoConfirmar: Icons.person_add_alt_1_outlined,
+                onCancelar: () => Navigator.pop(context),
+                onConfirmar: _guardar,
               ),
             ],
           ),
@@ -322,31 +303,11 @@ class _SheetEditarCuentaState extends State<SheetEditarCuenta> {
                 validator: _validarRutCuentaAdmin,
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: ColoresUbb.azulApp,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _guardar,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('Guardar'),
-                    ),
-                  ),
-                ],
+              BotonesAccion.confirmacion(
+                textoConfirmar: 'Guardar',
+                iconoConfirmar: Icons.save_outlined,
+                onCancelar: () => Navigator.pop(context),
+                onConfirmar: _guardar,
               ),
             ],
           ),
