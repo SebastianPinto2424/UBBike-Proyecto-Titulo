@@ -114,6 +114,12 @@ ThemeData crearTemaUbb() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
       elevation: 8,
