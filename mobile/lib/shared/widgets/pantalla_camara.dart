@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 
 Future<Uint8List?> tomarFotoEnApp(BuildContext context) {
   return Navigator.of(context).push<Uint8List>(
@@ -30,6 +30,8 @@ class _PantallaCamaraState extends State<PantallaCamara>
   Uint8List? _foto;
   String? _error;
   bool _capturando = false;
+  FlashMode _flash = FlashMode.auto;
+  bool _flashDisponible = false;
 
   @override
   void initState() {
@@ -80,12 +82,14 @@ class _PantallaCamaraState extends State<PantallaCamara>
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
       await controlador.initialize();
+      final flashDisponible = await _aplicarFlash(controlador, _flash);
       if (!mounted) {
         await controlador.dispose();
         return;
       }
       setState(() {
         _controlador = controlador;
+        _flashDisponible = flashDisponible;
         _error = null;
       });
     } on CameraException catch (error) {
@@ -99,6 +103,31 @@ class _PantallaCamaraState extends State<PantallaCamara>
         setState(
             () => _error = 'No se pudo abrir la cámara. Intenta nuevamente.');
       }
+    }
+  }
+
+  Future<bool> _aplicarFlash(
+      CameraController controlador, FlashMode modo) async {
+    try {
+      await controlador.setFlashMode(modo);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _cambiarFlash() async {
+    final controlador = _controlador;
+    if (controlador == null) {
+      return;
+    }
+    final siguiente = switch (_flash) {
+      FlashMode.off => FlashMode.auto,
+      FlashMode.auto => FlashMode.always,
+      _ => FlashMode.off,
+    };
+    if (await _aplicarFlash(controlador, siguiente) && mounted) {
+      setState(() => _flash = siguiente);
     }
   }
 
@@ -135,11 +164,6 @@ class _PantallaCamaraState extends State<PantallaCamara>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(_foto == null ? 'Tomar foto' : 'Revisar foto'),
-      ),
       body: SafeArea(child: _contenido()),
     );
   }
@@ -162,42 +186,162 @@ class _PantallaCamaraState extends State<PantallaCamara>
       );
     }
 
-    final controlador = _controlador;
-    if (controlador == null || !controlador.value.isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
-    }
+    return _VistaCaptura(
+      controlador: _controlador,
+      capturando: _capturando,
+      flash: _flashDisponible ? _flash : null,
+      onCerrar: () => Navigator.of(context).pop(),
+      onCambiarFlash: _cambiarFlash,
+      onCapturar: _capturar,
+    );
+  }
+}
 
-    return Column(
+class _VistaCaptura extends StatelessWidget {
+  const _VistaCaptura({
+    required this.controlador,
+    required this.capturando,
+    required this.flash,
+    required this.onCerrar,
+    required this.onCambiarFlash,
+    required this.onCapturar,
+  });
+
+  final CameraController? controlador;
+  final bool capturando;
+  final FlashMode? flash;
+  final VoidCallback onCerrar;
+  final VoidCallback onCambiarFlash;
+  final VoidCallback onCapturar;
+
+  @override
+  Widget build(BuildContext context) {
+    final controlador = this.controlador;
+    final listo = controlador != null && controlador.value.isInitialized;
+    final flash = this.flash;
+
+    return Stack(
       children: [
-        Expanded(child: Center(child: CameraPreview(controlador))),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Semantics(
-            button: true,
-            label: 'Tomar foto',
-            child: GestureDetector(
-              onTap: _capturar,
-              child: Container(
-                width: 74,
-                height: 74,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                ),
-                padding: const EdgeInsets.all(5),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _capturando ? Colors.white54 : Colors.white,
-                  ),
-                ),
-              ),
+        Positioned.fill(
+          child: Center(
+            child: listo
+                ? CameraPreview(controlador)
+                : const CircularProgressIndicator(color: Colors.white),
+          ),
+        ),
+        Positioned(
+          top: 8,
+          left: 8,
+          child: _BotonFlotante(
+            icono: Icons.close,
+            tooltip: 'Cerrar',
+            onPressed: onCerrar,
+          ),
+        ),
+        if (flash != null)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _BotonFlotante(
+              icono: switch (flash) {
+                FlashMode.off => Icons.flash_off,
+                FlashMode.auto => Icons.flash_auto,
+                _ => Icons.flash_on,
+              },
+              tooltip: switch (flash) {
+                FlashMode.off => 'Flash desactivado',
+                FlashMode.auto => 'Flash automático',
+                _ => 'Flash activado',
+              },
+              onPressed: onCambiarFlash,
+            ),
+          ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 28,
+          child: Center(
+            child: _Disparador(
+              habilitado: listo && !capturando,
+              capturando: capturando,
+              onTap: onCapturar,
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BotonFlotante extends StatelessWidget {
+  const _BotonFlotante({
+    required this.icono,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icono;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.black54,
+        foregroundColor: Colors.white,
+      ),
+      icon: Icon(icono),
+    );
+  }
+}
+
+class _Disparador extends StatelessWidget {
+  const _Disparador({
+    required this.habilitado,
+    required this.capturando,
+    required this.onTap,
+  });
+
+  final bool habilitado;
+  final bool capturando;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: habilitado,
+      label: 'Tomar foto',
+      child: GestureDetector(
+        onTap: habilitado ? onTap : null,
+        child: Container(
+          width: 76,
+          height: 76,
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 4),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: habilitado ? Colors.white : Colors.white54,
+            ),
+            child: capturando
+                ? const Padding(
+                    padding: EdgeInsets.all(18),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.black54,
+                    ),
+                  )
+                : null,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -219,33 +363,14 @@ class _RevisionFoto extends StatelessWidget {
       children: [
         Expanded(child: Center(child: Image.memory(foto, fit: BoxFit.contain))),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white70),
-                  ),
-                  onPressed: onRepetir,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Repetir'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ColoresUbb.azulApp,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: onUsar,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Usar foto'),
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: BotonesAccion.confirmacion(
+            textoCancelar: 'Repetir',
+            iconoCancelar: Icons.refresh,
+            textoConfirmar: 'Usar foto',
+            iconoConfirmar: Icons.check,
+            onCancelar: onRepetir,
+            onConfirmar: onUsar,
           ),
         ),
       ],
@@ -276,13 +401,12 @@ class _AvisoCamara extends StatelessWidget {
               style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white70),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: onCerrar,
+                child: const Text('Cerrar'),
               ),
-              onPressed: onCerrar,
-              child: const Text('Cerrar'),
             ),
           ],
         ),
