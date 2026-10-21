@@ -164,6 +164,23 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
     widget.onVerHistorial?.call();
   }
 
+  void _recargarConEstadoNuevo() {
+    if (!mounted) {
+      return;
+    }
+
+    _temporizadorHistorial?.cancel();
+    _detenerEspera();
+    setState(() {
+      esperaLarga = false;
+      cargandoDatos = true;
+      qrActual = null;
+      estadoQr = null;
+      motivoQr = null;
+    });
+    _cargarDatos();
+  }
+
   Future<void> _actualizarBicicleteros() async {
     try {
       final lista = await vm.listarBicicleteros();
@@ -270,20 +287,10 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
       }
     });
     ref.listen<int>(bicicletasVersionProvider, (_, __) {
-      if (!mounted || estadoQr == EstadoQr.escaneado) {
-        return;
-      }
-
-      _temporizadorHistorial?.cancel();
-      _detenerEspera();
-      setState(() {
-        esperaLarga = false;
-        cargandoDatos = true;
-        qrActual = null;
-        estadoQr = null;
-        motivoQr = null;
-      });
-      _cargarDatos();
+      if (estadoQr != EstadoQr.escaneado) _recargarConEstadoNuevo();
+    });
+    ref.listen<int>(movimientosVersionProvider, (_, __) {
+      if (estadoQr == null) _recargarConEstadoNuevo();
     });
 
     final qr = qrActual;
