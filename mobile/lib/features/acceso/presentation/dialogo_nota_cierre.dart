@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
+import 'package:ubbike/shared/widgets/dialogo_accion.dart';
+
 class DialogoNotaCierre extends StatefulWidget {
   const DialogoNotaCierre({super.key, required this.estado});
 
@@ -35,13 +39,15 @@ class _DialogoNotaCierreState extends State<DialogoNotaCierre> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        widget.estado == 'RESUELTA'
-            ? 'Marcar solicitud como resuelta'
-            : 'Cerrar solicitud sin resolver',
-      ),
-      content: Form(
+    final resuelta = widget.estado == 'RESUELTA';
+
+    return DialogoAccion(
+      icono: resuelta ? Icons.check_circle_outline : Icons.cancel_outlined,
+      colorIcono: resuelta ? ColoresUbb.azulApp : ColoresUbb.rojoInstitucional,
+      titulo: resuelta
+          ? 'Marcar solicitud como resuelta'
+          : 'Cerrar solicitud sin resolver',
+      contenido: Form(
         key: formKeyNotaCierre,
         child: TextFormField(
           controller: controller,
@@ -58,16 +64,12 @@ class _DialogoNotaCierreState extends State<DialogoNotaCierre> {
               : null,
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: _confirmar,
-          child: const Text('Confirmar'),
-        ),
-      ],
+      acciones: BotonesAccion.confirmacion(
+        destructiva: !resuelta,
+        textoConfirmar: 'Confirmar',
+        onCancelar: () => Navigator.of(context).pop(),
+        onConfirmar: _confirmar,
+      ),
     );
   }
 }
