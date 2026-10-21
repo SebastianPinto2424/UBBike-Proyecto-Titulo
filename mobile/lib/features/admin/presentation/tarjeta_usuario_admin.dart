@@ -4,6 +4,8 @@ import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/admin/presentation/formularios_cuenta_admin.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
+import 'package:ubbike/shared/widgets/dialogo_accion.dart';
 
 class TarjetaUsuarioAdmin extends StatefulWidget {
   const TarjetaUsuarioAdmin({
@@ -340,23 +342,20 @@ class _PanelGestionUsuario extends StatelessWidget {
                   }
                   final confirmar = await showDialog<bool>(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Confirmar cambio de rol'),
-                      content: Text(
+                    builder: (ctx) => DialogoAccion(
+                      icono: Icons.manage_accounts_outlined,
+                      titulo: 'Confirmar cambio de rol',
+                      contenido: Text(
                         '¿Cambiar el rol de ${usuario.nombre} de '
                         '"${usuario.rol.etiqueta}" a "${rol.etiqueta}"?\n\n'
                         'Esto modifica sus permisos dentro de la app.',
+                        textAlign: TextAlign.center,
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Cambiar rol'),
-                        ),
-                      ],
+                      acciones: BotonesAccion.confirmacion(
+                        textoConfirmar: 'Cambiar rol',
+                        onCancelar: () => Navigator.pop(ctx, false),
+                        onConfirmar: () => Navigator.pop(ctx, true),
+                      ),
                     ),
                   );
                   if (confirmar == true) {
