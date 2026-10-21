@@ -128,7 +128,7 @@ class _VistaGestionManualGuardiaState
         const SizedBox(height: 8),
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(14),
             child: Form(
               key: formKeyGestionManual,
               child: Column(
@@ -327,8 +327,8 @@ class _VistaGestionManualGuardiaState
       final foto = await _capturaFotos.elegir(
         context,
         source,
-        calidad: 72,
-        ladoMaximo: 1200,
+        calidad: 80,
+        ladoMaximo: 1280,
       );
       if (foto == null || !mounted) {
         return;
