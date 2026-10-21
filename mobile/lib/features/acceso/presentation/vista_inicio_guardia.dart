@@ -158,7 +158,7 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
                         icono: Icons.edit_note_outlined,
                         titulo: 'Gestión manual',
                         detalle:
-                            'Registra ingreso o retiro usando correo institucional y RUT.',
+                            'Registra ingreso o retiro utilizando correo institucional o RUT.',
                         color: ColoresUbb.azulApp,
                         onTap: () => widget.onOpenIngreso
                             ?.call(ModoIngresoGuardia.manual),
