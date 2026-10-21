@@ -153,7 +153,8 @@ export const entorno = {
     urlFrontend: process.env.FRONTEND_URL ?? 'http://localhost:8081'
   },
   firebase: {
-    credencialesPath: process.env.FIREBASE_CREDENTIALS_PATH
+    credencialesPath: process.env.FIREBASE_CREDENTIALS_PATH,
+    credencialesBase64: process.env.FIREBASE_CREDENTIALS_BASE64
   },
   archivos: {
     directorioUploads: process.env.UPLOADS_DIR ?? path.resolve(process.cwd(), 'uploads'),
