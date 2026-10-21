@@ -9,6 +9,7 @@ import 'package:ubbike/features/admin/application/gestion_usuarios_vm.dart';
 import 'package:ubbike/features/admin/presentation/filtros_usuarios_admin.dart';
 import 'package:ubbike/features/admin/presentation/formularios_cuenta_admin.dart';
 import 'package:ubbike/features/admin/presentation/tarjeta_usuario_admin.dart';
+import 'package:ubbike/shared/widgets/dialogo_eliminar.dart';
 import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
@@ -150,36 +151,15 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
   }
 
   Future<void> _eliminarUsuario(UsuarioApp usuario) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(
-          Icons.delete_forever_outlined,
-          color: ColoresUbb.rojoInstitucional,
-          size: 44,
-        ),
-        title: const Text('Eliminar cuenta'),
-        content: Text(
-          'Se desactivara la cuenta de ${usuario.nombre}, se cerraran sus sesiones y dejara de aparecer en la gestion diaria.',
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ColoresUbb.rojoInstitucional,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+    final confirmar = await confirmarEliminacion(
+      context,
+      titulo: 'Eliminar cuenta',
+      nombre: usuario.nombre,
+      consecuencia: 'Se desactivará la cuenta, se cerrarán sus sesiones y '
+          'dejará de aparecer en la gestión diaria.',
     );
 
-    if (confirmar != true) {
+    if (!confirmar || !mounted) {
       return;
     }
 
