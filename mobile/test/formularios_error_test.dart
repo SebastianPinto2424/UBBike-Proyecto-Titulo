@@ -94,8 +94,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Rechazar ingreso'), findsWidgets);
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Rechazar ingreso'));
+      expect(find.text('Rechazar ingreso'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Rechazar'));
       await tester.pumpAndSettle();
 
       expect(find.text('Selecciona el motivo del rechazo.'), findsOneWidget);
@@ -119,7 +119,7 @@ void main() {
       await tester.tap(find.text('La bicicleta no coincide'));
       await tester.pump();
       await tester.enterText(find.byType(TextFormField), 'Es de otro color');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Rechazar retiro'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Rechazar'));
       await tester.pumpAndSettle();
 
       expect(enviado, 'La bicicleta no coincide. Es de otro color');
@@ -138,7 +138,7 @@ void main() {
 
       await tester.tap(find.text('Los datos no coinciden con el titular'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Rechazar ingreso'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Rechazar'));
       await tester.pumpAndSettle();
 
       expect(find.text('Este QR ya se usó'), findsOneWidget);
