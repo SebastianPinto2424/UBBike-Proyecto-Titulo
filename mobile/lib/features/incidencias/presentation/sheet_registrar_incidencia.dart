@@ -119,8 +119,8 @@ class _SheetRegistrarIncidenciaState extends State<SheetRegistrarIncidencia> {
         await capturaFotos.elegir(
           context,
           origen,
-          calidad: 68,
-          ladoMaximo: 900,
+          calidad: 80,
+          ladoMaximo: 1280,
           maximoBytes: maximoBytesFotoIncidencia,
         ),
       );
