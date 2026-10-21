@@ -9,7 +9,7 @@ Aplicacion web/mobile y API REST para registrar bicicletas, validar ingresos y r
 - `deploy/`: plantillas y scripts para el despliegue en el contenedor.
 - `docs/`: documentacion tecnica complementaria.
 
-Este documento cubre las dos formas de desplegar el proyecto: en local con Docker y en el contenedor institucional con pm2.
+Este documento cubre las formas de desplegar el proyecto: en local con Docker, en un servidor con Docker y en el contenedor institucional con pm2.
 
 ## Despliegue local con Docker
 
@@ -56,6 +56,46 @@ Para probar desde celulares reales, el PC y los celulares deben estar en la mism
 El script detecta la IP local, actualiza `.env`, levanta Docker, verifica el backend y genera una APK debug que queda en la carpeta `apks-pruebas` del Escritorio.
 
 Antes de instalar la APK conviene comprobar desde el celular que `http://IP_DEL_PC:3000/salud` responde. Si no responde, hay que ejecutar el script una vez como administrador o habilitar el puerto TCP 3000 en el Firewall de Windows. Esta APK es solo para pruebas locales por HTTP; la APK de produccion se compila en release apuntando a HTTPS.
+
+## Despliegue en un servidor con Docker
+
+En un servidor con Docker y Docker Compose:
+
+```bash
+git clone -b rama-dev-contenedor https://github.com/SebastianPinto2424/UBBike-Taller2.git ubbike
+cd ubbike
+cp .env.example .env
+```
+
+Editar `.env` con los valores del servidor:
+
+| Variable | Valor |
+| --- | --- |
+| `PUBLIC_API_BASE_URL` | `https://DOMINIO` |
+| `PUBLIC_WS_BASE_URL` | `wss://DOMINIO` |
+| `FRONTEND_URL` y `DOCKER_FRONTEND_URL` | `https://DOMINIO` |
+| `CORS_ORIGINS` y `DOCKER_CORS_ORIGINS` | `https://DOMINIO` |
+| `POSTGRES_PASSWORD` | Clave unica de al menos 16 caracteres |
+| `JWT_SECRET` | Cadena aleatoria de al menos 32 caracteres |
+| `TRUST_PROXY` | `1` cuando la app queda detras de Apache o Nginx |
+| `SMTP_USER` y `SMTP_PASSWORD` | Cuenta de correo para los avisos |
+| `FIREBASE_CREDENTIALS_BASE64` | Credencial de Firebase en base64, para las notificaciones push |
+
+La credencial de Firebase se convierte a base64 con `base64 -w0 firebase-admin.json` en Linux o con `[Convert]::ToBase64String([IO.File]::ReadAllBytes("firebase-admin.json"))` en PowerShell.
+
+Levantar:
+
+```bash
+docker compose up -d --build
+```
+
+Los contenedores escuchan solo en `127.0.0.1`. El servidor web publica el dominio enviando `/` a `127.0.0.1:8081` (web) y las rutas de la API, `/socket.io` y `/uploads` a `127.0.0.1:3000`; la plantilla `deploy/apache/ubbike-https.conf.example` sirve de base. La APK se compila apuntando al mismo dominio:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://DOMINIO
+```
+
+`SEED_DEMO_DATA=true` crea las cuentas de demostracion, incluida la del administrador; en un servidor publico hay que cambiar sus contrasenas despues del primer inicio.
 
 ## Despliegue en el contenedor institucional (pm2)
 
