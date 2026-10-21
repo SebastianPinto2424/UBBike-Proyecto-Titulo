@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 
 class VistaPreviaReporte extends StatelessWidget {
   const VistaPreviaReporte({
@@ -115,26 +116,15 @@ class VistaPreviaReporte extends StatelessWidget {
               ),
           ],
           const SizedBox(height: 16),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                key: const Key('previa-cancelar'),
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                key: const Key('previa-descargar'),
-                onPressed: totalRegistros == 0
-                    ? null
-                    : () => Navigator.pop(context, true),
-                icon: Icon(iconoConfirmar),
-                label: Text(textoConfirmar),
-              ),
-            ),
-          ]),
+          BotonesAccion.confirmacion(
+            textoConfirmar: textoConfirmar,
+            iconoConfirmar: iconoConfirmar,
+            claveCancelar: const Key('previa-cancelar'),
+            claveConfirmar: const Key('previa-descargar'),
+            onCancelar: () => Navigator.pop(context, false),
+            onConfirmar:
+                totalRegistros == 0 ? null : () => Navigator.pop(context, true),
+          ),
         ],
       ),
     );
