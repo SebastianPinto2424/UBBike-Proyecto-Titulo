@@ -8,6 +8,8 @@ import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/servicios/captura_fotos.dart';
 import 'package:ubbike/shared/utils/limites_foto.dart';
 import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
+import 'package:ubbike/shared/widgets/dialogo_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/selector_foto.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
@@ -112,22 +114,20 @@ class _FormularioBicicletaSheetState
 
     final continuar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Registro sin terminar'),
-        content: const Text(
+      builder: (context) => DialogoAccion(
+        icono: Icons.edit_note_outlined,
+        titulo: 'Registro sin terminar',
+        contenido: const Text(
           'Tenías un registro de bicicleta sin terminar (por ejemplo, la app '
           'se cerró mientras tomabas una foto). ¿Quieres continuarlo?',
+          textAlign: TextAlign.center,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Descartar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Continuar'),
-          ),
-        ],
+        acciones: BotonesAccion.confirmacion(
+          textoCancelar: 'Descartar',
+          textoConfirmar: 'Continuar',
+          onCancelar: () => Navigator.of(context).pop(false),
+          onConfirmar: () => Navigator.of(context).pop(true),
+        ),
       ),
     );
 
@@ -186,8 +186,8 @@ class _FormularioBicicletaSheetState
         await capturaFotos.elegir(
           context,
           source,
-          calidad: 68,
-          ladoMaximo: 900,
+          calidad: 80,
+          ladoMaximo: 1280,
         ),
       );
     } catch (_) {
