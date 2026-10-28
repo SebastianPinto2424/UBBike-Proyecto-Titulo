@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:ubbike/shared/widgets/vista_con_tabs.dart';
+import 'package:ubbike/shared/widgets/vista_con_pestanas.dart';
 import 'package:ubbike/features/qr/presentation/vista_qr_usuario.dart';
+import 'package:ubbike/features/acceso/presentation/vista_guardias_en_turno.dart';
 import 'package:ubbike/features/acceso/presentation/vista_solicitar_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_escaner_qr_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_gestion_manual_guardia.dart';
@@ -17,11 +18,11 @@ class VistaSoporteUsuario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VistaConTabs(
+    return VistaConPestanas(
       initialIndex: initialIndex,
-      tabs: [
-        tabCompacto(Icons.headset_mic_outlined, 'Atención'),
-        tabCompacto(Icons.flag_outlined, 'Incidencias'),
+      pestanas: [
+        pestanaCompacta(Icons.headset_mic_outlined, 'Atención'),
+        pestanaCompacta(Icons.flag_outlined, 'Incidencias'),
       ],
       vistas: const [
         VistaSolicitarGuardia(),
@@ -42,11 +43,11 @@ class VistaSoporteGuardia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VistaConTabs(
+    return VistaConPestanas(
       initialIndex: initialIndex,
-      tabs: [
-        tabCompacto(Icons.notifications_active_outlined, 'Alertas'),
-        tabCompacto(Icons.report_problem_outlined, 'Incidencias'),
+      pestanas: [
+        pestanaCompacta(Icons.notifications_active_outlined, 'Alertas'),
+        pestanaCompacta(Icons.report_problem_outlined, 'Incidencias'),
       ],
       vistas: const [
         VistaAlertasGuardia(),
@@ -67,11 +68,11 @@ class VistaSoporteCentral extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VistaConTabs(
+    return VistaConPestanas(
       initialIndex: initialIndex,
-      tabs: [
-        tabCompacto(Icons.campaign_outlined, 'Solicitudes'),
-        tabCompacto(Icons.report_problem_outlined, 'Incidencias'),
+      pestanas: [
+        pestanaCompacta(Icons.campaign_outlined, 'Solicitudes'),
+        pestanaCompacta(Icons.report_problem_outlined, 'Incidencias'),
       ],
       vistas: const [
         VistaSolicitudesCentral(),
@@ -85,6 +86,27 @@ class VistaSoporteCentral extends StatelessWidget {
   }
 }
 
+class VistaGuardias extends StatelessWidget {
+  const VistaGuardias({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return VistaConPestanas(
+      initialIndex: initialIndex,
+      pestanas: [
+        pestanaCompacta(Icons.shield_outlined, 'En turno'),
+        pestanaCompacta(Icons.query_stats_outlined, 'Operaciones'),
+      ],
+      vistas: const [
+        VistaGuardiasEnTurno(),
+        VistaOperacionesGuardiasCentral(),
+      ],
+    );
+  }
+}
+
 class VistaSoporteAdministrador extends StatelessWidget {
   const VistaSoporteAdministrador({super.key, this.initialIndex = 0});
 
@@ -92,15 +114,13 @@ class VistaSoporteAdministrador extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VistaConTabs(
+    return VistaConPestanas(
       initialIndex: initialIndex,
-      tabs: [
-        tabCompacto(Icons.security_outlined, 'Guardias'),
-        tabCompacto(Icons.campaign_outlined, 'Solicitudes'),
-        tabCompacto(Icons.report_problem_outlined, 'Incidencias'),
+      pestanas: [
+        pestanaCompacta(Icons.campaign_outlined, 'Solicitudes'),
+        pestanaCompacta(Icons.report_problem_outlined, 'Incidencias'),
       ],
       vistas: const [
-        VistaOperacionesGuardiasCentral(),
         VistaSolicitudesCentral(),
         VistaIncidencias(
           mostrarReportante: true,
@@ -119,11 +139,11 @@ class VistaQrAdmin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return VistaConTabs(
-      tabs: [
-        tabCompacto(Icons.qr_code_2, 'Generar'),
-        tabCompacto(Icons.qr_code_scanner, 'Validar'),
-        tabCompacto(Icons.edit_note_outlined, 'Manual'),
+    return VistaConPestanas(
+      pestanas: [
+        pestanaCompacta(Icons.qr_code_2, 'Generar'),
+        pestanaCompacta(Icons.qr_code_scanner, 'Validar'),
+        pestanaCompacta(Icons.edit_note_outlined, 'Manual'),
       ],
       vistas: [
         VistaQrUsuario(onVerHistorial: onVerHistorial),
