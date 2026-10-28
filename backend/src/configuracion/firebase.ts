@@ -47,5 +47,3 @@ export const obtenerFirebase = (): App | null => {
     return null;
   }
 };
-
-export const firebaseHabilitado = (): boolean => obtenerFirebase() !== null;

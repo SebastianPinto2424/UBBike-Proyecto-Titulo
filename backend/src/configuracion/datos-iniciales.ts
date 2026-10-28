@@ -39,6 +39,8 @@ const usuariosDemo = [
   }
 ];
 
+export const correosUsuariosDemo = usuariosDemo.map((usuario) => usuario.correo);
+
 const bicicleterosBase = [
   {
     nombre: 'Bicicletero cercano al Centro de Idiomas',
