@@ -20,10 +20,6 @@ class _HttpOverridesConCertificado extends HttpOverrides {
 }
 
 Future<void> inicializarClienteHttp() async {
-  if (kIsWeb) {
-    return;
-  }
-
   if (!ConfiguracionApi.baseUrl.startsWith('https')) {
     return;
   }

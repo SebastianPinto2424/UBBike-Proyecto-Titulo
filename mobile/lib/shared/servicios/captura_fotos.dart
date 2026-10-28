@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:ubbike/shared/utils/limites_foto.dart';
+import 'package:ubbike/shared/utilidades/limites_foto.dart';
 import 'package:ubbike/shared/widgets/pantalla_camara.dart';
 
 class CapturaFotos {
@@ -17,7 +17,7 @@ class CapturaFotos {
     required double ladoMaximo,
     int? maximoBytes,
   }) async {
-    if (fuente == ImageSource.camera && !kIsWeb) {
+    if (fuente == ImageSource.camera) {
       final bytes = await tomarFotoEnApp(context);
       return bytes == null
           ? null
@@ -37,7 +37,7 @@ class CapturaFotos {
   }
 
   Future<FotoPreparada?> recuperarPerdida({int? maximoBytes}) async {
-    if (kIsWeb) {
+    if (defaultTargetPlatform != TargetPlatform.android) {
       return null;
     }
     final respuesta = await _picker.retrieveLostData();
