@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 
 extension SnackBarSemantico on BuildContext {
+  void mostrarAvisoUnico(SnackBar aviso) {
+    ScaffoldMessenger.of(this)
+      ..clearSnackBars()
+      ..showSnackBar(aviso);
+  }
+
   void mostrarExito(String mensaje) {
-    ScaffoldMessenger.of(this).showSnackBar(
+    mostrarAvisoUnico(
       SnackBar(
         content: Row(
           children: [
@@ -20,7 +26,7 @@ extension SnackBarSemantico on BuildContext {
   }
 
   void mostrarError(String mensaje) {
-    ScaffoldMessenger.of(this).showSnackBar(
+    mostrarAvisoUnico(
       SnackBar(
         content: Row(
           children: [
@@ -37,7 +43,7 @@ extension SnackBarSemantico on BuildContext {
   }
 
   void mostrarInfo(String mensaje) {
-    ScaffoldMessenger.of(this).showSnackBar(
+    mostrarAvisoUnico(
       SnackBar(
         content: Row(
           children: [
