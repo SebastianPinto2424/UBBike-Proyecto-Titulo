@@ -201,6 +201,12 @@ ThemeData crearTemaUbb() {
       surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
+    datePickerTheme: DatePickerThemeData(
+      cancelButtonStyle: TextButton.styleFrom(
+        foregroundColor: ColoresUbb.rojoInstitucional,
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+    ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: ColoresUbb.azulNoche,
       contentTextStyle: const TextStyle(color: Colors.white),
