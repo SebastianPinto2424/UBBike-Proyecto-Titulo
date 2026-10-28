@@ -59,8 +59,11 @@ class ClienteApi {
       try {
         return await _respuesta(solicitud);
       } catch (error) {
-        if (intento >= _reintentosLectura || !_esFalloTransitorio(error)) {
+        if (!_esFalloTransitorio(error)) {
           rethrow;
+        }
+        if (intento >= _reintentosLectura) {
+          throw const ExcepcionApi(mensajeSinConexion);
         }
         await Future<void>.delayed(_esperaReintento * (intento + 1));
       }
@@ -128,7 +131,16 @@ class ClienteApi {
   Future<Map<String, dynamic>> _ejecutar(
     Future<http.Response> Function() solicitud,
   ) async {
-    return _procesarRespuesta(await _respuesta(solicitud));
+    final http.Response respuesta;
+    try {
+      respuesta = await _respuesta(solicitud);
+    } catch (error) {
+      if (_esFalloTransitorio(error)) {
+        throw const ExcepcionApi(mensajeSinConexion);
+      }
+      rethrow;
+    }
+    return _procesarRespuesta(respuesta);
   }
 
   Future<http.Response> _respuesta(
@@ -153,7 +165,7 @@ class ClienteApi {
         final clave = '$usuarioId:$refreshToken';
         final renovacion = _renovaciones.putIfAbsent(
           clave,
-          () => _intentarRefresh(refreshToken, usuarioId),
+          () => _intentarRenovacion(refreshToken, usuarioId),
         );
         final bool reintentado;
         try {
@@ -172,7 +184,7 @@ class ClienteApi {
     return respuesta;
   }
 
-  Future<bool> _intentarRefresh(
+  Future<bool> _intentarRenovacion(
     String refreshToken,
     String usuarioId,
   ) async {
@@ -205,14 +217,26 @@ class ClienteApi {
     return false;
   }
 
-  Map<String, dynamic> _procesarRespuesta(http.Response respuesta) {
-    Map<String, dynamic> contenido;
+  Map<String, dynamic>? _leerJson(String cuerpo) {
+    if (cuerpo.isEmpty) {
+      return <String, dynamic>{};
+    }
     try {
-      contenido = respuesta.body.isEmpty
-          ? <String, dynamic>{}
-          : jsonDecode(respuesta.body) as Map<String, dynamic>;
+      final datos = jsonDecode(cuerpo);
+      return datos is Map<String, dynamic> ? datos : null;
     } on FormatException {
-      contenido = <String, dynamic>{};
+      return null;
+    }
+  }
+
+  Map<String, dynamic> _procesarRespuesta(http.Response respuesta) {
+    final contenido = _leerJson(respuesta.body);
+
+    if (respuesta.statusCode >= 500 || contenido == null) {
+      throw ExcepcionApi(
+        mensajeServidorNoDisponible,
+        statusCode: respuesta.statusCode,
+      );
     }
 
     if (respuesta.statusCode >= 400) {
@@ -222,8 +246,10 @@ class ClienteApi {
           : null;
       final mensaje = primerDetalle ?? contenido['message']?.toString();
       throw ExcepcionApi(
-        _mensajeApiAmigable(mensaje) ?? 'Error ${respuesta.statusCode}',
+        _mensajeApiAmigable(mensaje) ??
+            'No se pudo completar la acción. Intenta nuevamente.',
         statusCode: respuesta.statusCode,
+        codigo: contenido['codigo'] as String?,
       );
     }
 
