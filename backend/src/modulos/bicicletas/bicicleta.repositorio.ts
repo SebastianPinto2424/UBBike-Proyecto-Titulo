@@ -7,6 +7,9 @@ const includeBicicleteroActual = {
   }
 } satisfies Prisma.BicicletaInclude;
 
+export const ejecutarEnTransaccion = <T>(callback: (client: ClientePrisma) => Promise<T>) =>
+  prisma.$transaction(callback);
+
 export const buscarDeUsuario = (
   usuarioId: string,
   bicicletaId: string,
@@ -63,4 +66,14 @@ export const actualizarConBicicletero = (
     where: { id },
     data,
     include: includeBicicleteroActual
+  });
+
+export const eliminarSiEstaFuera = (
+  id: string,
+  usuarioId: string,
+  client: ClientePrisma = prisma
+) =>
+  client.bicicleta.updateMany({
+    where: { id, usuarioId, eliminadoEn: null, dentroBicicletero: false },
+    data: { eliminadoEn: new Date(), activa: false }
   });

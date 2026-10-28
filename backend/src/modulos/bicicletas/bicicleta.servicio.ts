@@ -1,6 +1,6 @@
-import { ErrorHttp } from '../../comun/errors/error-http';
-import { prisma, type ClientePrisma } from '../../configuracion/prisma';
-import { bloquearClave } from '../../comun/utils/bloqueos';
+import { ErrorHttp } from '../../comun/errores/error-http';
+import type { ClientePrisma } from '../../configuracion/prisma';
+import { bloquearClave } from '../../comun/utilidades/bloqueos';
 import type { Bicicleta } from '../../generated/prisma/client';
 import { eliminarArchivoFotoBicicleta, guardarFotoBicicleta } from './foto-bicicleta.servicio';
 import * as bicicletaRepositorio from './bicicleta.repositorio';
@@ -71,7 +71,10 @@ const dejarSoloActiva = async (
   bicicletaId: string,
   db?: ClientePrisma
 ): Promise<void> => {
-  if (!db) return prisma.$transaction((tx) => dejarSoloActiva(usuarioId, bicicletaId, tx));
+  if (!db)
+    return bicicletaRepositorio.ejecutarEnTransaccion((tx) =>
+      dejarSoloActiva(usuarioId, bicicletaId, tx)
+    );
   await bloquearClave(db, `bicicletas:${usuarioId}`);
   const vigente = await bicicletaRepositorio.buscarDeUsuario(usuarioId, bicicletaId, db);
   if (!vigente) throw new ErrorHttp(404, 'Bicicleta no encontrada');
@@ -204,10 +207,7 @@ export const eliminarBicicleta = async (usuarioId: string, bicicletaId: string) 
 
   const estabaActiva = bicicleta.activa;
 
-  const eliminada = await prisma.bicicleta.updateMany({
-    where: { id: bicicleta.id, usuarioId, eliminadoEn: null, dentroBicicletero: false },
-    data: { eliminadoEn: new Date(), activa: false }
-  });
+  const eliminada = await bicicletaRepositorio.eliminarSiEstaFuera(bicicleta.id, usuarioId);
   if (eliminada.count !== 1)
     throw new ErrorHttp(409, 'La bicicleta cambió de estado; vuelve a consultar');
 
