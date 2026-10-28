@@ -4,7 +4,7 @@ const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   rootDir: '.',
-  setupFiles: ['<rootDir>/tests/e2e/helpers/entorno-aislado.ts'],
+  setupFiles: ['<rootDir>/tests/e2e/apoyo/entorno-aislado.ts'],
   testMatch: ['<rootDir>/tests/e2e/**/*.e2e.test.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1'
