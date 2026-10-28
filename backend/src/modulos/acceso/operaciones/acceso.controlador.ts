@@ -1,11 +1,7 @@
 import { SolicitudAutenticada } from '../../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../../comun/utils/controlador-async';
-import {
-  buscarCoincidenciaGestionManual,
-  confirmarQr,
-  denegarQr,
-  registrarGestionManual
-} from './acceso.servicio';
+import { controladorAsync } from '../../../comun/utilidades/controlador-async';
+import { buscarCoincidenciaGestionManual, registrarGestionManual } from './gestion-manual.servicio';
+import { confirmarQr, denegarQr } from './acceso.servicio';
 
 export const confirmarAccesoQr = controladorAsync<SolicitudAutenticada>(async (req, res) => {
   const movimiento = await confirmarQr({

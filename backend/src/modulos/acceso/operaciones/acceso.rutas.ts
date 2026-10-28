@@ -1,7 +1,7 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { middlewareAutenticacion } from '../../../comun/middlewares/autenticacion.middleware';
 import { autorizarRoles } from '../../../comun/middlewares/autorizar-roles.middleware';
-import { validarCuerpo } from '../../../comun/middlewares/validar-cuerpo.middleware';
+import { validarConsulta, validarCuerpo } from '../../../comun/middlewares/validacion.middleware';
 import { RolUsuario } from '../../usuarios/rol-usuario';
 import {
   buscarManual,
@@ -9,7 +9,12 @@ import {
   denegarAccesoQr,
   registrarManual
 } from './acceso.controlador';
-import { esquemaConfirmarQr, esquemaDenegarQr, esquemaGestionManual } from './acceso.validacion';
+import {
+  esquemaBuscarGestionManual,
+  esquemaConfirmarQr,
+  esquemaDenegarQr,
+  esquemaGestionManual
+} from './acceso.validacion';
 
 const rutasAcceso = Router();
 
@@ -20,7 +25,7 @@ rutasAcceso.use(
 
 rutasAcceso.post('/qr/confirmar', validarCuerpo(esquemaConfirmarQr), confirmarAccesoQr);
 rutasAcceso.post('/qr/denegar', validarCuerpo(esquemaDenegarQr), denegarAccesoQr);
-rutasAcceso.get('/manual/buscar', buscarManual);
+rutasAcceso.get('/manual/buscar', validarConsulta(esquemaBuscarGestionManual), buscarManual);
 rutasAcceso.post('/manual', validarCuerpo(esquemaGestionManual), registrarManual);
 
 export { rutasAcceso };
