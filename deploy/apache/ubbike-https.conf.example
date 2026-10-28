@@ -1,6 +1,5 @@
 <VirtualHost *:80>
   ServerName <DOMINIO_O_IP_PUBLICA>
-  DocumentRoot /var/www/ubbike
   RewriteEngine On
   RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R=301,L]
 </VirtualHost>
@@ -8,7 +7,6 @@
 <IfModule mod_ssl.c>
 <VirtualHost *:443>
   ServerName <DOMINIO_O_IP_PUBLICA>
-  DocumentRoot /var/www/ubbike
 
   SSLEngine on
   SSLCertificateFile /etc/letsencrypt/live/<DOMINIO_O_IP_PUBLICA>/fullchain.pem
@@ -17,7 +15,6 @@
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(self)"
 
   ProxyPreserveHost On
   ProxyRequests Off
@@ -26,46 +23,8 @@
   RewriteCond %{HTTP:Upgrade} =websocket [NC]
   RewriteRule ^/socket.io/(.*) ws://127.0.0.1:3000/socket.io/$1 [P,L]
 
-  ProxyPass /socket.io http://127.0.0.1:3000/socket.io retry=0
-  ProxyPassReverse /socket.io http://127.0.0.1:3000/socket.io
-
-  ProxyPass /autenticacion http://127.0.0.1:3000/autenticacion retry=0
-  ProxyPassReverse /autenticacion http://127.0.0.1:3000/autenticacion
-  ProxyPass /auth http://127.0.0.1:3000/auth retry=0
-  ProxyPassReverse /auth http://127.0.0.1:3000/auth
-  ProxyPass /bicicletas http://127.0.0.1:3000/bicicletas retry=0
-  ProxyPassReverse /bicicletas http://127.0.0.1:3000/bicicletas
-  ProxyPass /bicicleteros http://127.0.0.1:3000/bicicleteros retry=0
-  ProxyPassReverse /bicicleteros http://127.0.0.1:3000/bicicleteros
-  ProxyPass /historial http://127.0.0.1:3000/historial retry=0
-  ProxyPassReverse /historial http://127.0.0.1:3000/historial
-  ProxyPass /notificaciones http://127.0.0.1:3000/notificaciones retry=0
-  ProxyPassReverse /notificaciones http://127.0.0.1:3000/notificaciones
-  ProxyPass /qr http://127.0.0.1:3000/qr retry=0
-  ProxyPassReverse /qr http://127.0.0.1:3000/qr
-  ProxyPass /accesos http://127.0.0.1:3000/accesos retry=0
-  ProxyPassReverse /accesos http://127.0.0.1:3000/accesos
-  ProxyPass /guardias http://127.0.0.1:3000/guardias retry=0
-  ProxyPassReverse /guardias http://127.0.0.1:3000/guardias
-  ProxyPass /solicitudes-guardia http://127.0.0.1:3000/solicitudes-guardia retry=0
-  ProxyPassReverse /solicitudes-guardia http://127.0.0.1:3000/solicitudes-guardia
-  ProxyPass /incidencias http://127.0.0.1:3000/incidencias retry=0
-  ProxyPassReverse /incidencias http://127.0.0.1:3000/incidencias
-  ProxyPass /usuarios http://127.0.0.1:3000/usuarios retry=0
-  ProxyPassReverse /usuarios http://127.0.0.1:3000/usuarios
-  ProxyPass /uploads http://127.0.0.1:3000/uploads retry=0
-  ProxyPassReverse /uploads http://127.0.0.1:3000/uploads
-  ProxyPass /salud http://127.0.0.1:3000/salud retry=0
-  ProxyPassReverse /salud http://127.0.0.1:3000/salud
-  ProxyPass /health http://127.0.0.1:3000/health retry=0
-  ProxyPassReverse /health http://127.0.0.1:3000/health
-
-  <Directory /var/www/ubbike>
-    Options -Indexes +FollowSymLinks
-    AllowOverride None
-    Require all granted
-    FallbackResource /index.html
-  </Directory>
+  ProxyPass / http://127.0.0.1:3000/ retry=0
+  ProxyPassReverse / http://127.0.0.1:3000/
 
   ErrorLog ${APACHE_LOG_DIR}/ubbike_error.log
   CustomLog ${APACHE_LOG_DIR}/ubbike_access.log combined

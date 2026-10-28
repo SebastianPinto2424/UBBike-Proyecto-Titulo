@@ -20,7 +20,7 @@ if [[ ! -f "$TEMPLATE" ]]; then
   exit 1
 fi
 
-mkdir -p "$CERT_DIR" /var/www/ubbike
+mkdir -p "$CERT_DIR"
 
 if [[ "$PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   SAN="IP:$PUBLIC_HOST"
