@@ -40,28 +40,18 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>UBBike necesita acceder a la cámara para registrar fotografías de bicicletas.</string>
+	<string>UBBike usa la cámara para escanear códigos QR y fotografiar bicicletas e incidencias.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>UBBike usa tu ubicación para sugerirte el bicicletero más cercano.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>IP_DEL_SERVIDOR</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<false/>
-			</dict>
-		</dict>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>UBBike necesita acceder a la red local para conectarse al servidor durante el uso.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>UBBike necesita acceder a tus fotos para seleccionar imágenes de bicicletas.</string>
+	<string>UBBike usa tus fotos para adjuntar imágenes de bicicletas e incidencias.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -102,5 +92,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 </dict>
 </plist>
