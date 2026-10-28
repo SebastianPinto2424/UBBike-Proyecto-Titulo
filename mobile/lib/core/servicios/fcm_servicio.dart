@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,14 +9,15 @@ import 'package:ubbike/core/servicios/registro_dispositivo_push.dart';
 @pragma('vm:entry-point')
 Future<void> manejarMensajeSegundoPlano(RemoteMessage mensaje) async {}
 
-class FcmService {
-  FcmService._();
-  static final FcmService instancia = FcmService._();
+class FcmServicio {
+  FcmServicio._();
+  static final FcmServicio instancia = FcmServicio._();
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   bool _inicializado = false;
   String? _ultimoToken;
+  StreamSubscription<String>? _renovacionToken;
 
   final ValueNotifier<Map<String, dynamic>?> notificacionTocada =
       ValueNotifier(null);
@@ -27,7 +30,7 @@ class FcmService {
   );
 
   Future<void> inicializar() async {
-    if (_inicializado || kIsWeb) {
+    if (_inicializado) {
       return;
     }
     _inicializado = true;
@@ -35,6 +38,7 @@ class FcmService {
     await _plugin.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(),
       ),
       onDidReceiveNotificationResponse: (respuesta) {
         final payload = respuesta.payload;
@@ -82,16 +86,13 @@ class FcmService {
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
         ),
+        iOS: const DarwinNotificationDetails(),
       ),
       payload: mensaje.data['tipo'] as String?,
     );
   }
 
   Future<void> registrarToken(RegistroDispositivoPush repositorio) async {
-    if (kIsWeb) {
-      return;
-    }
-
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null) {
@@ -100,7 +101,9 @@ class FcmService {
       _ultimoToken = token;
       await repositorio.registrarDispositivo(token);
 
-      FirebaseMessaging.instance.onTokenRefresh.listen((nuevoToken) async {
+      await _renovacionToken?.cancel();
+      _renovacionToken =
+          FirebaseMessaging.instance.onTokenRefresh.listen((nuevoToken) async {
         _ultimoToken = nuevoToken;
         try {
           await repositorio.registrarDispositivo(nuevoToken);
@@ -114,10 +117,6 @@ class FcmService {
   }
 
   Future<void> eliminarToken(RegistroDispositivoPush repositorio) async {
-    if (kIsWeb) {
-      return;
-    }
-
     try {
       final token = _ultimoToken ?? await FirebaseMessaging.instance.getToken();
       if (token != null) {
