@@ -1,7 +1,6 @@
 param(
     [switch]$SinApk,
-    [int]$BackendPort = 0,
-    [int]$FrontendPort = 0
+    [int]$BackendPort = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -133,28 +132,15 @@ $contenido = Get-Content $rutaEnv -Raw
 if ($BackendPort -le 0) {
     $BackendPort = [int](Leer-Env -Contenido $contenido -Clave 'BACKEND_PORT' -ValorPorDefecto '3000')
 }
-if ($FrontendPort -le 0) {
-    $FrontendPort = [int](Leer-Env -Contenido $contenido -Clave 'FRONTEND_PORT' -ValorPorDefecto '8081')
-}
 
 $apiBaseUrl = "http://${ip}:${BackendPort}"
-$wsBaseUrl = "ws://${ip}:${BackendPort}"
-$frontendUrl = "http://${ip}:${FrontendPort}"
-$corsOrigins = "$frontendUrl,http://localhost:${FrontendPort},http://127.0.0.1:${FrontendPort}"
 
 Write-Host "IP LAN detectada: $ip" -ForegroundColor Cyan
 Write-Host "Backend demo: $apiBaseUrl" -ForegroundColor Cyan
 
 $contenido = Set-Env -Contenido $contenido -Clave 'BACKEND_PORT' -Valor $BackendPort
 $contenido = Set-Env -Contenido $contenido -Clave 'BACKEND_BIND_ADDRESS' -Valor '0.0.0.0'
-$contenido = Set-Env -Contenido $contenido -Clave 'FRONTEND_PORT' -Valor $FrontendPort
-$contenido = Set-Env -Contenido $contenido -Clave 'FRONTEND_BIND_ADDRESS' -Valor '0.0.0.0'
 $contenido = Set-Env -Contenido $contenido -Clave 'PUBLIC_API_BASE_URL' -Valor $apiBaseUrl
-$contenido = Set-Env -Contenido $contenido -Clave 'PUBLIC_WS_BASE_URL' -Valor $wsBaseUrl
-$contenido = Set-Env -Contenido $contenido -Clave 'FRONTEND_URL' -Valor $frontendUrl
-$contenido = Set-Env -Contenido $contenido -Clave 'DOCKER_FRONTEND_URL' -Valor $frontendUrl
-$contenido = Set-Env -Contenido $contenido -Clave 'CORS_ORIGINS' -Valor $corsOrigins
-$contenido = Set-Env -Contenido $contenido -Clave 'DOCKER_CORS_ORIGINS' -Valor $corsOrigins
 Set-Content -Path $rutaEnv -Value $contenido -Encoding utf8 -NoNewline
 Write-Host '.env actualizado para la red local.' -ForegroundColor Green
 
