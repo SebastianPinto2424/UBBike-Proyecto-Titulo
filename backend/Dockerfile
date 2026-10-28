@@ -23,6 +23,7 @@ COPY --from=deps --chown=node:node /app/dist ./dist
 COPY --chown=node:node package*.json ./
 COPY --chown=node:node prisma ./prisma
 COPY --chown=node:node prisma.config.ts ./
+COPY --chown=node:node publico ./publico
 
 RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
 
