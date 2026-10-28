@@ -4,8 +4,8 @@ import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class AccesoRepository {
-  const AccesoRepository(this._api);
+class AccesoRepositorio {
+  const AccesoRepositorio(this._api);
 
   final AccesoApi _api;
 
@@ -32,7 +32,7 @@ class AccesoRepository {
       _api.registrarManual(solicitud);
 }
 
-final accesoRepositoryProvider = Provider<AccesoRepository>((ref) {
+final accesoRepositorioProvider = Provider<AccesoRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return AccesoRepository(AccesoApi(cliente: cliente));
+  return AccesoRepositorio(AccesoApi(cliente: cliente));
 });

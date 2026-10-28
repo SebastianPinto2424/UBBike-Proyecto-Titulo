@@ -11,7 +11,7 @@ import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/features/acceso/presentation/dialogo_resultado_movimiento.dart';
 import 'package:ubbike/features/acceso/presentation/formulario_qr_validado.dart';
 import 'package:ubbike/features/acceso/presentation/panel_escaneo_guardia.dart';
-import 'package:ubbike/features/acceso/presentation/sheet_denegacion_qr.dart';
+import 'package:ubbike/features/acceso/presentation/hoja_denegacion_qr.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
 class VistaEscanerQrGuardia extends ConsumerStatefulWidget {
@@ -40,7 +40,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   @override
   void initState() {
     super.initState();
-    _scannerController = _crearScannerController();
+    _scannerController = _crearControladorEscaner();
   }
 
   @override
@@ -51,7 +51,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
     super.dispose();
   }
 
-  MobileScannerController _crearScannerController() {
+  MobileScannerController _crearControladorEscaner() {
     return MobileScannerController(
       autoStart: false,
       detectionSpeed: DetectionSpeed.noDuplicates,
@@ -76,7 +76,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
     unawaited(_procesarQrDetectado(codigo));
   }
 
-  void _toggleEscanear() {
+  void _alternarEscaneo() {
     unawaited(_cambiarEstadoEscaner());
   }
 
@@ -127,10 +127,10 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   }
 
   void _limpiarLectura() {
-    unawaited(_limpiarLecturaAsync());
+    unawaited(_limpiarLecturaAsincrona());
   }
 
-  Future<void> _limpiarLecturaAsync() async {
+  Future<void> _limpiarLecturaAsincrona() async {
     await _detenerCamaraSilencioso();
     if (!mounted) {
       return;
@@ -184,10 +184,10 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   }
 
   void _reintentarEscaner() {
-    unawaited(_reintentarEscanerAsync());
+    unawaited(_reintentarEscanerAsincrono());
   }
 
-  Future<void> _reintentarEscanerAsync() async {
+  Future<void> _reintentarEscanerAsincrono() async {
     if (preparandoEscaner || cargando) {
       return;
     }
@@ -269,7 +269,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          onPressed: cargando || preparandoEscaner ? null : _toggleEscanear,
+          onPressed: cargando || preparandoEscaner ? null : _alternarEscaneo,
           child: Text(
             preparandoEscaner
                 ? 'Preparando cámara'
@@ -348,7 +348,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el servidor.');
+        context.mostrarError(mensajeSinConexion);
       }
     } finally {
       if (mounted) {
@@ -359,7 +359,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
 
   Future<void> _escanearNuevamente(QrValidadoApp qr) async {
     unawaited(vm.liberarQr(qr.token).catchError((Object _) {}));
-    await _limpiarLecturaAsync();
+    await _limpiarLecturaAsincrona();
     if (mounted) {
       await _iniciarEscaner();
     }
@@ -371,7 +371,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
       showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => SheetDenegacion(
+      builder: (_) => HojaDenegacion(
         esIngreso: qr.tipo == 'INGRESO',
         onConfirmar: (motivo) => _confirmarDenegacion(qr, motivo),
       ),
@@ -395,7 +395,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
     } on ExcepcionApi catch (error) {
       return error.mensaje;
     } catch (_) {
-      return 'No se pudo conectar con el servidor.';
+      return mensajeSinConexion;
     }
   }
 }

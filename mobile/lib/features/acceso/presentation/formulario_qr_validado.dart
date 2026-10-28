@@ -5,6 +5,7 @@ import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/features/acceso/presentation/botones_decision_movimiento.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/selector_foto.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 String? _validarComentarioQrGuardia(String? valor) {
   final texto = valor?.trim() ?? '';
@@ -184,6 +185,8 @@ class FormularioQrValidado extends StatelessWidget {
               const SizedBox(height: 10),
               TextFormField(
                 controller: comentarioController,
+                spellCheckConfiguration: revisionOrtografica(),
+                textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
                 decoration: const InputDecoration(
                   labelText: 'Comentario opcional del guardia',

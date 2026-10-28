@@ -5,10 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/utilidades/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/encabezado_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/vista_ingreso_guardia.dart';
-import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
+import 'package:ubbike/shared/utilidades/utilidades_sesion.dart';
 import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/features/acceso/presentation/selector_bicicletero_guardia.dart';
@@ -25,13 +26,15 @@ class VistaInicioGuardia extends ConsumerStatefulWidget {
   ConsumerState<VistaInicioGuardia> createState() => _VistaInicioGuardiaState();
 }
 
-class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
+class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia>
+    with AutoRefrescoMixin {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
   late Future<BicicleteroApp?> futuroBicicletero;
   late Future<List<BicicleteroApp>> futuroBicicleteros;
   BicicleteroApp? ultimoBicicletero;
   List<BicicleteroApp>? ultimosBicicleteros;
   bool bicicleteroConsultado = false;
+  bool ultimaRecargaFallida = false;
   int versionSelector = 0;
 
   @override
@@ -39,6 +42,21 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
     super.initState();
     futuroBicicletero = vm.obtenerBicicleteroGestionado();
     futuroBicicleteros = vm.listarBicicleteros();
+    iniciarAutoRefresco();
+  }
+
+  @override
+  bool get datosDesactualizados => ultimaRecargaFallida;
+
+  @override
+  Future<void> refrescar() async {
+    _refrescarEnSilencio();
+    try {
+      await Future.wait([futuroBicicletero, futuroBicicleteros]);
+      ultimaRecargaFallida = false;
+    } catch (_) {
+      ultimaRecargaFallida = true;
+    }
   }
 
   Future<void> _recargar() async {
@@ -68,9 +86,7 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
       bicicleterosVersionProvider,
       movimientosVersionProvider
     ]) {
-      ref.listen<int>(version, (_, __) {
-        if (mounted) _refrescarEnSilencio();
-      });
+      ref.listen<int>(version, (_, __) => solicitarRefresco());
     }
 
     return ColoredBox(
@@ -102,8 +118,9 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
                         ultimoBicicletero = snapshot.data;
                         bicicleteroConsultado = true;
                       }
-                      final bicicletero =
-                          esperando ? ultimoBicicletero : snapshot.data;
+                      final bicicletero = esperando || snapshot.hasError
+                          ? ultimoBicicletero
+                          : snapshot.data;
                       final tieneBicicletero = bicicletero != null;
                       final primeraCarga = esperando && !bicicleteroConsultado;
 
@@ -172,14 +189,19 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia> {
                           if (snapshot.hasData) {
                             ultimosBicicleteros = snapshot.data;
                           }
+                          final anteriores = ultimosBicicleteros;
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
-                            final bicicleteros = ultimosBicicleteros;
-                            if (bicicleteros == null) {
+                            if (anteriores == null) {
                               return const SizedBox.shrink();
                             }
                             return _ListaBicicleterosGuardia(
-                              bicicleteros: bicicleteros,
+                              bicicleteros: anteriores,
+                            );
+                          }
+                          if (snapshot.hasError && anteriores != null) {
+                            return _ListaBicicleterosGuardia(
+                              bicicleteros: anteriores,
                             );
                           }
                           if (snapshot.hasError) {

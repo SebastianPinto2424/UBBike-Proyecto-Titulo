@@ -145,3 +145,29 @@ class SolicitudRegistroManual {
     };
   }
 }
+
+class GuardiaTurnoApp {
+  const GuardiaTurnoApp({
+    required this.id,
+    required this.nombre,
+    this.bicicleteroId,
+    this.bicicleteroNombre,
+  });
+
+  final String id;
+  final String nombre;
+  final String? bicicleteroId;
+  final String? bicicleteroNombre;
+
+  bool get enTurno => bicicleteroId != null;
+
+  factory GuardiaTurnoApp.desdeJson(Map<String, dynamic> json) {
+    final bicicletero = json['bicicletero'] as Map<String, dynamic>?;
+    return GuardiaTurnoApp(
+      id: json['id'] as String,
+      nombre: json['nombre'] as String,
+      bicicleteroId: bicicletero?['id'] as String?,
+      bicicleteroNombre: bicicletero?['nombre'] as String?,
+    );
+  }
+}

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/acceso/data/acceso_repository.dart';
+import 'package:ubbike/features/acceso/data/acceso_repositorio.dart';
 import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 
@@ -10,13 +10,13 @@ class EscanerQrVm {
   final Ref _ref;
 
   Future<QrValidadoApp> validarQr(String token) =>
-      _ref.read(accesoRepositoryProvider).validarQr(token);
+      _ref.read(accesoRepositorioProvider).validarQr(token);
 
   Future<void> liberarQr(String token) =>
-      _ref.read(accesoRepositoryProvider).liberarQr(token);
+      _ref.read(accesoRepositorioProvider).liberarQr(token);
 
   Future<MovimientoApp> confirmarQr(String token, {String? comentario}) =>
-      _ref.read(accesoRepositoryProvider).confirmarQr(
+      _ref.read(accesoRepositorioProvider).confirmarQr(
             token,
             comentario: comentario,
           );
@@ -25,7 +25,7 @@ class EscanerQrVm {
     required String token,
     required String motivo,
   }) =>
-      _ref.read(accesoRepositoryProvider).denegarQr(
+      _ref.read(accesoRepositorioProvider).denegarQr(
             token: token,
             motivo: motivo,
           );

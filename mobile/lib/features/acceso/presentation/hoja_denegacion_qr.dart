@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 typedef MotivoRechazo = ({IconData icono, String titulo, String detalle});
 
@@ -19,8 +20,8 @@ const motivosRechazo = <MotivoRechazo>[
   ),
 ];
 
-class SheetDenegacion extends StatefulWidget {
-  const SheetDenegacion({
+class HojaDenegacion extends StatefulWidget {
+  const HojaDenegacion({
     super.key,
     required this.esIngreso,
     required this.onConfirmar,
@@ -30,10 +31,10 @@ class SheetDenegacion extends StatefulWidget {
   final Future<String?> Function(String motivo) onConfirmar;
 
   @override
-  State<SheetDenegacion> createState() => _SheetDenegacionState();
+  State<HojaDenegacion> createState() => _HojaDenegacionState();
 }
 
-class _SheetDenegacionState extends State<SheetDenegacion> {
+class _HojaDenegacionState extends State<HojaDenegacion> {
   final formKeyDenegacion = GlobalKey<FormState>();
   final detalleController = TextEditingController();
   MotivoRechazo? seleccionado;
@@ -131,6 +132,8 @@ class _SheetDenegacionState extends State<SheetDenegacion> {
               const SizedBox(height: 4),
               TextFormField(
                 controller: detalleController,
+                spellCheckConfiguration: revisionOrtografica(),
+                textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
                 enabled: !enviando,
                 decoration: const InputDecoration(

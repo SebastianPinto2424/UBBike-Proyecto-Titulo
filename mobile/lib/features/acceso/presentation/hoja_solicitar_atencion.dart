@@ -4,9 +4,10 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
-class SheetSolicitarAtencion extends StatefulWidget {
-  const SheetSolicitarAtencion({
+class HojaSolicitarAtencion extends StatefulWidget {
+  const HojaSolicitarAtencion({
     super.key,
     required this.bicicleteros,
     required this.onEnviar,
@@ -17,10 +18,10 @@ class SheetSolicitarAtencion extends StatefulWidget {
   final Future<String?> Function(String bicicleteroId, String mensaje) onEnviar;
 
   @override
-  State<SheetSolicitarAtencion> createState() => _SheetSolicitarAtencionState();
+  State<HojaSolicitarAtencion> createState() => _HojaSolicitarAtencionState();
 }
 
-class _SheetSolicitarAtencionState extends State<SheetSolicitarAtencion> {
+class _HojaSolicitarAtencionState extends State<HojaSolicitarAtencion> {
   final formKeySolicitarAtencion = GlobalKey<FormState>();
   final mensajeController = TextEditingController();
   BicicleteroApp? seleccionado;
@@ -128,6 +129,8 @@ class _SheetSolicitarAtencionState extends State<SheetSolicitarAtencion> {
                 ),
                 child: TextFormField(
                   controller: mensajeController,
+                  spellCheckConfiguration: revisionOrtografica(),
+                  textCapitalization: TextCapitalization.sentences,
                   maxLines: 3,
                   decoration: const InputDecoration(
                     labelText: 'Mensaje (opcional)',
