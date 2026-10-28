@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
 import 'package:ubbike/shared/modelos/pagina_cursor.dart';
@@ -33,11 +34,13 @@ class NotificacionApi {
     await cliente.patch('/notificaciones/$notificacionId/leida');
   }
 
-  Future<void> registrarDispositivo(String token,
-      {String plataforma = 'android'}) async {
+  Future<void> registrarDispositivo(String token, {String? plataforma}) async {
     await cliente.post(
       '/notificaciones/dispositivos',
-      body: {'token': token, 'plataforma': plataforma},
+      body: {
+        'token': token,
+        'plataforma': plataforma ?? plataformaPush(defaultTargetPlatform),
+      },
     );
   }
 
@@ -46,3 +49,6 @@ class NotificacionApi {
         .delete('/notificaciones/dispositivos', body: {'token': token});
   }
 }
+
+String plataformaPush(TargetPlatform plataforma) =>
+    plataforma == TargetPlatform.iOS ? 'ios' : 'android';

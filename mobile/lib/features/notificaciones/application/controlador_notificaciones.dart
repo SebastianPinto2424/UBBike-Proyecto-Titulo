@@ -4,20 +4,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/servicios/registro_dispositivo_push.dart';
-import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
+import 'package:ubbike/features/notificaciones/data/notificacion_repositorio.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 
 class ControladorNotificaciones extends ChangeNotifier {
   ControladorNotificaciones({
-    required NotificacionRepository notificacionRepository,
+    required NotificacionRepositorio notificacionRepositorio,
     Stream<void>? eventosTiempoReal,
     Duration intervalo = const Duration(seconds: 30),
-  })  : _notificacionRepository = notificacionRepository,
+  })  : _notificacionRepositorio = notificacionRepositorio,
         _eventosTiempoReal = eventosTiempoReal,
         _intervalo = intervalo;
 
-  final NotificacionRepository _notificacionRepository;
+  final NotificacionRepositorio _notificacionRepositorio;
   final Stream<void>? _eventosTiempoReal;
   final Duration _intervalo;
   final Set<String> _notificacionesConocidas = {};
@@ -50,7 +50,7 @@ class ControladorNotificaciones extends ChangeNotifier {
 
     _actualizando = true;
     try {
-      final pagina = await _notificacionRepository.listarPagina();
+      final pagina = await _notificacionRepositorio.listarPagina();
       if (_cerrado) return;
       final notificaciones = pagina.datos;
       final nuevas = notificaciones
@@ -82,7 +82,7 @@ class ControladorNotificaciones extends ChangeNotifier {
 
   Future<void> marcarTodasLeidas() async {
     try {
-      await _notificacionRepository.marcarTodasLeidas();
+      await _notificacionRepositorio.marcarTodasLeidas();
       if (_cerrado) return;
       await actualizar();
     } catch (_) {}
@@ -100,11 +100,11 @@ class ControladorNotificaciones extends ChangeNotifier {
 final crearControladorNotificacionesProvider =
     Provider<ControladorNotificaciones Function(Stream<void> eventos)>(
   (ref) => (eventos) => ControladorNotificaciones(
-        notificacionRepository: ref.read(notificacionRepositoryProvider),
+        notificacionRepositorio: ref.read(notificacionRepositorioProvider),
         eventosTiempoReal: eventos,
       ),
 );
 
 final registroDispositivoPushProvider = Provider<RegistroDispositivoPush>(
-  (ref) => ref.watch(notificacionRepositoryProvider),
+  (ref) => ref.watch(notificacionRepositorioProvider),
 );

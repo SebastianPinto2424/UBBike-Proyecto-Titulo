@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/servicios/registro_dispositivo_push.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class NotificacionRepository implements RegistroDispositivoPush {
-  const NotificacionRepository(this._api);
+class NotificacionRepositorio implements RegistroDispositivoPush {
+  const NotificacionRepositorio(this._api);
 
   final NotificacionApi _api;
 
@@ -28,7 +28,8 @@ class NotificacionRepository implements RegistroDispositivoPush {
       _api.eliminarDispositivo(token);
 }
 
-final notificacionRepositoryProvider = Provider<NotificacionRepository>((ref) {
+final notificacionRepositorioProvider =
+    Provider<NotificacionRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return NotificacionRepository(NotificacionApi(cliente: cliente));
+  return NotificacionRepositorio(NotificacionApi(cliente: cliente));
 });
