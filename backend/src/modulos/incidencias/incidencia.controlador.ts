@@ -1,11 +1,7 @@
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../comun/utils/controlador-async';
-import {
-  actualizarEstadoIncidencia,
-  crearIncidencia,
-  listarIncidencias,
-  recordarIncidencia
-} from './incidencia.servicio';
+import { controladorAsync } from '../../comun/utilidades/controlador-async';
+import { actualizarEstadoIncidencia, recordarIncidencia } from './seguimiento-incidencia.servicio';
+import { crearIncidencia, listarIncidencias } from './incidencia.servicio';
 
 export const crear = controladorAsync<SolicitudAutenticada>(async (req, res) => {
   const incidencia = await crearIncidencia({

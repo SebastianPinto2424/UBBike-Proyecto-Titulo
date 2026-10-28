@@ -1,4 +1,10 @@
 import Joi from 'joi';
+import {
+  esquemaCursorPagina,
+  esquemaIdentificador,
+  esquemaLimitePagina,
+  esquemaTextoBusqueda
+} from '../../comun/utilidades/esquemas-comunes';
 import { maximoFotosIncidencia, maximoLargoFotoIncidencia } from './foto-incidencia.servicio';
 import { EstadoIncidencia } from './estado-incidencia';
 import { TipoIncidencia } from './tipo-incidencia';
@@ -41,4 +47,13 @@ export const esquemaActualizarEstadoIncidencia = Joi.object({
     }),
     otherwise: Joi.string().trim().max(1000).allow('', null).optional()
   })
+});
+
+export const esquemaConsultaIncidencias = Joi.object({
+  estado: Joi.string().valid(...Object.values(EstadoIncidencia), 'TODOS', 'ABIERTAS'),
+  tipo: Joi.string().valid(...Object.values(TipoIncidencia), 'TODOS'),
+  bicicleteroId: esquemaIdentificador,
+  q: esquemaTextoBusqueda,
+  cursor: esquemaCursorPagina,
+  limite: esquemaLimitePagina
 });

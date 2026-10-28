@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { ErrorHttp } from '../../comun/errors/error-http';
-import { limitarPagina, validarCursor } from '../../comun/utils/paginacion';
+import { ErrorHttp } from '../../comun/errores/error-http';
+import { limitarPagina, validarCursor } from '../../comun/utilidades/paginacion';
 import type { ClientePrisma } from '../../configuracion/prisma';
 import { Prisma } from '../../generated/prisma/client';
 import { registrarAuditoria } from '../auditoria/auditoria.servicio';
@@ -12,17 +12,9 @@ import {
 } from '../notificaciones/notificacion.servicio';
 import { TipoNotificacion } from '../notificaciones/tipo-notificacion';
 import { RolUsuario } from '../usuarios/rol-usuario';
-import {
-  crearCorreoIncidenciaNueva,
-  crearCorreoIncidenciaResuelta,
-  enviarCorreo
-} from '../correos/correo.servicio';
-import {
-  EventosTiempoReal,
-  emitirTiempoReal,
-  salaRol,
-  salaUsuario
-} from '../../tiempo-real/tiempo-real';
+import { crearCorreoIncidenciaNueva } from '../correos/operacion.plantillas';
+import { enviarCorreo } from '../correos/correo.servicio';
+import { EventosTiempoReal, emitirTiempoReal, salaRol } from '../../tiempo-real/tiempo-real';
 import { EstadoIncidencia } from './estado-incidencia';
 import * as incidenciaRepositorio from './incidencia.repositorio';
 import type { IncidenciaCompleta } from './incidencia.repositorio';
@@ -31,6 +23,8 @@ import {
   guardarFotosIncidencia
 } from './foto-incidencia.servicio';
 import { TipoIncidencia } from './tipo-incidencia';
+import { rolesCentral, estadosCerradosIncidencia } from './incidencia.reglas';
+import { etiquetaTipoIncidencia, mapearIncidencia } from './incidencia.mapeador';
 
 type DatosCrearIncidencia = {
   usuarioId: string;
@@ -53,141 +47,6 @@ type DatosListarIncidencias = {
   q?: string;
   cursor?: string;
   limite?: number;
-};
-
-type DatosActualizarIncidencia = {
-  usuarioId: string;
-  rol: string;
-  incidenciaId: string;
-  estado: EstadoIncidencia;
-  respuesta?: string | null;
-  ip?: string | null;
-  userAgent?: string | null;
-};
-
-type DatosRecordarIncidencia = {
-  usuarioId: string;
-  rol: string;
-  incidenciaId: string;
-};
-
-const rolesCentral: string[] = [RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR];
-const estadosCerradosIncidencia: EstadoIncidencia[] = [
-  EstadoIncidencia.RESUELTA,
-  EstadoIncidencia.DESCARTADA
-];
-const segundosEsperaRecordatorioIncidencia = 300;
-
-const etiquetaEstadoIncidencia = (estado: EstadoIncidencia) => {
-  switch (estado) {
-    case EstadoIncidencia.PENDIENTE:
-      return 'pendiente';
-    case EstadoIncidencia.EN_REVISION:
-      return 'en revisión';
-    case EstadoIncidencia.RESUELTA:
-      return 'resuelta';
-    case EstadoIncidencia.DESCARTADA:
-      return 'descartada';
-    default:
-      return estado;
-  }
-};
-
-const etiquetaTipoIncidencia = (tipo: TipoIncidencia) => {
-  switch (tipo) {
-    case TipoIncidencia.PROBLEMA_QR:
-      return 'Problema con QR';
-    case TipoIncidencia.DANO_BICICLETA:
-      return 'Daño de bicicleta';
-    case TipoIncidencia.DANO_INFRAESTRUCTURA:
-      return 'Daño de infraestructura';
-    case TipoIncidencia.PROBLEMA_MOVIMIENTO:
-      return 'Problema de movimiento';
-    case TipoIncidencia.USUARIO_DATOS:
-      return 'Datos de usuario';
-    default:
-      return 'Otro';
-  }
-};
-
-type ContextoIncidencia = {
-  usuarioId: string;
-  rol: string;
-};
-
-const calcularSegundosParaRecordatorioIncidencia = (incidencia: IncidenciaCompleta) => {
-  if (estadosCerradosIncidencia.includes(incidencia.estado)) {
-    return null;
-  }
-
-  const base = incidencia.ultimoRecordatorioEn ?? incidencia.creadaEn;
-  const transcurridos = Math.floor((Date.now() - base.getTime()) / 1000);
-  return Math.max(segundosEsperaRecordatorioIncidencia - transcurridos, 0);
-};
-
-const mapearUsuarioIncidencia = (
-  usuario: IncidenciaCompleta['reportadaPorUsuario'] | IncidenciaCompleta['gestionadaPorUsuario']
-) => {
-  if (!usuario) {
-    return null;
-  }
-
-  return {
-    id: usuario.id,
-    nombre: usuario.nombre,
-    correo: usuario.correo,
-    rut: usuario.rut,
-    rol: usuario.rol
-  };
-};
-
-const mapearIncidencia = (incidencia: IncidenciaCompleta, contexto: ContextoIncidencia) => {
-  const esReportante = incidencia.reportadaPorUsuarioId === contexto.usuarioId;
-  const segundosParaRecordar = esReportante
-    ? calcularSegundosParaRecordatorioIncidencia(incidencia)
-    : null;
-
-  return {
-    id: incidencia.id,
-    tipo: incidencia.tipo,
-    descripcion: incidencia.descripcion,
-    estado: incidencia.estado,
-    respuesta: incidencia.respuesta,
-    creadaEn: incidencia.creadaEn,
-    actualizadaEn: incidencia.actualizadaEn,
-    resueltaEn: incidencia.resueltaEn,
-    ultimoRecordatorioEn: incidencia.ultimoRecordatorioEn,
-    recordatorios: incidencia.recordatorios,
-    puedeRecordar: esReportante && segundosParaRecordar === 0,
-    segundosParaRecordar,
-    reportadaPorUsuario: mapearUsuarioIncidencia(incidencia.reportadaPorUsuario),
-    gestionadaPorUsuario: mapearUsuarioIncidencia(incidencia.gestionadaPorUsuario),
-    fotos: incidencia.fotos.map((foto) => ({
-      id: foto.id,
-      url: foto.fotoUrl,
-      mimeType: foto.mimeType,
-      tamanoBytes: foto.tamanoBytes
-    })),
-    bicicletero: {
-      id: incidencia.bicicletero.id,
-      nombre: incidencia.bicicletero.nombre,
-      ubicacion: incidencia.bicicletero.ubicacion
-    },
-    bicicleta: incidencia.bicicleta
-      ? {
-          id: incidencia.bicicleta.id,
-          descripcion: incidencia.bicicleta.descripcion,
-          marca: incidencia.bicicleta.marca,
-          modelo: incidencia.bicicleta.modelo,
-          color: incidencia.bicicleta.color,
-          aro: incidencia.bicicleta.aro,
-          numeroSerie: incidencia.bicicleta.numeroSerie,
-          fotoUrl: incidencia.bicicleta.fotoUrl,
-          activa: incidencia.bicicleta.activa,
-          dentroBicicletero: incidencia.bicicleta.dentroBicicletero
-        }
-      : null
-  };
 };
 
 const obtenerBicicleterosAsignadosGuardia = async (guardiaId: string, db?: ClientePrisma) => {
@@ -285,7 +144,7 @@ const construirWhereIncidencias = async (filtros: DatosListarIncidencias) => {
   return condiciones.length ? { AND: condiciones } : {};
 };
 
-const enviarCorreosCentralIncidencia = async (
+export const enviarCorreosCentralIncidencia = async (
   incidencia: IncidenciaCompleta,
   db: ClientePrisma,
   recordatorio = false,
@@ -437,183 +296,4 @@ export const listarIncidencias = async (filtros: DatosListarIncidencias) => {
     ),
     nextCursor
   };
-};
-
-export const actualizarEstadoIncidencia = async (datos: DatosActualizarIncidencia) => {
-  if (!rolesCentral.includes(datos.rol)) {
-    throw new ErrorHttp(403, 'Solo administracion puede gestionar incidencias');
-  }
-
-  const efectos: EfectosDiferidos = [];
-  const resultado = await incidenciaRepositorio.ejecutarEnTransaccion(async (db) => {
-    const incidencia = await incidenciaRepositorio.buscarPorId(datos.incidenciaId, db);
-
-    if (!incidencia) {
-      throw new ErrorHttp(404, 'Incidencia no encontrada');
-    }
-
-    if (estadosCerradosIncidencia.includes(incidencia.estado)) {
-      throw new ErrorHttp(409, 'La incidencia ya está cerrada');
-    }
-
-    const respuesta = datos.respuesta?.trim() || null;
-    const cerrada = estadosCerradosIncidencia.includes(datos.estado);
-
-    if (cerrada && !respuesta) {
-      throw new ErrorHttp(400, 'Debes indicar una respuesta para cerrar la incidencia');
-    }
-
-    const ahora = new Date();
-
-    const actualizada = await incidenciaRepositorio.actualizar(
-      incidencia.id,
-      {
-        estado: datos.estado,
-        respuesta: respuesta ?? incidencia.respuesta,
-        gestionadaPorUsuarioId: datos.usuarioId,
-        resueltaEn: cerrada ? ahora : null
-      },
-      db
-    );
-
-    const notificarReportante = incidencia.reportadaPorUsuarioId !== datos.usuarioId;
-
-    if (notificarReportante) {
-      await crearNotificacion(
-        {
-          usuarioId: incidencia.reportadaPorUsuarioId,
-          titulo: 'Incidencia actualizada',
-          mensaje: `El estado del reporte en ${incidencia.bicicletero.nombre} cambió a ${etiquetaEstadoIncidencia(datos.estado)}.`,
-          tipo: TipoNotificacion.INCIDENCIA,
-          datos: { incidenciaId: incidencia.id, estado: datos.estado }
-        },
-        db,
-        efectos
-      );
-    }
-
-    if (notificarReportante && cerrada && respuesta) {
-      const correo = crearCorreoIncidenciaResuelta({
-        nombre: incidencia.reportadaPorUsuario.nombre,
-        tipo: etiquetaTipoIncidencia(incidencia.tipo),
-        bicicletero: incidencia.bicicletero.nombre,
-        estado: etiquetaEstadoIncidencia(datos.estado),
-        respuesta,
-        fecha: ahora
-      });
-      await enviarCorreo(
-        { para: incidencia.reportadaPorUsuario.correo, ...correo, referencia: incidencia.id },
-        db
-      );
-    }
-
-    await registrarAuditoria(
-      {
-        actorUsuarioId: datos.usuarioId,
-        accion: 'INCIDENCIA_ESTADO_ACTUALIZADO',
-        entidad: 'incidencias',
-        entidadId: incidencia.id,
-        ip: datos.ip,
-        userAgent: datos.userAgent,
-        datos: {
-          estadoAnterior: incidencia.estado,
-          estadoNuevo: datos.estado,
-          respuesta: respuesta ?? undefined
-        }
-      },
-      db
-    );
-
-    return mapearIncidencia(actualizada, { usuarioId: datos.usuarioId, rol: datos.rol });
-  });
-
-  ejecutarEfectosDiferidos(efectos);
-  const reportanteId = resultado.reportadaPorUsuario?.id;
-  emitirTiempoReal(
-    [
-      ...(reportanteId ? [salaUsuario(reportanteId)] : []),
-      salaRol(RolUsuario.GUARDIA),
-      salaRol(RolUsuario.ADMIN_CENTRAL),
-      salaRol(RolUsuario.ADMINISTRADOR)
-    ],
-    EventosTiempoReal.INCIDENCIA
-  );
-
-  return resultado;
-};
-
-export const recordarIncidencia = async (datos: DatosRecordarIncidencia) => {
-  const efectos: EfectosDiferidos = [];
-  const resultado = await incidenciaRepositorio.ejecutarEnTransaccion(async (db) => {
-    const incidencia = await incidenciaRepositorio.buscarPorId(datos.incidenciaId, db);
-
-    if (!incidencia) {
-      throw new ErrorHttp(404, 'Incidencia no encontrada');
-    }
-
-    if (incidencia.reportadaPorUsuarioId !== datos.usuarioId) {
-      throw new ErrorHttp(403, 'Solo quien reportó la incidencia puede recordarla');
-    }
-
-    if (estadosCerradosIncidencia.includes(incidencia.estado)) {
-      throw new ErrorHttp(409, 'La incidencia ya está cerrada');
-    }
-
-    const segundosRestantes = calcularSegundosParaRecordatorioIncidencia(incidencia);
-
-    if (segundosRestantes !== null && segundosRestantes > 0) {
-      throw new ErrorHttp(409, `Podrás recordar nuevamente en ${segundosRestantes} segundos`);
-    }
-
-    const ahora = new Date();
-    const actualizada = await incidenciaRepositorio.actualizar(
-      incidencia.id,
-      {
-        ultimoRecordatorioEn: ahora,
-        recordatorios: { increment: 1 }
-      },
-      db
-    );
-
-    await notificarUsuariosPorRol(
-      {
-        roles: [RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR],
-        titulo: 'Recordatorio de incidencia',
-        mensaje: `${incidencia.reportadaPorUsuario.nombre} sigue esperando respuesta en ${incidencia.bicicletero.nombre}.`,
-        tipo: TipoNotificacion.INCIDENCIA,
-        datos: { incidenciaId: incidencia.id, bicicleteroId: incidencia.bicicletero.id },
-        excluirUsuarioId: datos.usuarioId
-      },
-      db,
-      efectos
-    );
-
-    await registrarAuditoria(
-      {
-        actorUsuarioId: datos.usuarioId,
-        accion: 'INCIDENCIA_RECORDADA',
-        entidad: 'incidencias',
-        entidadId: incidencia.id,
-        datos: { rolActor: datos.rol }
-      },
-      db
-    );
-
-    await enviarCorreosCentralIncidencia(incidencia, db, true, datos.usuarioId);
-    return mapearIncidencia(actualizada, { usuarioId: datos.usuarioId, rol: datos.rol });
-  });
-
-  ejecutarEfectosDiferidos(efectos);
-  const reportanteId = resultado.reportadaPorUsuario?.id;
-  emitirTiempoReal(
-    [
-      ...(reportanteId ? [salaUsuario(reportanteId)] : []),
-      salaRol(RolUsuario.GUARDIA),
-      salaRol(RolUsuario.ADMIN_CENTRAL),
-      salaRol(RolUsuario.ADMINISTRADOR)
-    ],
-    EventosTiempoReal.INCIDENCIA
-  );
-
-  return resultado;
 };
