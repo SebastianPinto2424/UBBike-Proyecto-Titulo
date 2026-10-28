@@ -18,6 +18,38 @@ export const buscarActivaConBicicletero = (guardiaId: string, client: ClientePri
     }
   });
 
+export const buscarActivaDeBicicletero = (bicicleteroId: string, client: ClientePrisma = prisma) =>
+  client.asignacionGuardia.findFirst({
+    where: {
+      bicicleteroId,
+      activa: true
+    },
+    include: {
+      guardia: {
+        select: {
+          nombre: true
+        }
+      },
+      bicicletero: {
+        select: {
+          nombre: true
+        }
+      }
+    }
+  });
+
+export const cerrarActivaPorId = (id: string, terminaEn: Date, client: ClientePrisma = prisma) =>
+  client.asignacionGuardia.updateMany({
+    where: {
+      id,
+      activa: true
+    },
+    data: {
+      activa: false,
+      terminaEn
+    }
+  });
+
 export const buscarBicicleteroActivo = (id: string, client: ClientePrisma = prisma) =>
   client.bicicletero.findFirst({
     where: {
@@ -46,3 +78,30 @@ export const crear = (
   data: Prisma.AsignacionGuardiaUncheckedCreateInput,
   client: ClientePrisma = prisma
 ) => client.asignacionGuardia.create({ data });
+
+const filtroGuardiaHabilitado = {
+  rol: 'GUARDIA',
+  cuentaActiva: true,
+  debeCambiarContrasena: false,
+  eliminadoEn: null
+} satisfies Prisma.UsuarioWhereInput;
+
+export const buscarGuardiaHabilitado = (id: string, client: ClientePrisma = prisma) =>
+  client.usuario.findFirst({
+    where: { id, ...filtroGuardiaHabilitado },
+    select: { id: true, nombre: true }
+  });
+
+export const listarGuardiasHabilitados = (client: ClientePrisma = prisma) =>
+  client.usuario.findMany({
+    where: filtroGuardiaHabilitado,
+    select: {
+      id: true,
+      nombre: true,
+      asignacionesGuardia: {
+        where: { activa: true },
+        select: { bicicletero: { select: { id: true, nombre: true } } }
+      }
+    },
+    orderBy: { nombre: 'asc' }
+  });
