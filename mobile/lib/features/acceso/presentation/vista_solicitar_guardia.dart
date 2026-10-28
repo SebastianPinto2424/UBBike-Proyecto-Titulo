@@ -8,10 +8,12 @@ import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/utilidades/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/features/acceso/presentation/sheet_solicitar_atencion.dart';
+import 'package:ubbike/features/acceso/presentation/hoja_cancelar_solicitud.dart';
+import 'package:ubbike/features/acceso/presentation/hoja_solicitar_atencion.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 
@@ -23,20 +25,24 @@ class VistaSolicitarGuardia extends ConsumerStatefulWidget {
       _VistaSolicitarGuardiaState();
 }
 
-class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
+class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia>
+    with AutoRefrescoMixin {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
   List<BicicleteroApp> bicicleteros = [];
   late Future<List<SolicitudGuardiaApp>> futuroSolicitudes;
-  bool cargando = true;
+  List<SolicitudGuardiaApp>? ultimasSolicitudes;
+  ValueNotifier<SolicitudGuardiaApp>? solicitudEnCancelacion;
+  bool ultimaRecargaFallida = false;
+  bool abriendoFormulario = false;
   bool notificando = false;
   Timer? temporizadorCooldown;
 
   @override
   void initState() {
     super.initState();
-    futuroSolicitudes = vm.listarSolicitudes();
-    _programarRefrescoCooldown(futuroSolicitudes);
+    futuroSolicitudes = _cargarSolicitudes();
     _cargarBicicleteros();
+    iniciarAutoRefresco();
   }
 
   @override
@@ -45,60 +51,83 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
     super.dispose();
   }
 
-  Future<void> _programarRefrescoCooldown(
-    Future<List<SolicitudGuardiaApp>> futuro,
-  ) async {
+  @override
+  bool get datosDesactualizados => ultimaRecargaFallida;
+
+  @override
+  Future<void> refrescar() async {
+    _recargar();
+    await futuroSolicitudes.then<void>((_) {}, onError: (_) {});
+  }
+
+  Future<List<SolicitudGuardiaApp>> _cargarSolicitudes() async {
     try {
-      final solicitudes = await futuro;
-      temporizadorCooldown?.cancel();
+      final solicitudes = await vm.listarSolicitudes();
+      ultimasSolicitudes = solicitudes;
+      ultimaRecargaFallida = false;
+      _actualizarSolicitudEnCancelacion(solicitudes);
+      _programarRefrescoCooldown(solicitudes);
+      return solicitudes;
+    } catch (_) {
+      ultimaRecargaFallida = true;
+      final anteriores = ultimasSolicitudes;
+      if (anteriores == null) rethrow;
+      return anteriores;
+    }
+  }
 
-      final pendientes = solicitudes
-          .map((solicitud) => solicitud.segundosParaNotificarGuardia ?? 0)
-          .where((segundos) => segundos > 0);
+  void _actualizarSolicitudEnCancelacion(
+    List<SolicitudGuardiaApp> solicitudes,
+  ) {
+    final enCancelacion = solicitudEnCancelacion;
+    if (enCancelacion == null) {
+      return;
+    }
+    final actual = solicitudes
+        .where((solicitud) => solicitud.id == enCancelacion.value.id)
+        .firstOrNull;
+    if (actual != null) enCancelacion.value = actual;
+  }
 
-      if (pendientes.isEmpty || !mounted) {
-        return;
-      }
+  void _programarRefrescoCooldown(List<SolicitudGuardiaApp> solicitudes) {
+    temporizadorCooldown?.cancel();
 
-      final segundosMinimos = pendientes.reduce((a, b) => a < b ? a : b);
-      temporizadorCooldown = Timer(
-        Duration(seconds: segundosMinimos + 1),
-        () {
-          if (mounted) {
-            _recargar();
-          }
-        },
-      );
-    } catch (_) {}
+    final pendientes = solicitudes
+        .map((solicitud) => solicitud.segundosParaNotificarGuardia ?? 0)
+        .where((segundos) => segundos > 0);
+
+    if (pendientes.isEmpty || !mounted) {
+      return;
+    }
+
+    final segundosMinimos = pendientes.reduce((a, b) => a < b ? a : b);
+    temporizadorCooldown = Timer(
+      Duration(seconds: segundosMinimos + 1),
+      _recargar,
+    );
   }
 
   Future<void> _cargarBicicleteros() async {
     try {
       final datos = await vm.listarBicicleteros();
       if (mounted) {
-        setState(() {
-          bicicleteros = datos;
-          cargando = false;
-        });
+        setState(() => bicicleteros = datos);
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() => cargando = false);
-      }
-    }
+    } catch (_) {}
   }
 
   void _recargar() {
-    final futuro = vm.listarSolicitudes();
+    if (!mounted) {
+      return;
+    }
     setState(() {
-      futuroSolicitudes = futuro;
+      futuroSolicitudes = _cargarSolicitudes();
     });
-    _programarRefrescoCooldown(futuro);
   }
 
   Future<String?> _crearSolicitud(String bicicleteroId, String mensaje) async {
     try {
-      await vm.crearSolicitud(
+      final solicitud = await vm.crearSolicitud(
         bicicleteroId: bicicleteroId,
         tipo: 'REQUIERE_SERVICIO',
         mensaje: mensaje,
@@ -106,19 +135,48 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
 
       if (mounted) {
         _recargar();
-        context
-            .mostrarExito('Solicitud enviada al guardia con copia a central');
+        context.mostrarExito(
+          solicitud.guardiaAsignado == null
+              ? 'Por ahora nadie gestiona este bicicletero. Avisamos a central y tu solicitud llegará al guardia en cuanto tome el turno.'
+              : 'Solicitud enviada al guardia con copia a central',
+        );
       }
       return null;
     } on ExcepcionApi catch (error) {
       return error.mensaje;
     } catch (_) {
-      return 'No se pudo conectar con el servidor.';
+      return mensajeSinConexion;
     }
   }
 
   Future<void> _abrirFormulario() async {
-    if (cargando) {
+    if (abriendoFormulario) {
+      return;
+    }
+    if (bicicleteros.isEmpty) {
+      setState(() => abriendoFormulario = true);
+      try {
+        final datos = await vm.listarBicicleteros();
+        if (mounted) {
+          setState(() => bicicleteros = datos);
+        }
+      } on ExcepcionApi catch (error) {
+        if (mounted) {
+          context.mostrarError(error.mensaje);
+        }
+        return;
+      } catch (_) {
+        if (mounted) {
+          context.mostrarError(mensajeSinConexion);
+        }
+        return;
+      } finally {
+        if (mounted) {
+          setState(() => abriendoFormulario = false);
+        }
+      }
+    }
+    if (!mounted) {
       return;
     }
     if (bicicleteros.isEmpty) {
@@ -131,11 +189,48 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
       isScrollControlled: true,
       showDragHandle: true,
       useSafeArea: true,
-      builder: (_) => SheetSolicitarAtencion(
+      builder: (_) => HojaSolicitarAtencion(
         bicicleteros: bicicleteros,
         onEnviar: _crearSolicitud,
       ),
     );
+  }
+
+  Future<void> _abrirCancelacion(SolicitudGuardiaApp solicitud) async {
+    final enVivo = ValueNotifier(solicitud);
+    solicitudEnCancelacion = enVivo;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (_) => HojaCancelarSolicitud(
+        solicitud: enVivo,
+        onCancelar: (motivo) => _cancelarSolicitud(solicitud, motivo),
+      ),
+    );
+    if (identical(solicitudEnCancelacion, enVivo)) {
+      solicitudEnCancelacion = null;
+    }
+    enVivo.dispose();
+  }
+
+  Future<String?> _cancelarSolicitud(
+    SolicitudGuardiaApp solicitud,
+    String motivo,
+  ) async {
+    try {
+      await vm.cancelarSolicitud(solicitudId: solicitud.id, motivo: motivo);
+      if (mounted) {
+        _recargar();
+        context.mostrarExito('Solicitud cancelada');
+      }
+      return null;
+    } on ExcepcionApi catch (error) {
+      return error.mensaje;
+    } catch (_) {
+      return mensajeSinConexion;
+    }
   }
 
   Future<void> _notificarGuardia(SolicitudGuardiaApp solicitud) async {
@@ -167,11 +262,10 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<int>(solicitudesGuardiaVersionProvider, (_, __) {
-      if (mounted) {
-        _recargar();
-      }
-    });
+    ref.listen<int>(
+        solicitudesGuardiaVersionProvider, (_, __) => solicitarRefresco());
+    ref.listen<int>(
+        bicicleterosVersionProvider, (_, __) => _cargarBicicleteros());
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -179,7 +273,7 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _EncabezadoAtencionGuardia(
-            cargando: cargando,
+            abriendo: abriendoFormulario,
             onSolicitar: _abrirFormulario,
           ),
           const SizedBox(height: 16),
@@ -191,7 +285,8 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
               child: FutureBuilder<List<SolicitudGuardiaApp>>(
                 future: futuroSolicitudes,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(bottom: 24),
@@ -243,6 +338,7 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
                     children: [
                       ...solicitudes.map(
                         (solicitud) => Padding(
+                          key: ValueKey(solicitud.id),
                           padding: const EdgeInsets.only(bottom: 10),
                           child: TarjetaSolicitudGuardia(
                             solicitud: solicitud,
@@ -250,6 +346,8 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
                             permitirNotificarUsuario: true,
                             onNotificarGuardia: () =>
                                 _notificarGuardia(solicitud),
+                            onCancelarSolicitante: () =>
+                                _abrirCancelacion(solicitud),
                             onEsperaCumplida: _recargar,
                           ),
                         ),
@@ -268,11 +366,11 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia> {
 
 class _EncabezadoAtencionGuardia extends StatelessWidget {
   const _EncabezadoAtencionGuardia({
-    required this.cargando,
+    required this.abriendo,
     required this.onSolicitar,
   });
 
-  final bool cargando;
+  final bool abriendo;
   final VoidCallback onSolicitar;
 
   @override
@@ -307,17 +405,17 @@ class _EncabezadoAtencionGuardia extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: cargando ? null : onSolicitar,
-              icon: cargando
+              onPressed: abriendo ? null : onSolicitar,
+              icon: abriendo
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.add, size: 18),
-              label: Text(
-                cargando ? 'Cargando bicicleteros' : 'Solicitar atención',
-                style: const TextStyle(
+              label: const Text(
+                'Solicitar atención',
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),

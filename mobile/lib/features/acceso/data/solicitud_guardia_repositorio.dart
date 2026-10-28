@@ -1,11 +1,12 @@
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/features/acceso/data/solicitud_guardia_api.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class SolicitudGuardiaRepository {
-  const SolicitudGuardiaRepository(this._api);
+class SolicitudGuardiaRepositorio {
+  const SolicitudGuardiaRepositorio(this._api);
 
   final SolicitudGuardiaApi _api;
 
@@ -20,7 +21,7 @@ class SolicitudGuardiaRepository {
   Future<void> liberarBicicleteroGestionado() =>
       _api.liberarBicicleteroGestionado();
 
-  Future<void> crearSolicitud({
+  Future<SolicitudGuardiaApp> crearSolicitud({
     required String bicicleteroId,
     required String tipo,
     String? mensaje,
@@ -30,6 +31,14 @@ class SolicitudGuardiaRepository {
         tipo: tipo,
         mensaje: mensaje,
       );
+
+  Future<List<GuardiaTurnoApp>> listarGuardias() => _api.listarGuardias();
+
+  Future<SolicitudGuardiaApp> cancelarSolicitud({
+    required String solicitudId,
+    required String motivo,
+  }) =>
+      _api.cancelarSolicitud(solicitudId: solicitudId, motivo: motivo);
 
   Future<SolicitudGuardiaApp> notificarGuardia({
     required String solicitudId,
@@ -53,8 +62,8 @@ class SolicitudGuardiaRepository {
           solicitudId: solicitudId, estado: estado, nota: nota);
 }
 
-final solicitudGuardiaRepositoryProvider =
-    Provider<SolicitudGuardiaRepository>((ref) {
+final solicitudGuardiaRepositorioProvider =
+    Provider<SolicitudGuardiaRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return SolicitudGuardiaRepository(SolicitudGuardiaApi(cliente: cliente));
+  return SolicitudGuardiaRepositorio(SolicitudGuardiaApi(cliente: cliente));
 });

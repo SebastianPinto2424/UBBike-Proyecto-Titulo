@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/features/acceso/presentation/dialogo_nota_cierre.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
-import 'package:ubbike/shared/utils/auto_refresco.dart';
+import 'package:ubbike/shared/utilidades/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/features/acceso/presentation/solicitud_guardia_widgets.dart';
 import 'package:ubbike/shared/widgets/filtros_widgets.dart';
@@ -85,6 +88,36 @@ class _VistaSolicitudesCentralState
       estadoFiltro = 'TODOS';
       futuroSolicitudes = _cargarSolicitudes();
     });
+  }
+
+  Future<void> _cerrarSinResolver(SolicitudGuardiaApp solicitud) async {
+    final nota = await showDialog<String>(
+      context: context,
+      builder: (_) => const DialogoNotaCierre(),
+    );
+    if (nota == null || !mounted) {
+      return;
+    }
+
+    try {
+      await vm.actualizarEstado(
+        solicitudId: solicitud.id,
+        estado: 'CANCELADA',
+        nota: nota,
+      );
+      if (mounted) {
+        _recargar();
+        context.mostrarExito('Solicitud cerrada sin resolver');
+      }
+    } on ExcepcionApi catch (error) {
+      if (mounted) {
+        context.mostrarError(error.mensaje);
+      }
+    } catch (_) {
+      if (mounted) {
+        context.mostrarError(mensajeSinConexion);
+      }
+    }
   }
 
   List<FiltroActivo> _filtrosActivos() {
@@ -243,13 +276,14 @@ class _VistaSolicitudesCentralState
       children: solicitudes
           .map(
             (solicitud) => Padding(
+              key: ValueKey(solicitud.id),
               padding: const EdgeInsets.only(bottom: 10),
               child: TarjetaSolicitudGuardia(
                 solicitud: solicitud,
                 mostrarSolicitante: true,
                 permitirNotificarCentral: true,
                 mostrarAccionesGuardia: false,
-                permitirCierreCentral: true,
+                onCerrarSinResolver: () => _cerrarSinResolver(solicitud),
                 onEsperaCumplida: _recargar,
                 onActualizar: (estado, {nota}) async {
                   await vm.actualizarEstado(

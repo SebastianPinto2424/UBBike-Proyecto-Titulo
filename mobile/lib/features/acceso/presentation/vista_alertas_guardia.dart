@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
@@ -107,6 +107,7 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
 
   Widget _tarjetaSolicitud(SolicitudGuardiaApp solicitud) {
     return Padding(
+      key: ValueKey(solicitud.id),
       padding: const EdgeInsets.only(bottom: 10),
       child: TarjetaSolicitudGuardia(
         solicitud: solicitud,
@@ -220,7 +221,8 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
   }
 
   Widget _contenidoAlertas(AsyncSnapshot<List<SolicitudGuardiaApp>> snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
+    if (snapshot.connectionState == ConnectionState.waiting &&
+        !snapshot.hasData) {
       return const SliverCargando();
     }
 

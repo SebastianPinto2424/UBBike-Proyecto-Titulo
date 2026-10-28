@@ -1,4 +1,5 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
+import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
 
@@ -6,6 +7,15 @@ class SolicitudGuardiaApi {
   const SolicitudGuardiaApi({required this.cliente});
 
   final ClienteApi cliente;
+
+  Future<List<GuardiaTurnoApp>> listarGuardias() async {
+    final respuesta = await cliente.get('/guardias');
+    final datos = respuesta['guardias'] as List<dynamic>? ?? const [];
+    return datos
+        .whereType<Map<String, dynamic>>()
+        .map(GuardiaTurnoApp.desdeJson)
+        .toList();
+  }
 
   Future<BicicleteroApp?> obtenerBicicleteroGestionado() async {
     final respuesta = await cliente.get('/guardias/me/bicicletero');
@@ -31,18 +41,36 @@ class SolicitudGuardiaApi {
     await cliente.delete('/guardias/me/bicicletero');
   }
 
-  Future<void> crearSolicitud({
+  Future<SolicitudGuardiaApp> crearSolicitud({
     required String bicicleteroId,
     required String tipo,
     String? mensaje,
   }) async {
-    await cliente.post(
+    final respuesta = await cliente.post(
       '/solicitudes-guardia',
       body: {
         'bicicleteroId': bicicleteroId,
         'tipo': tipo,
         'mensaje': mensaje,
       },
+    );
+
+    return SolicitudGuardiaApp.desdeJson(
+      respuesta['solicitud'] as Map<String, dynamic>,
+    );
+  }
+
+  Future<SolicitudGuardiaApp> cancelarSolicitud({
+    required String solicitudId,
+    required String motivo,
+  }) async {
+    final respuesta = await cliente.post(
+      '/solicitudes-guardia/$solicitudId/cancelar',
+      body: {'motivo': motivo},
+    );
+
+    return SolicitudGuardiaApp.desdeJson(
+      respuesta['solicitud'] as Map<String, dynamic>,
     );
   }
 

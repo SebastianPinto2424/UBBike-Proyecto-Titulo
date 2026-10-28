@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/acceso/presentation/dialogo_nota_cierre.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 import 'package:ubbike/shared/widgets/bloque_mensaje.dart';
 import 'package:ubbike/shared/widgets/boton_con_espera.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/central_widgets.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
@@ -19,10 +19,11 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
     this.permitirNotificarCentral = false,
     this.permitirNotificarUsuario = false,
     this.mostrarAccionesGuardia = true,
-    this.permitirCierreCentral = false,
+    this.onCerrarSinResolver,
     this.onEsperaCumplida,
     this.onActualizar,
     this.onNotificarGuardia,
+    this.onCancelarSolicitante,
   });
 
   final SolicitudGuardiaApp solicitud;
@@ -30,17 +31,21 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
   final bool permitirNotificarCentral;
   final bool permitirNotificarUsuario;
   final bool mostrarAccionesGuardia;
-  final bool permitirCierreCentral;
 
   final VoidCallback? onEsperaCumplida;
   final Future<void> Function(String estado, {String? nota})? onActualizar;
   final Future<void> Function()? onNotificarGuardia;
+  final VoidCallback? onCancelarSolicitante;
+  final VoidCallback? onCerrarSinResolver;
 
   @override
   Widget build(BuildContext context) {
     final cerrada =
         solicitud.estado == 'RESUELTA' || solicitud.estado == 'CANCELADA';
     final mensaje = solicitud.mensaje?.trim();
+    final puedeRecordar = onActualizar == null &&
+        permitirNotificarUsuario &&
+        onNotificarGuardia != null;
     final etiquetaMensaje =
         mostrarSolicitante ? 'Mensaje del solicitante' : 'Mensaje enviado';
 
@@ -155,8 +160,7 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
             if (solicitud.resueltaEn != null) ...[
               const SizedBox(height: 8),
               FilaDato(
-                etiqueta:
-                    solicitud.estado == 'CANCELADA' ? 'Cancelada' : 'Resuelta',
+                etiqueta: _etiquetaCierre(solicitud),
                 valor: _formatearFechaHoraSolicitud(solicitud.resueltaEn!),
               ),
             ],
@@ -178,12 +182,14 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
                 mensaje: mensaje,
               ),
             ],
-            if (solicitud.notaCierreCentral != null &&
-                solicitud.notaCierreCentral!.isNotEmpty) ...[
+            if (solicitud.motivoCierre != null &&
+                solicitud.motivoCierre!.isNotEmpty) ...[
               const SizedBox(height: 12),
               BloqueMensajeSolicitud(
-                titulo: 'Motivo de cierre (Central)',
-                mensaje: solicitud.notaCierreCentral!,
+                titulo: solicitud.cerradaPor == 'SOLICITANTE'
+                    ? 'Motivo del solicitante'
+                    : 'Motivo de cierre (Central)',
+                mensaje: solicitud.motivoCierre!,
               ),
             ],
             if (!cerrada && onActualizar != null) ...[
@@ -221,12 +227,7 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
                       label: const Text('Marcar resuelta'),
                     ),
                   ],
-                  if (permitirCierreCentral) ...[
-                    OutlinedButton.icon(
-                      onPressed: () => _cerrarComoCentral(context, 'RESUELTA'),
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Marcar resuelta'),
-                    ),
+                  if (onCerrarSinResolver != null) ...[
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ColoresUbb.rojoInstitucional,
@@ -234,7 +235,7 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
                           color: ColoresUbb.rojoInstitucional,
                         ),
                       ),
-                      onPressed: () => _cerrarComoCentral(context, 'CANCELADA'),
+                      onPressed: onCerrarSinResolver,
                       icon: const Icon(Icons.block_outlined),
                       label: const Text('Cerrar sin resolver'),
                     ),
@@ -243,19 +244,33 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
               ),
             ],
             if (!cerrada &&
-                onActualizar == null &&
-                permitirNotificarUsuario &&
-                onNotificarGuardia != null) ...[
+                (puedeRecordar || onCancelarSolicitante != null)) ...[
               const SizedBox(height: 14),
-              if (solicitud.guardiaAsignado == null)
-                const _IndicadorCentralAvisada()
-              else
-                _BotonRecordarSolicitud(
-                  solicitud: solicitud,
-                  prefijoEspera: 'Podrás recordar en',
-                  onPresionar: () => _notificarGuardia(context),
-                  alTerminarEspera: onEsperaCumplida,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (puedeRecordar && solicitud.guardiaAsignado == null)
+                    const _IndicadorCentralAvisada(),
+                  if (puedeRecordar && solicitud.guardiaAsignado != null)
+                    _BotonRecordarSolicitud(
+                      solicitud: solicitud,
+                      prefijoEspera: 'Podrás recordar en',
+                      onPresionar: () => _notificarGuardia(context),
+                      alTerminarEspera: onEsperaCumplida,
+                    ),
+                  if (puedeRecordar && onCancelarSolicitante != null)
+                    const SizedBox(height: 10),
+                  if (onCancelarSolicitante != null)
+                    BotonAccion(
+                      accion: AccionBoton(
+                        texto: 'Cancelar solicitud',
+                        color: ColoresUbb.rojoInstitucional,
+                        icono: Icons.block,
+                        onPressed: onCancelarSolicitante,
+                      ),
+                    ),
+                ],
+              ),
             ],
           ],
         ),
@@ -278,17 +293,6 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
         context.mostrarError(error.mensaje);
       }
     }
-  }
-
-  Future<void> _cerrarComoCentral(BuildContext context, String estado) async {
-    final nota = await showDialog<String>(
-      context: context,
-      builder: (_) => DialogoNotaCierre(estado: estado),
-    );
-    if (nota == null || !context.mounted) {
-      return;
-    }
-    await _actualizar(context, estado, nota: nota);
   }
 
   Future<void> _notificarGuardia(BuildContext context) async {
@@ -338,7 +342,7 @@ class _IndicadorCentralAvisada extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Esperando que se asigne un guardia al bicicletero.',
+                  'Nadie gestiona este bicicletero por ahora. Tu solicitud llegará al guardia en cuanto tome el turno.',
                   style: textTheme.bodySmall?.copyWith(
                     color: ColoresUbb.textoSecundario,
                   ),
@@ -428,4 +432,15 @@ Color _colorEstadoSolicitud(String estado) {
 
 String _formatearFechaHoraSolicitud(DateTime fecha) {
   return '${formatearFecha(fecha)} ${formatearHora(fecha)}';
+}
+
+String _etiquetaCierre(SolicitudGuardiaApp solicitud) {
+  if (solicitud.estado == 'RESUELTA') {
+    return 'Resuelta';
+  }
+  return switch (solicitud.cerradaPor) {
+    'SOLICITANTE' => 'Cancelada por el solicitante',
+    'CENTRAL' => 'Cerrada por central',
+    _ => 'Cancelada',
+  };
 }

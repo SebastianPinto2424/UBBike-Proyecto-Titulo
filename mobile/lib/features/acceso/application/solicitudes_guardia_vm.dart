@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/acceso/data/solicitud_guardia_repository.dart';
+import 'package:ubbike/features/acceso/data/solicitud_guardia_repositorio.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
-import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/shared/data/bicicleteros_repositorio.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 class SolicitudesGuardiaVm {
@@ -11,39 +11,48 @@ class SolicitudesGuardiaVm {
   final Ref _ref;
 
   Future<List<BicicleteroApp>> listarBicicleteros() =>
-      _ref.read(bicicleterosRepositoryProvider).listar();
+      _ref.read(bicicleterosRepositorioProvider).listar();
 
   Future<BicicleteroApp?> obtenerBicicleteroGestionado() => _ref
-      .read(solicitudGuardiaRepositoryProvider)
+      .read(solicitudGuardiaRepositorioProvider)
       .obtenerBicicleteroGestionado();
 
   Future<BicicleteroApp> seleccionarBicicleteroGestionado(
     String bicicleteroId,
   ) =>
       _ref
-          .read(solicitudGuardiaRepositoryProvider)
+          .read(solicitudGuardiaRepositorioProvider)
           .seleccionarBicicleteroGestionado(bicicleteroId);
 
   Future<void> liberarBicicleteroGestionado() => _ref
-      .read(solicitudGuardiaRepositoryProvider)
+      .read(solicitudGuardiaRepositorioProvider)
       .liberarBicicleteroGestionado();
 
-  Future<void> crearSolicitud({
+  Future<SolicitudGuardiaApp> crearSolicitud({
     required String bicicleteroId,
     required String tipo,
     String? mensaje,
   }) =>
-      _ref.read(solicitudGuardiaRepositoryProvider).crearSolicitud(
+      _ref.read(solicitudGuardiaRepositorioProvider).crearSolicitud(
             bicicleteroId: bicicleteroId,
             tipo: tipo,
             mensaje: mensaje,
+          );
+
+  Future<SolicitudGuardiaApp> cancelarSolicitud({
+    required String solicitudId,
+    required String motivo,
+  }) =>
+      _ref.read(solicitudGuardiaRepositorioProvider).cancelarSolicitud(
+            solicitudId: solicitudId,
+            motivo: motivo,
           );
 
   Future<SolicitudGuardiaApp> notificarGuardia({
     required String solicitudId,
     String? mensaje,
   }) =>
-      _ref.read(solicitudGuardiaRepositoryProvider).notificarGuardia(
+      _ref.read(solicitudGuardiaRepositorioProvider).notificarGuardia(
             solicitudId: solicitudId,
             mensaje: mensaje,
           );
@@ -53,7 +62,7 @@ class SolicitudesGuardiaVm {
     String? q,
     int? limite,
   }) =>
-      _ref.read(solicitudGuardiaRepositoryProvider).listarSolicitudes(
+      _ref.read(solicitudGuardiaRepositorioProvider).listarSolicitudes(
             estado: estado,
             q: q,
             limite: limite,
@@ -64,7 +73,7 @@ class SolicitudesGuardiaVm {
     required String estado,
     String? nota,
   }) =>
-      _ref.read(solicitudGuardiaRepositoryProvider).actualizarEstado(
+      _ref.read(solicitudGuardiaRepositorioProvider).actualizarEstado(
             solicitudId: solicitudId,
             estado: estado,
             nota: nota,
