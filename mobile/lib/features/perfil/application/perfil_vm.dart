@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/auth/data/autenticacion_repository.dart';
+import 'package:ubbike/features/autenticacion/data/autenticacion_repositorio.dart';
 
 class PerfilVm {
   const PerfilVm(this._ref);
@@ -8,7 +8,7 @@ class PerfilVm {
   final Ref _ref;
 
   Future<String> solicitarCambioContrasena(String correo) => _ref
-      .read(autenticacionRepositoryProvider)
+      .read(autenticacionRepositorioProvider)
       .solicitarCambioContrasena(correo);
 }
 
