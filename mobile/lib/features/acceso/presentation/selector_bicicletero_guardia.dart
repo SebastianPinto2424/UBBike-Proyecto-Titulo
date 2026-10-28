@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
-import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/utilidades/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
+import 'package:ubbike/shared/widgets/selector_desplegable.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
 class SelectorBicicleteroGuardiaPerfil extends ConsumerStatefulWidget {
@@ -19,7 +21,8 @@ class SelectorBicicleteroGuardiaPerfil extends ConsumerStatefulWidget {
 }
 
 class _SelectorBicicleteroGuardiaPerfilState
-    extends ConsumerState<SelectorBicicleteroGuardiaPerfil> {
+    extends ConsumerState<SelectorBicicleteroGuardiaPerfil>
+    with AutoRefrescoMixin {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
   List<BicicleteroApp> bicicleteros = [];
   BicicleteroApp? bicicleteroSeleccionado;
@@ -27,11 +30,30 @@ class _SelectorBicicleteroGuardiaPerfilState
   bool guardando = false;
   bool liberando = false;
   bool abierto = false;
+  bool ultimaRecargaFallida = false;
+
+  String? get _miId {
+    final sesion = ref.read(sesionProvider).valueOrNull;
+    return sesion is SesionActiva ? sesion.usuario.id : null;
+  }
+
+  void _terminarOperacion() {
+    if (mounted) _cargar(silencioso: true);
+  }
 
   @override
   void initState() {
     super.initState();
     _cargar();
+    iniciarAutoRefresco();
+  }
+
+  @override
+  bool get datosDesactualizados => ultimaRecargaFallida;
+
+  @override
+  Future<void> refrescar() async {
+    if (!guardando && !liberando) await _cargar(silencioso: true);
   }
 
   Future<void> _cargar({bool silencioso = false}) async {
@@ -59,21 +81,21 @@ class _SelectorBicicleteroGuardiaPerfilState
         bicicleteros = lista;
         bicicleteroSeleccionado = seleccionado;
         cargando = false;
+        ultimaRecargaFallida = false;
       });
-    } on ExcepcionApi catch (error) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
 
-      setState(() => cargando = false);
-      context.mostrarError(error.mensaje);
-    } catch (_) {
-      if (!mounted) {
-        return;
+      setState(() {
+        cargando = false;
+        ultimaRecargaFallida = true;
+      });
+      if (!silencioso) {
+        context.mostrarError(
+            error is ExcepcionApi ? error.mensaje : mensajeSinConexion);
       }
-
-      setState(() => cargando = false);
-      context.mostrarError('No se pudo conectar con el backend');
     }
   }
 
@@ -118,8 +140,9 @@ class _SelectorBicicleteroGuardiaPerfilState
       }
 
       setState(() => guardando = false);
-      context.mostrarError('No se pudo conectar con el backend');
+      context.mostrarError(mensajeSinConexion);
     }
+    _terminarOperacion();
   }
 
   Future<void> _liberar() async {
@@ -166,8 +189,9 @@ class _SelectorBicicleteroGuardiaPerfilState
         guardando = false;
         liberando = false;
       });
-      context.mostrarError('No se pudo conectar con el backend');
+      context.mostrarError(mensajeSinConexion);
     }
+    _terminarOperacion();
   }
 
   String _textoBicicleteroSeleccionado() {
@@ -184,151 +208,41 @@ class _SelectorBicicleteroGuardiaPerfilState
 
   Widget _opcionNinguno() {
     final seleccionado = bicicleteroSeleccionado == null;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: guardando || seleccionado ? null : _liberar,
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: seleccionado
-                  ? ColoresUbb.azulApp.withValues(alpha: 0.08)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: seleccionado ? ColoresUbb.azulApp : ColoresUbb.borde,
-                width: seleccionado ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ninguno',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Dejar de gestionar un bicicletero',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: ColoresUbb.textoSecundario,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                if (liberando)
-                  const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  Icon(
-                    seleccionado
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: seleccionado
-                        ? ColoresUbb.azulApp
-                        : ColoresUbb.textoSecundario,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return OpcionDesplegable(
+      titulo: 'Ninguno',
+      detalle: 'Dejar de gestionar un bicicletero',
+      seleccionada: seleccionado,
+      cargando: liberando,
+      onTap: guardando || seleccionado ? null : _liberar,
     );
   }
 
   Widget _opcionBicicletero(BicicleteroApp bicicletero) {
     final seleccionado = bicicleteroSeleccionado?.id == bicicletero.id;
-    final guardandoEste = guardando && seleccionado;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: guardando || seleccionado
-              ? null
-              : () {
-                  setState(() => bicicleteroSeleccionado = bicicletero);
-                  _guardar();
-                },
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: seleccionado
-                  ? ColoresUbb.azulApp.withValues(alpha: 0.08)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: seleccionado ? ColoresUbb.azulApp : ColoresUbb.borde,
-                width: seleccionado ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        bicicletero.nombre,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${bicicletero.cuposDisponibles} cupos disponibles',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: ColoresUbb.textoSecundario,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                if (guardandoEste)
-                  const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  Icon(
-                    seleccionado
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: seleccionado
-                        ? ColoresUbb.azulApp
-                        : ColoresUbb.textoSecundario,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    final deOtroGuardia = bicicletero.tieneGuardia &&
+        bicicletero.guardiaActivoId != _miId &&
+        !seleccionado;
+    return OpcionDesplegable(
+      titulo: bicicletero.nombre,
+      detalle: deOtroGuardia
+          ? 'Lo gestiona ${bicicletero.guardiaActivoNombre}'
+          : '${bicicletero.cuposDisponibles} cupos disponibles',
+      seleccionada: seleccionado,
+      bloqueada: deOtroGuardia,
+      cargando: guardando && seleccionado,
+      onTap: guardando || seleccionado || deOtroGuardia
+          ? null
+          : () {
+              setState(() => bicicleteroSeleccionado = bicicletero);
+              _guardar();
+            },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<int>(bicicleterosVersionProvider, (_, __) {
-      if (mounted && !guardando && !liberando) _cargar(silencioso: true);
-    });
+    ref.listen<int>(
+        bicicleterosVersionProvider, (_, __) => solicitarRefresco());
 
     if (cargando) {
       return const Center(child: CircularProgressIndicator());
@@ -345,103 +259,19 @@ class _SelectorBicicleteroGuardiaPerfilState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 9),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => setState(() => abierto = !abierto),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: ColoresUbb.bordeFuerte),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: ColoresUbb.azulApp,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _textoBicicleteroSeleccionado(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: bicicleteroSeleccionado == null
-                                        ? ColoresUbb.textoSecundario
-                                        : ColoresUbb.textoPrincipal,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            ),
-                          ),
-                          Icon(
-                            abierto
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            color: ColoresUbb.textoSecundario,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 14,
-              top: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                color: Theme.of(context).scaffoldBackgroundColor,
-                child: Text(
-                  'Bicicletero a gestionar',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: ColoresUbb.azulApp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-              ),
-            ),
-          ],
+        CampoDesplegable(
+          etiqueta: 'Bicicletero a gestionar',
+          texto: _textoBicicleteroSeleccionado(),
+          vacio: bicicleteroSeleccionado == null,
+          abierto: abierto,
+          onTap: () => setState(() => abierto = !abierto),
         ),
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 180),
-          crossFadeState:
-              abierto ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          firstChild: const SizedBox.shrink(),
-          secondChild: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: ColoresUbb.fondo,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: ColoresUbb.borde),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _opcionNinguno(),
-                    ...bicicleteros.map(_opcionBicicletero),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        PanelOpcionesDesplegable(
+          abierto: abierto,
+          opciones: [
+            _opcionNinguno(),
+            ...bicicleteros.map(_opcionBicicletero),
+          ],
         ),
       ],
     );
