@@ -14,7 +14,7 @@ class ConfiguracionApi {
   }
 
   static String get _baseUrlLocalPorPlataforma {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:$_puertoLocal';
     }
 
