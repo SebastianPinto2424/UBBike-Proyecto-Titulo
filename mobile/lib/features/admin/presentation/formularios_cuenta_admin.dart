@@ -3,27 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/utils/identidad.dart';
+import 'package:ubbike/shared/utilidades/identidad.dart';
 import 'package:ubbike/shared/widgets/botones_accion.dart';
-import 'package:ubbike/shared/widgets/estilos_formulario_auth.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario_autenticacion.dart';
 
-class SheetEditarCuenta extends StatefulWidget {
-  const SheetEditarCuenta({super.key, required this.usuario});
+class HojaEditarCuenta extends StatefulWidget {
+  const HojaEditarCuenta({super.key, required this.usuario});
 
   final UsuarioApp usuario;
 
   @override
-  State<SheetEditarCuenta> createState() => _SheetEditarCuentaState();
+  State<HojaEditarCuenta> createState() => _HojaEditarCuentaState();
 }
 
-class SheetCrearUsuario extends StatefulWidget {
-  const SheetCrearUsuario({super.key});
+class HojaCrearUsuario extends StatefulWidget {
+  const HojaCrearUsuario({super.key});
 
   @override
-  State<SheetCrearUsuario> createState() => _SheetCrearUsuarioState();
+  State<HojaCrearUsuario> createState() => _HojaCrearUsuarioState();
 }
 
-class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
+class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
   final formKeyCrearCuenta = GlobalKey<FormState>();
   final nombreController = TextEditingController();
   final correoController = TextEditingController();
@@ -113,18 +113,36 @@ class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Para guardias puedes usar un correo externo. La cuenta queda activa; el usuario recibirá un correo para verificarla y definir su contraseña.',
+                'La persona recibirá un correo para activar su cuenta y crear su contraseña.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: ColoresUbb.textoSecundario,
                     ),
               ),
               const SizedBox(height: 16),
+              DropdownAdmin<RolUsuario>(
+                value: rol,
+                decoration: const InputDecoration(labelText: 'Rol'),
+                items: RolUsuario.values
+                    .map(
+                      (item) => DropdownMenuItem(
+                        value: item,
+                        child: Text(item.etiqueta),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (valor) {
+                  if (valor != null) {
+                    setState(() => rol = valor);
+                  }
+                },
+              ),
+              const SizedBox(height: 18),
               TextFormField(
                 controller: nombreController,
                 focusNode: nombreFocus,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
-                decoration: decoracionCampoAuth(
+                decoration: decoracionCampoAutenticacion(
                   labelText: 'Nombre completo',
                   icono: Icons.person_outline,
                   helperText: _ayudaSiActivo(
@@ -143,15 +161,12 @@ class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
                 enableSuggestions: false,
                 textCapitalization: TextCapitalization.none,
                 textInputAction: TextInputAction.next,
-                decoration: decoracionCampoAuth(
+                decoration: decoracionCampoAutenticacion(
                   labelText: 'Correo',
                   icono: Icons.mail_outline,
-                  helperText: _ayudaSiActivo(
-                    correoFocus,
-                    'Institucional, o externo si es guardia (ej: persona@gmail.com)',
-                  ),
+                  helperText: _ayudaSiActivo(correoFocus, _ayudaCorreo(rol)),
                 ),
-                validator: _validarCorreoCuentaAdmin,
+                validator: (valor) => _validarCorreoCuentaAdmin(valor, rol),
               ),
               const SizedBox(height: 18),
               TextFormField(
@@ -159,9 +174,9 @@ class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
                 focusNode: rutFocus,
                 autocorrect: false,
                 enableSuggestions: false,
-                inputFormatters: [RutInputFormatter()],
+                inputFormatters: [FormateadorRut()],
                 textInputAction: TextInputAction.next,
-                decoration: decoracionCampoAuth(
+                decoration: decoracionCampoAutenticacion(
                   labelText: 'RUT',
                   icono: Icons.badge_outlined,
                   helperText: _ayudaSiActivo(
@@ -170,24 +185,6 @@ class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
                   ),
                 ),
                 validator: _validarRutCuentaAdmin,
-              ),
-              const SizedBox(height: 12),
-              DropdownAdmin<RolUsuario>(
-                value: rol,
-                decoration: const InputDecoration(labelText: 'Rol'),
-                items: RolUsuario.values
-                    .map(
-                      (item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(item.etiqueta),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (valor) {
-                  if (valor != null) {
-                    setState(() => rol = valor);
-                  }
-                },
               ),
               const SizedBox(height: 20),
               BotonesAccion.confirmacion(
@@ -204,7 +201,7 @@ class _SheetCrearUsuarioState extends State<SheetCrearUsuario> {
   }
 }
 
-class _SheetEditarCuentaState extends State<SheetEditarCuenta> {
+class _HojaEditarCuentaState extends State<HojaEditarCuenta> {
   final formKeyEditarCuenta = GlobalKey<FormState>();
   late final TextEditingController nombreController;
   late final TextEditingController correoController;
@@ -288,15 +285,21 @@ class _SheetEditarCuentaState extends State<SheetEditarCuenta> {
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
                 textInputAction: TextInputAction.next,
-                decoration:
-                    const InputDecoration(labelText: 'Correo institucional'),
-                validator: _validarCorreoCuentaAdmin,
+                decoration: InputDecoration(
+                  labelText: 'Correo',
+                  helperText: _ayudaCorreo(widget.usuario.rol),
+                ),
+                validator: (valor) => _validarCorreoCuentaAdmin(
+                  valor,
+                  widget.usuario.rol,
+                  correoActual: widget.usuario.correo,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: rutController,
                 autocorrect: false,
-                inputFormatters: [RutInputFormatter()],
+                inputFormatters: [FormateadorRut()],
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _guardar(),
                 decoration: const InputDecoration(labelText: 'RUT'),
@@ -331,7 +334,33 @@ String? _validarNombreCuentaAdmin(String? valor) {
   return null;
 }
 
-String? _validarCorreoCuentaAdmin(String? valor) {
+String _ayudaCorreo(RolUsuario rol) {
+  final dominio = rol.dominioCorreo;
+  return dominio == null
+      ? 'Puede ser institucional o externo (ej: persona@gmail.com)'
+      : 'Debe terminar en $dominio';
+}
+
+String _quienPorRol(RolUsuario rol) {
+  switch (rol) {
+    case RolUsuario.estudiante:
+      return 'Un estudiante';
+    case RolUsuario.funcionario:
+      return 'Un funcionario';
+    case RolUsuario.guardia:
+      return 'Un guardia';
+    case RolUsuario.adminCentral:
+      return 'Un administrador central';
+    case RolUsuario.administrador:
+      return 'Un administrador';
+  }
+}
+
+String? _validarCorreoCuentaAdmin(
+  String? valor,
+  RolUsuario rol, {
+  String? correoActual,
+}) {
   final texto = valor?.trim() ?? '';
   if (texto.isEmpty) {
     return 'Ingresa un correo.';
@@ -343,6 +372,14 @@ String? _validarCorreoCuentaAdmin(String? valor) {
   final correoValido = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
   if (!correoValido.hasMatch(texto)) {
     return 'Ingresa un correo válido. Ej: usuario@ubiobio.cl';
+  }
+
+  final sinCambios = texto.toLowerCase() == correoActual?.trim().toLowerCase();
+  final dominio = rol.dominioCorreo;
+  if (!sinCambios &&
+      dominio != null &&
+      !texto.toLowerCase().endsWith(dominio)) {
+    return '${_quienPorRol(rol)} debe usar un correo $dominio';
   }
   return null;
 }
