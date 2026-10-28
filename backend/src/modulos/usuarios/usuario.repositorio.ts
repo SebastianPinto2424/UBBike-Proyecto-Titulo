@@ -67,3 +67,30 @@ export const contarAdministradoresActivos = (
       ...(excluirUsuarioId ? { id: { not: excluirUsuarioId } } : {})
     }
   });
+
+export const contarAdministradoresSinCorreos = (
+  correos: string[],
+  client: ClientePrisma = prisma
+) =>
+  client.usuario.count({
+    where: {
+      rol: RolUsuario.ADMINISTRADOR,
+      cuentaActiva: true,
+      correoVerificado: true,
+      eliminadoEn: null,
+      correo: { notIn: correos }
+    }
+  });
+
+export const desactivarCuentasPorCorreo = async (correos: string[]) => {
+  const [resultado] = await prisma.$transaction([
+    prisma.usuario.updateMany({
+      where: { correo: { in: correos }, eliminadoEn: null },
+      data: { cuentaActiva: false, eliminadoEn: new Date(), versionSesion: { increment: 1 } }
+    }),
+    prisma.dispositivoToken.deleteMany({
+      where: { usuario: { correo: { in: correos } } }
+    })
+  ]);
+  return resultado.count;
+};
