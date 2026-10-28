@@ -53,6 +53,19 @@ extension EtiquetaRolUsuario on RolUsuario {
     }
   }
 
+  String? get dominioCorreo {
+    switch (this) {
+      case RolUsuario.estudiante:
+        return '@alumnos.ubiobio.cl';
+      case RolUsuario.guardia:
+        return null;
+      case RolUsuario.funcionario:
+      case RolUsuario.adminCentral:
+      case RolUsuario.administrador:
+        return '@ubiobio.cl';
+    }
+  }
+
   bool get esUsuarioRegular {
     return this == RolUsuario.estudiante || this == RolUsuario.funcionario;
   }
