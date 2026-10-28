@@ -366,43 +366,34 @@ class _PanelGestionUsuario extends StatelessWidget {
               const Divider(height: 28),
               const _EtiquetaSeccion('Acciones de cuenta'),
               const SizedBox(height: 8),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final anchoBoton = constraints.maxWidth >= 330
-                      ? (constraints.maxWidth - 10) / 2
-                      : constraints.maxWidth;
-
-                  return Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      SizedBox(
-                        width: anchoBoton,
-                        child: ElevatedButton(
-                          onPressed: () => onEditarCredenciales(usuario),
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('Editar datos'),
-                          ),
-                        ),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      key: Key('editar-usuario-${usuario.id}'),
+                      onPressed: () => onEditarCredenciales(usuario),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Editar datos'),
                       ),
-                      SizedBox(
-                        width: anchoBoton,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ColoresUbb.rojoInstitucional,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () => onEliminar(usuario),
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('Eliminar cuenta'),
-                          ),
-                        ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      key: Key('eliminar-usuario-${usuario.id}'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ColoresUbb.rojoInstitucional,
+                        foregroundColor: Colors.white,
                       ),
-                    ],
-                  );
-                },
+                      onPressed: () => onEliminar(usuario),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Eliminar cuenta'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
