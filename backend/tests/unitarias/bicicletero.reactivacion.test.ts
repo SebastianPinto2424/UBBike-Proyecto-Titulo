@@ -1,5 +1,5 @@
-import '../helpers/env-setup';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 import { crearBicicletero } from '../../src/modulos/bicicleteros/bicicletero.servicio';
 
@@ -25,12 +25,12 @@ const datosNuevos = {
 
 describe('crear un bicicletero con el nombre de uno eliminado', () => {
   beforeEach(() => {
-    prismaMock.bicicleta.count.mockResolvedValue(0 as never);
+    prismaSimulado.bicicleta.count.mockResolvedValue(0 as never);
   });
 
   it('reactiva el existente con los datos nuevos en vez de fallar', async () => {
-    prismaMock.bicicletero.findUnique.mockResolvedValue(bicicletero as never);
-    prismaMock.bicicletero.update.mockResolvedValue({
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue(bicicletero as never);
+    prismaSimulado.bicicletero.update.mockResolvedValue({
       ...bicicletero,
       ...datosNuevos,
       activo: true
@@ -38,8 +38,8 @@ describe('crear un bicicletero con el nombre de uno eliminado', () => {
 
     const resultado = await crearBicicletero(datosNuevos);
 
-    expect(prismaMock.bicicletero.create).not.toHaveBeenCalled();
-    expect(prismaMock.bicicletero.update).toHaveBeenCalledWith(
+    expect(prismaSimulado.bicicletero.create).not.toHaveBeenCalled();
+    expect(prismaSimulado.bicicletero.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'bic-1' },
         data: expect.objectContaining({ activo: true, capacidad: 80 })
@@ -50,7 +50,7 @@ describe('crear un bicicletero con el nombre de uno eliminado', () => {
   });
 
   it('rechaza el nombre si el bicicletero sigue activo', async () => {
-    prismaMock.bicicletero.findUnique.mockResolvedValue({
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue({
       ...bicicletero,
       activo: true
     } as never);
@@ -58,13 +58,13 @@ describe('crear un bicicletero con el nombre de uno eliminado', () => {
     await expect(crearBicicletero(datosNuevos)).rejects.toMatchObject({
       statusCode: 409
     });
-    expect(prismaMock.bicicletero.create).not.toHaveBeenCalled();
-    expect(prismaMock.bicicletero.update).not.toHaveBeenCalled();
+    expect(prismaSimulado.bicicletero.create).not.toHaveBeenCalled();
+    expect(prismaSimulado.bicicletero.update).not.toHaveBeenCalled();
   });
 
   it('crea uno nuevo cuando el nombre esta libre', async () => {
-    prismaMock.bicicletero.findUnique.mockResolvedValue(null as never);
-    prismaMock.bicicletero.create.mockResolvedValue({
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue(null as never);
+    prismaSimulado.bicicletero.create.mockResolvedValue({
       ...bicicletero,
       ...datosNuevos,
       id: 'bic-2',
@@ -73,7 +73,7 @@ describe('crear un bicicletero con el nombre de uno eliminado', () => {
 
     const resultado = await crearBicicletero(datosNuevos);
 
-    expect(prismaMock.bicicletero.create).toHaveBeenCalled();
+    expect(prismaSimulado.bicicletero.create).toHaveBeenCalled();
     expect(resultado.id).toBe('bic-2');
   });
 });

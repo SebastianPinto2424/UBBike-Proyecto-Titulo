@@ -1,4 +1,4 @@
-import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 jest.mock('../../src/configuracion/firebase', () => ({ obtenerFirebase: jest.fn() }));
 jest.mock('firebase-admin/messaging', () => ({ getMessaging: jest.fn() }));
 jest.mock('../../src/modulos/notificaciones/dispositivo.repositorio', () => ({
@@ -21,7 +21,9 @@ beforeEach(() => {
   jest.mocked(dispositivos.listarTokensDeUsuario).mockResolvedValue(['token-1', 'token-2']);
   enviar.mockReset();
 });
-afterEach(() => { entorno.ambiente = ambienteOriginal; });
+afterEach(() => {
+  entorno.ambiente = ambienteOriginal;
+});
 
 it('no confirma una entrega sin Firebase en producción', async () => {
   entorno.ambiente = 'production';
@@ -40,19 +42,23 @@ it('no envía cuando no hay dispositivos registrados', async () => {
   expect(enviar).not.toHaveBeenCalled();
 });
 it('elimina tokens inválidos y conserva los que recibieron el aviso', async () => {
-  enviar.mockResolvedValue({ responses: [
-    { success: true },
-    { success: false, error: { code: 'messaging/registration-token-not-registered' } }
-  ] });
+  enviar.mockResolvedValue({
+    responses: [
+      { success: true },
+      { success: false, error: { code: 'messaging/registration-token-not-registered' } }
+    ]
+  });
   await enviarPushAUsuario('usuario', push);
   expect(dispositivos.eliminarTokens).toHaveBeenCalledWith(['token-2']);
   expect(enviar).toHaveBeenCalledWith(expect.objectContaining({ data: { cantidad: '2' } }));
 });
 it('un fallo temporal parcial se propaga para que la cola reintente', async () => {
-  enviar.mockResolvedValue({ responses: [
-    { success: true },
-    { success: false, error: { code: 'messaging/server-unavailable' } }
-  ] });
+  enviar.mockResolvedValue({
+    responses: [
+      { success: true },
+      { success: false, error: { code: 'messaging/server-unavailable' } }
+    ]
+  });
   await expect(enviarPushAUsuario('usuario', push)).rejects.toThrow('reintentar');
   expect(dispositivos.eliminarTokens).not.toHaveBeenCalled();
 });

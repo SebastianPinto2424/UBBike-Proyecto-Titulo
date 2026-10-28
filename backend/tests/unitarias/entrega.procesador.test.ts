@@ -1,17 +1,20 @@
-import '../helpers/env-setup';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
-import { iniciarEntregas, solicitarEntregaInmediata } from '../../src/modulos/entregas/entrega.worker';
+import {
+  iniciarEntregas,
+  solicitarEntregaInmediata
+} from '../../src/modulos/entregas/entrega.procesador';
 
 const esperarCiclo = () => new Promise<void>((resolver) => setImmediate(resolver));
 
-const corridas = () => prismaMock.entregaPendiente.findMany.mock.calls.length;
+const corridas = () => prismaSimulado.entregaPendiente.findMany.mock.calls.length;
 
 describe('worker de entregas', () => {
   let detener: (() => Promise<void>) | null = null;
 
   beforeEach(() => {
-    prismaMock.entregaPendiente.findMany.mockResolvedValue([] as never);
+    prismaSimulado.entregaPendiente.findMany.mockResolvedValue([] as never);
   });
 
   afterEach(async () => {
@@ -41,7 +44,7 @@ describe('worker de entregas', () => {
 
   it('no solapa corridas: varias solicitudes durante una corrida generan una sola mas', async () => {
     let liberar: (filas: never[]) => void = () => {};
-    prismaMock.entregaPendiente.findMany.mockImplementationOnce(
+    prismaSimulado.entregaPendiente.findMany.mockImplementationOnce(
       () => new Promise((resolver) => (liberar = resolver as never)) as never
     );
 

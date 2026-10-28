@@ -1,28 +1,54 @@
-import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 
-import {
-  crearCorreoCuentaAdministrativa,
-  crearCorreoMovimiento
-} from '../../src/modulos/correos/correo.servicio';
+import { crearCorreoCuentaAdministrativa } from '../../src/modulos/correos/cuenta.plantillas';
+import { crearCorreoMovimiento } from '../../src/modulos/correos/operacion.plantillas';
 
 describe('crearCorreoCuentaAdministrativa', () => {
   it('incluye siempre el boton y el enlace para crear la contrasena', () => {
-    const enlace =
-      'https://ubbike.example/cambiar-contrasena?token=token-seguro&modo=activacion';
-    const correo = crearCorreoCuentaAdministrativa(
-      'Guardia Prueba',
-      enlace,
-      24,
-      'GUARDIA'
-    );
+    const enlace = 'https://ubbike.example/cambiar-contrasena?token=token-seguro&modo=activacion';
+    const correo = crearCorreoCuentaAdministrativa('Guardia Prueba', enlace, 24, 'GUARDIA');
 
-    expect(correo.asunto).toBe('Te damos la bienvenida a UBBike — activa tu cuenta de guardia');
+    expect(correo.asunto).toBe('Activa tu cuenta de guardia en UBBike');
     expect(correo.texto).toContain(enlace);
     expect(correo.html).toContain(
       'href="https://ubbike.example/cambiar-contrasena?token=token-seguro&amp;modo=activacion"'
     );
     expect(correo.html).toContain('Crear mi contraseña');
     expect(correo.html).toContain('vence en 24 horas');
+  });
+
+  it('presenta la activación sin confundirla con un cambio de contraseña', () => {
+    const correo = crearCorreoCuentaAdministrativa(
+      'Guardia Prueba',
+      'https://ubbike.example/enlace',
+      24,
+      'GUARDIA'
+    );
+
+    for (const contenido of [correo.texto, correo.html]) {
+      expect(contenido).toContain('administración de UBBike creó tu cuenta de');
+      expect(contenido).toMatch(
+        /guardia(<\/strong>)? el \d{1,2} de \w+ de \d{4} a las \d{2}:\d{2}\./
+      );
+      expect(contenido).not.toMatch(/\.\./);
+      expect(contenido).toContain('crea la contraseña con la que ingresarás a la app');
+      expect(contenido).toContain('¿Has olvidado tu contraseña?');
+      expect(contenido).not.toMatch(/[«»]/);
+      expect(contenido).not.toContain('primer ingreso');
+      expect(contenido).not.toContain('nunca te enviamos una');
+    }
+    expect(correo.html).toContain('nunca te pedirá tu contraseña');
+  });
+
+  it('usa el rol de la cuenta en el asunto', () => {
+    expect(
+      crearCorreoCuentaAdministrativa(
+        'Ana Rojas',
+        'https://ubbike.example/enlace',
+        24,
+        'ADMINISTRADOR'
+      ).asunto
+    ).toBe('Activa tu cuenta de administrador en UBBike');
   });
 });
 

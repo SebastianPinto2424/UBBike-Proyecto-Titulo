@@ -1,6 +1,6 @@
-import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 jest.mock('../../src/modulos/notificaciones/notificacion.servicio', () => ({
   crearNotificacion: jest.fn().mockResolvedValue(undefined),
@@ -12,10 +12,8 @@ jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
   registrarAuditoria: jest.fn().mockResolvedValue(undefined)
 }));
 
-import {
-  actualizarEstadoIncidencia,
-  crearIncidencia
-} from '../../src/modulos/incidencias/incidencia.servicio';
+import { actualizarEstadoIncidencia } from '../../src/modulos/incidencias/seguimiento-incidencia.servicio';
+import { crearIncidencia } from '../../src/modulos/incidencias/incidencia.servicio';
 import { crearNotificacion } from '../../src/modulos/notificaciones/notificacion.servicio';
 import { TipoIncidencia } from '../../src/modulos/incidencias/tipo-incidencia';
 import { EstadoIncidencia } from '../../src/modulos/incidencias/estado-incidencia';
@@ -31,7 +29,7 @@ const incidenciaCerradaBase = {
 
 describe('actualizarEstadoIncidencia', () => {
   it('no permite reabrir una incidencia cerrada (RESUELTA -> EN_REVISION)', async () => {
-    prismaMock.incidencia.findUnique.mockResolvedValue(incidenciaCerradaBase as never);
+    prismaSimulado.incidencia.findUnique.mockResolvedValue(incidenciaCerradaBase as never);
 
     await expect(
       actualizarEstadoIncidencia({
@@ -42,11 +40,11 @@ describe('actualizarEstadoIncidencia', () => {
       })
     ).rejects.toMatchObject({ statusCode: 409 });
 
-    expect(prismaMock.incidencia.update).not.toHaveBeenCalled();
+    expect(prismaSimulado.incidencia.update).not.toHaveBeenCalled();
   });
 
   it('tampoco permite reabrir una incidencia DESCARTADA', async () => {
-    prismaMock.incidencia.findUnique.mockResolvedValue({
+    prismaSimulado.incidencia.findUnique.mockResolvedValue({
       ...incidenciaCerradaBase,
       estado: EstadoIncidencia.DESCARTADA
     } as never);
@@ -70,9 +68,9 @@ describe('crearIncidencia', () => {
       ubicacion: 'FACE',
       activo: true
     };
-    prismaMock.bicicletero.findUnique.mockResolvedValue(bicicletero as never);
-    prismaMock.usuario.findMany.mockResolvedValue([]);
-    prismaMock.incidencia.create.mockResolvedValue({
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue(bicicletero as never);
+    prismaSimulado.usuario.findMany.mockResolvedValue([]);
+    prismaSimulado.incidencia.create.mockResolvedValue({
       id: 'inc-uuid-2',
       tipo: TipoIncidencia.OTRO,
       descripcion: 'Candado roto en la entrada',

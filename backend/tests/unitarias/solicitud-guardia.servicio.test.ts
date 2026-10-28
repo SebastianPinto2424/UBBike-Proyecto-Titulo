@@ -1,6 +1,6 @@
-import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 jest.mock('../../src/modulos/notificaciones/notificacion.servicio', () => ({
   crearNotificacion: jest.fn().mockResolvedValue(undefined),
@@ -21,7 +21,7 @@ jest.mock('../../src/tiempo-real/tiempo-real', () => ({
   salaUsuario: (usuarioId: string) => `usuario:${usuarioId}`
 }));
 
-import { actualizarEstadoSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/solicitud-guardia.servicio';
+import { actualizarEstadoSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/seguimiento-solicitud.servicio';
 import { EstadoSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/estado-solicitud-guardia';
 import { emitirTiempoReal } from '../../src/tiempo-real/tiempo-real';
 import { RolUsuario } from '../../src/modulos/usuarios/rol-usuario';
@@ -46,30 +46,30 @@ describe('actualizarEstadoSolicitudGuardia', () => {
   });
 
   it('no permite reabrir una solicitud ya cerrada (RESUELTA -> EN_CAMINO)', async () => {
-    prismaMock.solicitudGuardia.findUnique.mockResolvedValue(solicitudCerradaBase as never);
+    prismaSimulado.solicitudGuardia.findUnique.mockResolvedValue(solicitudCerradaBase as never);
 
     await expect(
       actualizarEstadoSolicitudGuardia(
-        'admin-uuid-1',
-        RolUsuario.ADMIN_CENTRAL,
+        'guardia-uuid-1',
+        RolUsuario.GUARDIA,
         'sol-uuid-1',
         EstadoSolicitudGuardia.EN_CAMINO
       )
     ).rejects.toMatchObject({ statusCode: 409 });
 
-    expect(prismaMock.solicitudGuardia.update).not.toHaveBeenCalled();
+    expect(prismaSimulado.solicitudGuardia.update).not.toHaveBeenCalled();
   });
 
   it('tampoco permite reabrir una solicitud CANCELADA', async () => {
-    prismaMock.solicitudGuardia.findUnique.mockResolvedValue({
+    prismaSimulado.solicitudGuardia.findUnique.mockResolvedValue({
       ...solicitudCerradaBase,
       estado: EstadoSolicitudGuardia.CANCELADA
     } as never);
 
     await expect(
       actualizarEstadoSolicitudGuardia(
-        'admin-uuid-1',
-        RolUsuario.ADMIN_CENTRAL,
+        'guardia-uuid-1',
+        RolUsuario.GUARDIA,
         'sol-uuid-1',
         EstadoSolicitudGuardia.EN_CAMINO
       )
@@ -100,8 +100,8 @@ describe('actualizarEstadoSolicitudGuardia', () => {
       enCaminoEn: new Date('2026-07-08T12:01:00.000Z')
     };
 
-    prismaMock.solicitudGuardia.findUnique.mockResolvedValue(solicitudActiva as never);
-    prismaMock.solicitudGuardia.update.mockResolvedValue(solicitudActualizada as never);
+    prismaSimulado.solicitudGuardia.findUnique.mockResolvedValue(solicitudActiva as never);
+    prismaSimulado.solicitudGuardia.update.mockResolvedValue(solicitudActualizada as never);
 
     await actualizarEstadoSolicitudGuardia(
       'guardia-uuid-1',

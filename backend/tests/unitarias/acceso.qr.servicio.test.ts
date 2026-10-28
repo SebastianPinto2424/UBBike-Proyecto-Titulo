@@ -1,9 +1,15 @@
-import '../helpers/env-setup';
-import '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+
+jest.mock('../../src/modulos/correos/cuenta.plantillas', () => ({
+  crearCorreoCompletarRegistro: jest.fn()
+}));
+
+jest.mock('../../src/modulos/correos/operacion.plantillas', () => ({
+  crearCorreoMovimiento: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' })
+}));
 
 jest.mock('../../src/modulos/correos/correo.servicio', () => ({
-  crearCorreoCompletarRegistro: jest.fn(),
-  crearCorreoMovimiento: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' }),
   enviarCorreo: jest.fn().mockResolvedValue(undefined)
 }));
 

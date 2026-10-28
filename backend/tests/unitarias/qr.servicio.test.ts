@@ -1,6 +1,6 @@
-﻿import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 jest.mock('../../src/configuracion/redis', () => ({
   obtenerClienteRedis: jest.fn().mockResolvedValue(null)
@@ -82,7 +82,7 @@ const bicicleteroBase = {
 
 describe('generarQrTemporal', () => {
   it('lanza 404 si no existe bicicleta activa para el usuario', async () => {
-    prismaMock.bicicleta.findFirst.mockResolvedValue(null);
+    prismaSimulado.bicicleta.findFirst.mockResolvedValue(null);
 
     await expect(generarQrTemporal({ usuarioId: 'user-uuid-1' })).rejects.toMatchObject({
       statusCode: 404
@@ -90,7 +90,7 @@ describe('generarQrTemporal', () => {
   });
 
   it('lanza 409 si bicicleta ya esta dentro y se pide INGRESO', async () => {
-    prismaMock.bicicleta.findFirst.mockResolvedValue({
+    prismaSimulado.bicicleta.findFirst.mockResolvedValue({
       ...bicicletaBase,
       dentroBicicletero: true,
       bicicleteroActualId: 'bicletero-uuid-1',
@@ -103,14 +103,14 @@ describe('generarQrTemporal', () => {
   });
 
   it('genera QR correctamente para bicicleta fuera del bicicletero', async () => {
-    prismaMock.bicicleta.findFirst.mockResolvedValue(bicicletaBase as any);
-    prismaMock.bicicletero.findUnique.mockResolvedValue({
+    prismaSimulado.bicicleta.findFirst.mockResolvedValue(bicicletaBase as any);
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue({
       id: 'bicicletero-uuid-1',
       nombre: 'Centro Idiomas',
       activo: true
     } as any);
-    prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
-    prismaMock.codigoQrTemporal.create.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
+    prismaSimulado.codigoQrTemporal.create.mockResolvedValue({
       ...codigoQrBase,
       token: 'UBBIKE-nuevoToken'
     } as any);
@@ -126,14 +126,14 @@ describe('generarQrTemporal', () => {
   });
 
   it('genera QR correctamente para retiro cuando la bicicleta esta dentro', async () => {
-    prismaMock.bicicleta.findFirst.mockResolvedValue({
+    prismaSimulado.bicicleta.findFirst.mockResolvedValue({
       ...bicicletaBase,
       dentroBicicletero: true,
       bicicleteroActualId: bicicleteroBase.id,
       bicicleteroActual: bicicleteroBase
     } as any);
-    prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
-    prismaMock.codigoQrTemporal.create.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
+    prismaSimulado.codigoQrTemporal.create.mockResolvedValue({
       ...codigoQrBase,
       token: 'UBBIKE-retiroToken',
       tipo: 'RETIRO',
@@ -156,13 +156,13 @@ describe('generarQrTemporal', () => {
 
 describe('validarQrTemporal', () => {
   it('lanza 404 si el token no existe', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(null);
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(null);
 
     await expect(validarQrTemporal('token-no-existe')).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('lanza 409 si el QR ya fue usado', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       usado: true
     } as any);
@@ -173,7 +173,7 @@ describe('validarQrTemporal', () => {
   });
 
   it('lanza 410 si el QR esta expirado', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       expiraEn: new Date(Date.now() - 1000)
     } as any);
@@ -184,7 +184,7 @@ describe('validarQrTemporal', () => {
   });
 
   it('devuelve datos del usuario para QR valido', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
 
     const resultado = await validarQrTemporal('UBBIKE-tokenValido');
 
@@ -194,7 +194,7 @@ describe('validarQrTemporal', () => {
   });
 
   it('devuelve datos del usuario para QR valido de retiro', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       tipo: 'RETIRO',
       bicicleteroId: bicicleteroBase.id,
@@ -219,8 +219,8 @@ describe('validarQrTemporal', () => {
   });
 
   it('avisa al dueño del QR cuando un validador lo escanea', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
-    prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 1 });
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 1 });
 
     await validarQrTemporal('UBBIKE-tokenValido', {
       validadorUsuarioId: 'admin-uuid-1',
@@ -235,8 +235,8 @@ describe('validarQrTemporal', () => {
   });
 
   it('no avisa si otro validador ya habia tomado el QR', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
-    prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
       validarQrTemporal('UBBIKE-tokenValido', {
@@ -248,7 +248,7 @@ describe('validarQrTemporal', () => {
   });
 
   it('no avisa cuando se consulta sin validador', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
 
     await validarQrTemporal('UBBIKE-tokenValido');
 
@@ -260,15 +260,15 @@ describe('liberarQrTemporal', () => {
   const contexto = { validadorUsuarioId: 'guardia-uuid-1', rol: 'GUARDIA' };
 
   it('avisa al dueño que el guardia soltó su QR para que pueda generar otro', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       escaneadoPorGuardiaId: 'guardia-uuid-1'
     } as any);
-    prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 1 });
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 1 });
 
     await liberarQrTemporal('UBBIKE-tokenValido', contexto);
 
-    expect(prismaMock.codigoQrTemporal.updateMany).toHaveBeenCalledWith({
+    expect(prismaSimulado.codigoQrTemporal.updateMany).toHaveBeenCalledWith({
       where: { id: 'qr-uuid-1', usado: false, escaneadoPorGuardiaId: 'guardia-uuid-1' },
       data: { escaneadoPorGuardiaId: null, escaneadoEn: null }
     });
@@ -280,8 +280,8 @@ describe('liberarQrTemporal', () => {
   });
 
   it('no avisa si el QR no estaba tomado por ese guardia', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
-    prismaMock.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 0 });
 
     await liberarQrTemporal('UBBIKE-tokenValido', contexto);
 
@@ -289,7 +289,7 @@ describe('liberarQrTemporal', () => {
   });
 
   it('ignora un token que no existe', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(null);
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(null);
 
     await expect(liberarQrTemporal('token-no-existe', contexto)).resolves.toBeUndefined();
     expect(emitirMock).not.toHaveBeenCalled();
@@ -298,7 +298,7 @@ describe('liberarQrTemporal', () => {
 
 describe('consultarEstadoQr', () => {
   it('indica que el QR sigue activo si nadie lo tiene tomado', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
 
     await expect(consultarEstadoQr('qr-uuid-1', 'user-uuid-1')).resolves.toMatchObject({
       estado: 'ACTIVO',
@@ -307,7 +307,7 @@ describe('consultarEstadoQr', () => {
   });
 
   it('indica que un guardia lo está revisando', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       escaneadoPorGuardiaId: 'guardia-uuid-1',
       escaneadoEn: new Date()
@@ -319,13 +319,13 @@ describe('consultarEstadoQr', () => {
   });
 
   it('entrega el resultado del movimiento ya registrado con ese QR', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       usado: true,
       escaneadoPorGuardiaId: 'guardia-uuid-1',
       escaneadoEn: new Date()
     } as any);
-    prismaMock.movimiento.findFirst.mockResolvedValue({
+    prismaSimulado.movimiento.findFirst.mockResolvedValue({
       estado: 'DENEGADO',
       motivoDenegacion: 'La bicicleta no coincide'
     } as any);
@@ -337,7 +337,7 @@ describe('consultarEstadoQr', () => {
   });
 
   it('indica que fue reemplazado si se usó sin registrar movimiento', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue({
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
       ...codigoQrBase,
       usado: true
     } as any);
@@ -348,7 +348,7 @@ describe('consultarEstadoQr', () => {
   });
 
   it('no deja consultar el QR de otra persona', async () => {
-    prismaMock.codigoQrTemporal.findFirst.mockResolvedValue(null);
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(null);
 
     await expect(consultarEstadoQr('qr-uuid-1', 'otro-usuario')).rejects.toMatchObject({
       statusCode: 404

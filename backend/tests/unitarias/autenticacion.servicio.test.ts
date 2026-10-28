@@ -1,12 +1,12 @@
-﻿import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 jest.mock('../../src/configuracion/redis', () => ({
   obtenerClienteRedis: jest.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../../src/modulos/correos/correo.servicio', () => ({
+jest.mock('../../src/modulos/correos/cuenta.plantillas', () => ({
   crearCorreoVerificacion: jest.fn().mockReturnValue({ asunto: 'Verificar', texto: '', html: '' }),
   crearCorreoCuentaVerificada: jest
     .fn()
@@ -16,7 +16,10 @@ jest.mock('../../src/modulos/correos/correo.servicio', () => ({
     .mockReturnValue({ asunto: 'Cambiar', texto: '', html: '' }),
   crearCorreoContrasenaActualizada: jest
     .fn()
-    .mockReturnValue({ asunto: 'Actualizada', texto: '', html: '' }),
+    .mockReturnValue({ asunto: 'Actualizada', texto: '', html: '' })
+}));
+
+jest.mock('../../src/modulos/correos/correo.servicio', () => ({
   enviarCorreo: jest.fn().mockResolvedValue(undefined)
 }));
 
@@ -39,11 +42,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { olvidarDispositivosDeUsuario } from '../../src/modulos/notificaciones/notificacion.servicio';
 import { cerrarSesionesTiempoReal } from '../../src/tiempo-real/tiempo-real';
+import { iniciarSesion } from '../../src/modulos/autenticacion/autenticacion.servicio';
 import {
-  iniciarSesion,
   registrarUsuario,
   verificarCorreo
-} from '../../src/modulos/autenticacion/autenticacion.servicio';
+} from '../../src/modulos/autenticacion/registro.servicio';
 
 const usuarioBase = {
   id: 'uuid-1',
@@ -68,7 +71,7 @@ const usuarioBase = {
 
 describe('registrarUsuario', () => {
   it('lanza 409 si el correo ya existe', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioBase as any);
+    prismaSimulado.usuario.findUnique.mockResolvedValue(usuarioBase as any);
 
     await expect(
       registrarUsuario({
@@ -80,8 +83,8 @@ describe('registrarUsuario', () => {
   });
 
   it('crea el usuario si el correo no existe', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(null);
-    prismaMock.usuario.create.mockResolvedValue({
+    prismaSimulado.usuario.findUnique.mockResolvedValue(null);
+    prismaSimulado.usuario.create.mockResolvedValue({
       ...usuarioBase,
       correoVerificado: false
     } as any);
@@ -93,7 +96,7 @@ describe('registrarUsuario', () => {
     });
 
     expect(resultado.message).toContain('Registro recibido');
-    expect(prismaMock.usuario.create).toHaveBeenCalled();
+    expect(prismaSimulado.usuario.create).toHaveBeenCalled();
   });
 
   it('no hereda la identidad de una cuenta eliminada al reutilizar su RUT', async () => {
@@ -110,11 +113,11 @@ describe('registrarUsuario', () => {
       nombre: 'Juan Nuevo',
       correo: 'correo.nuevo@alumnos.ubiobio.cl'
     };
-    prismaMock.usuario.findUnique
+    prismaSimulado.usuario.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(eliminado as any);
-    prismaMock.usuario.update.mockResolvedValue({ ...eliminado, rut: null } as any);
-    prismaMock.usuario.create.mockResolvedValue(nuevo as any);
+    prismaSimulado.usuario.update.mockResolvedValue({ ...eliminado, rut: null } as any);
+    prismaSimulado.usuario.create.mockResolvedValue(nuevo as any);
 
     const resultado = await registrarUsuario({
       nombre: nuevo.nombre,
@@ -125,8 +128,8 @@ describe('registrarUsuario', () => {
 
     expect(resultado.message).toContain('Registro recibido');
     expect(resultado.usuario.id).toBe(nuevo.id);
-    expect(prismaMock.usuario.create).toHaveBeenCalled();
-    expect(prismaMock.usuario.update).toHaveBeenCalledWith({
+    expect(prismaSimulado.usuario.create).toHaveBeenCalled();
+    expect(prismaSimulado.usuario.update).toHaveBeenCalledWith({
       where: { id: eliminado.id },
       data: expect.objectContaining({ rut: null })
     });
@@ -147,11 +150,11 @@ describe('registrarUsuario', () => {
       rut: '12.345.678-9',
       eliminadoEn: new Date()
     };
-    prismaMock.usuario.findUnique
+    prismaSimulado.usuario.findUnique
       .mockResolvedValueOnce(eliminadoPorCorreo as any)
       .mockResolvedValueOnce(eliminadoPorRut as any);
-    prismaMock.usuario.update.mockResolvedValue(eliminadoPorCorreo as any);
-    prismaMock.usuario.create.mockResolvedValue({
+    prismaSimulado.usuario.update.mockResolvedValue(eliminadoPorCorreo as any);
+    prismaSimulado.usuario.create.mockResolvedValue({
       ...usuarioBase,
       id: 'uuid-nuevo'
     } as any);
@@ -163,53 +166,70 @@ describe('registrarUsuario', () => {
       contrasena: 'UBBike2026*Test!'
     });
 
-    expect(prismaMock.usuario.update).toHaveBeenCalledTimes(2);
-    expect(prismaMock.usuario.create).toHaveBeenCalled();
+    expect(prismaSimulado.usuario.update).toHaveBeenCalledTimes(2);
+    expect(prismaSimulado.usuario.create).toHaveBeenCalled();
   });
 });
 
 describe('iniciarSesion', () => {
   it('lanza 401 si el usuario no existe', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(null);
+    prismaSimulado.usuario.findUnique.mockResolvedValue(null);
 
     await expect(
       iniciarSesion({ correo: 'noexiste@alumnos.ubiobio.cl', contrasena: 'cualquier' })
     ).rejects.toMatchObject({ statusCode: 401 });
   });
 
-  it('lanza 403 si la cuenta esta desactivada', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue({
+  it('lanza 403 si la cuenta esta desactivada y la contraseña es correcta', async () => {
+    prismaSimulado.usuario.findUnique.mockResolvedValue({
       ...usuarioBase,
       cuentaActiva: false
     } as any);
+    jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
     await expect(
-      iniciarSesion({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'cualquier' })
-    ).rejects.toMatchObject({ statusCode: 403 });
+      iniciarSesion({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'ClaveSegura#2026' })
+    ).rejects.toMatchObject({ statusCode: 403, message: 'La cuenta está desactivada' });
   });
 
-  it('lanza 403 si el correo no esta verificado', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue({
+  it('lanza 403 con código si el correo no esta verificado y la contraseña es correcta', async () => {
+    prismaSimulado.usuario.findUnique.mockResolvedValue({
       ...usuarioBase,
       correoVerificado: false,
       cuentaActiva: true,
       registroParcial: false
     } as any);
+    jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+
+    await expect(
+      iniciarSesion({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'ClaveSegura#2026' })
+    ).rejects.toMatchObject({ statusCode: 403, codigo: 'CORREO_NO_VERIFICADO' });
+  });
+
+  it.each([
+    ['desactivada', { cuentaActiva: false }],
+    ['sin confirmar', { correoVerificado: false }]
+  ])('con contraseña incorrecta no revela que la cuenta está %s', async (_caso, cambios) => {
+    prismaSimulado.usuario.findUnique.mockResolvedValue({
+      ...usuarioBase,
+      ...cambios
+    } as any);
+    jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
     await expect(
       iniciarSesion({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'cualquier' })
-    ).rejects.toMatchObject({ statusCode: 403 });
+    ).rejects.toMatchObject({ statusCode: 401, message: 'Credenciales inválidas' });
   });
 });
 
 describe('iniciarSesion en un dispositivo nuevo', () => {
   it('cierra la sesión de los demás dispositivos de la cuenta', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue({
+    prismaSimulado.usuario.findUnique.mockResolvedValue({
       ...usuarioBase,
       correoVerificado: true,
       versionSesion: 4
     } as any);
-    prismaMock.usuario.update.mockResolvedValue({ ...usuarioBase, versionSesion: 5 } as any);
+    prismaSimulado.usuario.update.mockResolvedValue({ ...usuarioBase, versionSesion: 5 } as any);
     jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
     const resultado = await iniciarSesion({
@@ -217,7 +237,7 @@ describe('iniciarSesion en un dispositivo nuevo', () => {
       contrasena: 'ClaveSegura#2026'
     });
 
-    expect(prismaMock.usuario.update).toHaveBeenCalledWith({
+    expect(prismaSimulado.usuario.update).toHaveBeenCalledWith({
       where: { id: 'uuid-1' },
       data: { versionSesion: { increment: 1 } }
     });
@@ -229,20 +249,20 @@ describe('iniciarSesion en un dispositivo nuevo', () => {
 
 describe('verificarCorreo', () => {
   it('lanza 400 si el token no corresponde a ningun usuario', async () => {
-    prismaMock.usuario.findFirst.mockResolvedValue(null);
+    prismaSimulado.usuario.findFirst.mockResolvedValue(null);
 
     await expect(verificarCorreo('token-invalido')).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('lanza 400 si el token esta expirado', async () => {
     const fechaPasada = new Date(Date.now() - 1000 * 60 * 60);
-    prismaMock.usuario.findFirst.mockResolvedValue({
+    prismaSimulado.usuario.findFirst.mockResolvedValue({
       ...usuarioBase,
       tokenVerificacionCorreo: 'hash-token',
       tokenVerificacionCorreoExpiraEn: fechaPasada,
       registroParcial: false
     } as any);
-    prismaMock.usuario.update.mockResolvedValue(usuarioBase as any);
+    prismaSimulado.usuario.update.mockResolvedValue(usuarioBase as any);
 
     await expect(verificarCorreo('token-cualquiera')).rejects.toMatchObject({ statusCode: 400 });
   });

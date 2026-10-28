@@ -1,6 +1,6 @@
-import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 jest.mock('../../src/modulos/bicicletas/foto-bicicleta.servicio', () => ({
   guardarFotoBicicleta: jest.fn(),
@@ -34,19 +34,19 @@ const biciGuardada = {
 
 describe('crearBicicleta', () => {
   it('crea la bici INACTIVA y la activa vía dejarSoloActiva aunque el usuario ya tenga otra activa', async () => {
-    prismaMock.bicicleta.count.mockResolvedValue(1);
-    prismaMock.bicicleta.create.mockResolvedValue(biciGuardada as never);
-    prismaMock.bicicleta.updateMany.mockResolvedValue({ count: 1 } as never);
-    prismaMock.bicicleta.update.mockResolvedValue(biciGuardada as never);
-    prismaMock.bicicleta.findFirst.mockResolvedValue(biciGuardada as never);
+    prismaSimulado.bicicleta.count.mockResolvedValue(1);
+    prismaSimulado.bicicleta.create.mockResolvedValue(biciGuardada as never);
+    prismaSimulado.bicicleta.updateMany.mockResolvedValue({ count: 1 } as never);
+    prismaSimulado.bicicleta.update.mockResolvedValue(biciGuardada as never);
+    prismaSimulado.bicicleta.findFirst.mockResolvedValue(biciGuardada as never);
 
     await crearBicicleta({ usuarioId: 'user-1', descripcion: 'Bici nueva', activar: true });
 
-    expect(prismaMock.bicicleta.create).toHaveBeenCalledWith(
+    expect(prismaSimulado.bicicleta.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ activa: false }) })
     );
-    expect(prismaMock.bicicleta.updateMany).toHaveBeenCalled();
-    expect(prismaMock.bicicleta.update).toHaveBeenCalledWith(
+    expect(prismaSimulado.bicicleta.updateMany).toHaveBeenCalled();
+    expect(prismaSimulado.bicicleta.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'bici-nueva' }, data: { activa: true } })
     );
   });

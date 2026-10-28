@@ -1,12 +1,12 @@
-import '../helpers/env-setup';
-import { prismaMock } from '../helpers/prisma-mock';
-import { validarBasePruebas } from '../e2e/helpers/seguridad-base-datos';
-import { limitarPagina, validarCursor } from '../../src/comun/utils/paginacion';
+import '../apoyo/configurar-entorno';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
+import { validarBasePruebas } from '../e2e/apoyo/seguridad-base-datos';
+import { limitarPagina, validarCursor } from '../../src/comun/utilidades/paginacion';
 import {
   actualizarBicicletero,
   eliminarBicicletero
 } from '../../src/modulos/bicicleteros/bicicletero.servicio';
-import { conTiempoLimite } from '../../src/comun/utils/tiempo-limite';
+import { conTiempoLimite } from '../../src/comun/utilidades/tiempo-limite';
 
 describe('protecciones de producción', () => {
   it.each([
@@ -31,18 +31,18 @@ describe('protecciones de producción', () => {
     expect(() => validarCursor('invalido')).toThrow();
   });
   it('no permite reducir capacidad por debajo de la ocupación', async () => {
-    prismaMock.bicicletero.findUnique.mockResolvedValue({ id: 'rack' } as never);
-    prismaMock.bicicleta.count.mockResolvedValue(5);
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue({ id: 'rack' } as never);
+    prismaSimulado.bicicleta.count.mockResolvedValue(5);
     await expect(actualizarBicicletero('rack', { capacidad: 4 })).rejects.toMatchObject({
       statusCode: 409
     });
-    expect(prismaMock.bicicletero.update).not.toHaveBeenCalled();
-    expect(prismaMock.$queryRaw).toHaveBeenCalled();
+    expect(prismaSimulado.bicicletero.update).not.toHaveBeenCalled();
+    expect(prismaSimulado.$queryRaw).toHaveBeenCalled();
   });
   it('no desactiva un bicicletero con guardias asignados', async () => {
-    prismaMock.bicicletero.findUnique.mockResolvedValue({ id: 'rack' } as never);
-    prismaMock.bicicleta.count.mockResolvedValue(0);
-    prismaMock.asignacionGuardia.count.mockResolvedValue(1);
+    prismaSimulado.bicicletero.findUnique.mockResolvedValue({ id: 'rack' } as never);
+    prismaSimulado.bicicleta.count.mockResolvedValue(0);
+    prismaSimulado.asignacionGuardia.count.mockResolvedValue(1);
     await expect(eliminarBicicletero('rack')).rejects.toMatchObject({ statusCode: 409 });
   });
   it('corta dependencias que no responden', async () => {

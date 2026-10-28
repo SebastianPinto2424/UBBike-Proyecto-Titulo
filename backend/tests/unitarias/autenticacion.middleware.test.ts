@@ -1,6 +1,6 @@
-import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 import express from 'express';
 import request from 'supertest';
@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe('middlewareAutenticacion · contraseña temporal pendiente', () => {
   it('bloquea con 403 cuando debeCambiarContrasena es true', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue({
+    prismaSimulado.usuario.findUnique.mockResolvedValue({
       ...usuarioBase,
       debeCambiarContrasena: true
     } as never);
@@ -52,7 +52,7 @@ describe('middlewareAutenticacion · contraseña temporal pendiente', () => {
   });
 
   it('permite el acceso cuando no hay cambio pendiente', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuarioBase as never);
+    prismaSimulado.usuario.findUnique.mockResolvedValue(usuarioBase as never);
 
     const res = await request(crearApp(middlewareAutenticacion))
       .get('/protegido')
@@ -62,7 +62,7 @@ describe('middlewareAutenticacion · contraseña temporal pendiente', () => {
   });
 
   it('la variante permisiva deja pasar aunque haya cambio pendiente', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue({
+    prismaSimulado.usuario.findUnique.mockResolvedValue({
       ...usuarioBase,
       debeCambiarContrasena: true
     } as never);

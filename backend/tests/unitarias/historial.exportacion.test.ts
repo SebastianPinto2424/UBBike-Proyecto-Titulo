@@ -1,4 +1,4 @@
-import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 
 jest.mock('../../src/modulos/historial/historial.servicio', () => ({
   listarMovimientos: jest.fn(),
@@ -200,9 +200,7 @@ describe('exportacion del historial', () => {
   it('rechaza la exportacion a roles sin permiso', async () => {
     const { siguiente } = await ejecutarExportacion(RolUsuario.GUARDIA);
 
-    expect(siguiente).toHaveBeenCalledWith(
-      expect.objectContaining({ statusCode: 403 })
-    );
+    expect(siguiente).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
     expect(listarMovimientosParaExportar).not.toHaveBeenCalled();
   });
 });

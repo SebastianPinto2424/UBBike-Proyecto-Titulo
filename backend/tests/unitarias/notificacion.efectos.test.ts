@@ -1,5 +1,5 @@
-import '../helpers/env-setup';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 
 jest.mock('../../src/tiempo-real/tiempo-real', () => ({
   EventosTiempoReal: { NOTIFICACION: 'notificacion' },
@@ -29,7 +29,7 @@ const datosNotificacion = {
 
 describe('crearNotificacion con efectos diferidos', () => {
   beforeEach(() => {
-    prismaMock.notificacion.create.mockResolvedValue({ id: 'notif-1' } as never);
+    prismaSimulado.notificacion.create.mockResolvedValue({ id: 'notif-1' } as never);
   });
 
   it('encola push durable y emite tiempo real si no se difieren efectos', async () => {
@@ -37,7 +37,7 @@ describe('crearNotificacion con efectos diferidos', () => {
 
     expect(emitirTiempoReal).toHaveBeenCalledTimes(1);
     expect(enviarPushAUsuario).not.toHaveBeenCalled();
-    expect(prismaMock.entregaPendiente.create).toHaveBeenCalledWith({
+    expect(prismaSimulado.entregaPendiente.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ tipo: 'PUSH' })
     });
   });
@@ -47,7 +47,7 @@ describe('crearNotificacion con efectos diferidos', () => {
 
     await crearNotificacion(datosNotificacion, undefined, efectos);
 
-    expect(prismaMock.notificacion.create).toHaveBeenCalled();
+    expect(prismaSimulado.notificacion.create).toHaveBeenCalled();
     expect(emitirTiempoReal).not.toHaveBeenCalled();
     expect(enviarPushAUsuario).not.toHaveBeenCalled();
     expect(efectos).toHaveLength(1);
@@ -61,7 +61,15 @@ describe('crearNotificacion con efectos diferidos', () => {
 
     expect(emitirTiempoReal).toHaveBeenCalledTimes(1);
     expect(enviarPushAUsuario).not.toHaveBeenCalled();
-    expect(prismaMock.entregaPendiente.create).toHaveBeenCalledTimes(1);
+    expect(prismaSimulado.entregaPendiente.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('un aviso de sistema marcado para push sí se envía', async () => {
+    await crearNotificacion({ ...datosNotificacion, tipo: TipoNotificacion.SISTEMA, push: true });
+
+    expect(prismaSimulado.entregaPendiente.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ tipo: 'PUSH' })
+    });
   });
 
   it('no envia push para tipos que no son visibles en la app', async () => {
@@ -76,7 +84,7 @@ describe('crearNotificacion con efectos diferidos', () => {
 
     expect(emitirTiempoReal).toHaveBeenCalledTimes(1);
     expect(enviarPushAUsuario).not.toHaveBeenCalled();
-    expect(prismaMock.entregaPendiente.create).not.toHaveBeenCalled();
+    expect(prismaSimulado.entregaPendiente.create).not.toHaveBeenCalled();
   });
 
   it('solo registra la notificacion, ya leida, sin push ni aviso en tiempo real', async () => {
@@ -85,10 +93,10 @@ describe('crearNotificacion con efectos diferidos', () => {
     await crearNotificacion({ ...datosNotificacion, soloRegistro: true }, undefined, efectos);
     ejecutarEfectosDiferidos(efectos);
 
-    expect(prismaMock.notificacion.create).toHaveBeenCalledWith({
+    expect(prismaSimulado.notificacion.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ leida: true })
     });
     expect(emitirTiempoReal).not.toHaveBeenCalled();
-    expect(prismaMock.entregaPendiente.create).not.toHaveBeenCalled();
+    expect(prismaSimulado.entregaPendiente.create).not.toHaveBeenCalled();
   });
 });

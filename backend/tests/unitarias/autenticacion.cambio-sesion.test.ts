@@ -1,6 +1,6 @@
-import '../helpers/env-setup';
-import '../helpers/prisma-mock';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import '../apoyo/prisma-simulado';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 import bcrypt from 'bcryptjs';
 
 jest.mock('../../src/configuracion/redis', () => ({
@@ -16,21 +16,22 @@ jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
   registrarAuditoria: jest.fn().mockResolvedValue(undefined)
 }));
 
-jest.mock('../../src/modulos/correos/correo.servicio', () => ({
+jest.mock('../../src/modulos/correos/cuenta.plantillas', () => ({
   crearCorreoCambioContrasena: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' }),
   crearCorreoContrasenaActualizada: jest
     .fn()
     .mockReturnValue({ asunto: 'Contrasena actualizada', texto: 'texto', html: 'html' }),
   crearCorreoCuentaVerificada: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' }),
-  crearCorreoVerificacion: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' }),
+  crearCorreoVerificacion: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' })
+}));
+
+jest.mock('../../src/modulos/correos/correo.servicio', () => ({
   enviarCorreo: jest.fn().mockResolvedValue(undefined)
 }));
 
-import { cambiarContrasenaSesion } from '../../src/modulos/autenticacion/autenticacion.servicio';
-import {
-  crearCorreoContrasenaActualizada,
-  enviarCorreo
-} from '../../src/modulos/correos/correo.servicio';
+import { cambiarContrasenaSesion } from '../../src/modulos/autenticacion/contrasena.servicio';
+import { crearCorreoContrasenaActualizada } from '../../src/modulos/correos/cuenta.plantillas';
+import { enviarCorreo } from '../../src/modulos/correos/correo.servicio';
 
 const TEMP = 'TempClave2026!!';
 const NUEVA = 'NuevaClave2026!!';
@@ -61,32 +62,32 @@ describe('cambiarContrasenaSesion', () => {
   });
 
   it('rechaza con 400 si la contraseña actual es incorrecta', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuario() as never);
+    prismaSimulado.usuario.findUnique.mockResolvedValue(usuario() as never);
 
     await expect(
       cambiarContrasenaSesion('guardia-1', 'IncorrectaXXX1!', NUEVA)
     ).rejects.toMatchObject({ statusCode: 400 });
 
-    expect(prismaMock.usuario.update).not.toHaveBeenCalled();
+    expect(prismaSimulado.usuario.update).not.toHaveBeenCalled();
   });
 
   it('rechaza con 400 si la nueva contraseña es igual a la actual', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuario() as never);
+    prismaSimulado.usuario.findUnique.mockResolvedValue(usuario() as never);
 
     await expect(cambiarContrasenaSesion('guardia-1', TEMP, TEMP)).rejects.toMatchObject({
       statusCode: 400
     });
 
-    expect(prismaMock.usuario.update).not.toHaveBeenCalled();
+    expect(prismaSimulado.usuario.update).not.toHaveBeenCalled();
   });
 
   it('actualiza la contraseña y limpia el flag debeCambiarContrasena', async () => {
-    prismaMock.usuario.findUnique.mockResolvedValue(usuario() as never);
-    prismaMock.usuario.update.mockResolvedValue(usuario() as never);
+    prismaSimulado.usuario.findUnique.mockResolvedValue(usuario() as never);
+    prismaSimulado.usuario.update.mockResolvedValue(usuario() as never);
 
     await cambiarContrasenaSesion('guardia-1', TEMP, NUEVA);
 
-    expect(prismaMock.usuario.update).toHaveBeenCalledWith(
+    expect(prismaSimulado.usuario.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'guardia-1' },
         data: expect.objectContaining({ debeCambiarContrasena: false })

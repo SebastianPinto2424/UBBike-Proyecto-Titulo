@@ -1,5 +1,5 @@
-import '../helpers/env-setup';
-import { prismaMock } from '../helpers/prisma-mock';
+import '../apoyo/configurar-entorno';
+import { prismaSimulado } from '../apoyo/prisma-simulado';
 const mockIo = {
   use: jest.fn(),
   on: jest.fn(),
@@ -34,7 +34,7 @@ const conectar = () => {
   return socket;
 };
 it('desconecta al vencer JWT aunque la versión siga vigente', async () => {
-  prismaMock.usuario.findUnique.mockResolvedValue({
+  prismaSimulado.usuario.findUnique.mockResolvedValue({
     cuentaActiva: true,
     correoVerificado: true,
     versionSesion: 1
@@ -44,7 +44,7 @@ it('desconecta al vencer JWT aunque la versión siga vigente', async () => {
   expect(socket.disconnect).toHaveBeenCalledWith(true);
 });
 it('un fallo de base de datos durante la revalidación no queda sin capturar', async () => {
-  prismaMock.usuario.findUnique.mockRejectedValue(new Error('DB sin conexión'));
+  prismaSimulado.usuario.findUnique.mockRejectedValue(new Error('DB sin conexión'));
   const log = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {
     const socket = conectar();

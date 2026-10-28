@@ -20,10 +20,14 @@ import {
   esquemaCrearIncidencia
 } from '../../src/modulos/incidencias/incidencia.validacion';
 import {
+  esquemaBuscarGestionManual,
   esquemaConfirmarQr,
   esquemaDenegarQr,
   esquemaGestionManual
 } from '../../src/modulos/acceso/operaciones/acceso.validacion';
+import { esquemaCrearBicicletero } from '../../src/modulos/bicicleteros/bicicletero.validacion';
+import { esquemaConsultaHistorial } from '../../src/modulos/historial/historial.validacion';
+import { esquemaParametroId } from '../../src/comun/utilidades/esquemas-comunes';
 import {
   esquemaActualizarEstadoSolicitudGuardia,
   esquemaCrearSolicitudGuardia,
@@ -57,12 +61,19 @@ const esValido = (esquema: { validate: (v: unknown) => { error?: unknown } }, va
 describe('esquemaRegistro', () => {
   const base = {
     nombre: NOMBRE_OK,
+    rut: '12.345.678-5',
     correo: 'juan@alumnos.ubiobio.cl',
     contrasena: CONTRASENA_OK
   };
 
   it('acepta un registro completo y válido', () => {
     expect(esValido(esquemaRegistro, base)).toBe(true);
+  });
+
+  it('exige el RUT, igual que el formulario de la app', () => {
+    const { rut: _rut, ...sinRut } = base;
+    expect(esValido(esquemaRegistro, sinRut)).toBe(false);
+    expect(esValido(esquemaRegistro, { ...base, rut: '' })).toBe(false);
   });
 
   it('acepta RUT chileno válido (dígito verificador numérico, 0 y K)', () => {
@@ -119,6 +130,7 @@ describe('esquemaRegistro · política de contraseña', () => {
   const con = (contrasena: string) =>
     esValido(esquemaRegistro, {
       nombre: NOMBRE_OK,
+      rut: '12.345.678-5',
       correo: 'juan@alumnos.ubiobio.cl',
       contrasena
     });
@@ -335,11 +347,29 @@ describe('esquemaCrearUsuario admin', () => {
   const base = {
     nombre: NOMBRE_OK,
     correo: 'guardia.extern@correo.cl',
+    rut: '12.345.678-5',
     rol: RolUsuario.GUARDIA
   };
 
   it('acepta crear guardia con correo no institucional sin contrasena temporal', () => {
     expect(esValido(esquemaCrearUsuario, base)).toBe(true);
+  });
+
+  it('exige nombre completo y RUT valido como el formulario de la app', () => {
+    const { rut: _rut, ...sinRut } = base;
+    expect(esValido(esquemaCrearUsuario, sinRut)).toBe(false);
+    expect(esValido(esquemaCrearUsuario, { ...base, rut: '12.345.678-9' })).toBe(false);
+    expect(esValido(esquemaCrearUsuario, { ...base, nombre: 'Ana Perez' })).toBe(false);
+  });
+
+  it('normaliza correo y rol antes de guardar', () => {
+    const { value } = esquemaCrearUsuario.validate({
+      ...base,
+      correo: 'Guardia.Extern@Correo.CL',
+      rol: 'guardia'
+    });
+    expect(value.correo).toBe('guardia.extern@correo.cl');
+    expect(value.rol).toBe(RolUsuario.GUARDIA);
   });
 
   it('rechaza rol invalido y contrasena debil', () => {
@@ -495,5 +525,67 @@ describe('esquemaSeleccionarBicicleteroGuardia', () => {
       false
     );
     expect(esValido(esquemaSeleccionarBicicleteroGuardia, {})).toBe(false);
+  });
+});
+
+describe('validaciones alineadas con los formularios de la app', () => {
+  it('rechaza identificadores de ruta que no son UUID', () => {
+    expect(esValido(esquemaParametroId, { id: UUID })).toBe(true);
+    expect(esValido(esquemaParametroId, { id: 'b1' })).toBe(false);
+    expect(esquemaParametroId.validate({ id: 'b1' }).error?.message).toBe('Identificador inválido');
+  });
+
+  it('la gestión manual valida el dígito verificador del RUT y normaliza el correo', () => {
+    const base = { tipo: TipoMovimiento.INGRESO, correo: 'Ana@Alumnos.UBiobio.cl' };
+    const { error, value } = esquemaGestionManual.validate({ ...base, rut: '12345678-5' });
+    expect(error).toBeUndefined();
+    expect(value.rut).toBe('12.345.678-5');
+    expect(value.correo).toBe('ana@alumnos.ubiobio.cl');
+    expect(esValido(esquemaGestionManual, { ...base, rut: '12.345.678-9' })).toBe(false);
+  });
+
+  it('la búsqueda manual exige correo o RUT', () => {
+    expect(esValido(esquemaBuscarGestionManual, { rut: '12.345.678-5' })).toBe(true);
+    expect(esquemaBuscarGestionManual.validate({}).error?.message).toBe(
+      'Debes indicar correo o RUT para buscar coincidencias'
+    );
+  });
+
+  it('el nombre del bicicletero debe tener letras', () => {
+    const base = { ubicacion: 'Frente a FACE' };
+    expect(esValido(esquemaCrearBicicletero, { ...base, nombre: 'Bicicletero 1' })).toBe(true);
+    expect(esValido(esquemaCrearBicicletero, { ...base, nombre: '123' })).toBe(false);
+  });
+
+  it('cerrar sin resolver exige un motivo de al menos 3 caracteres', () => {
+    const cerrar = (nota: string) =>
+      esValido(esquemaActualizarEstadoSolicitudGuardia, {
+        estado: EstadoSolicitudGuardia.CANCELADA,
+        nota
+      });
+    expect(cerrar('Duplicada')).toBe(true);
+    expect(cerrar('ok')).toBe(false);
+    expect(cerrar('x'.repeat(601))).toBe(false);
+  });
+
+  it('acota tokens y contraseñas de entrada', () => {
+    expect(esValido(esquemaValidarQr, { token: 'x'.repeat(161) })).toBe(false);
+    expect(esValido(esquemaLogin, { correo: 'ana@ubiobio.cl', contrasena: 'x'.repeat(73) })).toBe(
+      false
+    );
+  });
+
+  it('los filtros del historial solo aceptan valores conocidos', () => {
+    const { error, value } = esquemaConsultaHistorial.validate({
+      tipo: 'INGRESO',
+      desde: '2026-10-01',
+      limit: '20',
+      page: '2'
+    });
+    expect(error).toBeUndefined();
+    expect(value).toMatchObject({ limit: 20, page: 2 });
+    expect(esValido(esquemaConsultaHistorial, { tipo: 'PRESTAMO' })).toBe(false);
+    expect(esValido(esquemaConsultaHistorial, { desde: 'ayer' })).toBe(false);
+    expect(esValido(esquemaConsultaHistorial, { guardiaId: 'g1' })).toBe(false);
   });
 });

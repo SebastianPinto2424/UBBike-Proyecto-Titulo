@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { middlewareErrores } from '../../src/comun/middlewares/errores.middleware';
-import { ErrorHttp } from '../../src/comun/errors/error-http';
+import { ErrorHttp } from '../../src/comun/errores/error-http';
 import { Prisma } from '../../src/generated/prisma/client';
 
 const crearRes = () => {
@@ -19,6 +19,21 @@ describe('middlewareErrores', () => {
     middlewareErrores(new ErrorHttp(400, 'dato inválido'), req, res, next);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: 'dato inválido' });
+  });
+
+  it('incluye el código del error cuando la app debe distinguirlo', () => {
+    const res = crearRes();
+    middlewareErrores(
+      new ErrorHttp(403, 'Aún no confirmas tu correo.', 'CORREO_NO_VERIFICADO'),
+      req,
+      res,
+      next
+    );
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Aún no confirmas tu correo.',
+      codigo: 'CORREO_NO_VERIFICADO'
+    });
   });
 
   it('mapea P2002 (restricción única) a 409', () => {
