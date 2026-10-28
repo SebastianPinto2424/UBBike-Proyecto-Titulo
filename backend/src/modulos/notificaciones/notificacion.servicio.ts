@@ -1,5 +1,5 @@
-import { ErrorHttp } from '../../comun/errors/error-http';
-import { prisma, type ClientePrisma } from '../../configuracion/prisma';
+import { ErrorHttp } from '../../comun/errores/error-http';
+import type { ClientePrisma } from '../../configuracion/prisma';
 import { Prisma } from '../../generated/prisma/client';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import { EventosTiempoReal, emitirTiempoReal, salaUsuario } from '../../tiempo-real/tiempo-real';
@@ -7,8 +7,8 @@ import { TipoNotificacion } from './tipo-notificacion';
 import * as notificacionRepositorio from './notificacion.repositorio';
 import * as dispositivoRepositorio from './dispositivo.repositorio';
 import { encolarEntrega } from '../entregas/entrega.repositorio';
-import { solicitarEntregaInmediata } from '../entregas/entrega.worker';
-import { limitarPagina, validarCursor } from '../../comun/utils/paginacion';
+import { solicitarEntregaInmediata } from '../entregas/entrega.procesador';
+import { limitarPagina, validarCursor } from '../../comun/utilidades/paginacion';
 
 type DatosCrearNotificacion = {
   usuarioId: string;
@@ -17,6 +17,7 @@ type DatosCrearNotificacion = {
   tipo?: TipoNotificacion;
   datos?: Record<string, unknown>;
   soloRegistro?: boolean;
+  push?: boolean;
 };
 
 type DatosNotificarRoles = {
@@ -58,7 +59,9 @@ export const crearNotificacion = async (
 ): Promise<Awaited<ReturnType<typeof notificacionRepositorio.crear>>> => {
   if (!db) {
     const pendientes = efectos ?? [];
-    const resultado = await prisma.$transaction((tx) => crearNotificacion(datos, tx, pendientes));
+    const resultado = await notificacionRepositorio.ejecutarEnTransaccion((tx) =>
+      crearNotificacion(datos, tx, pendientes)
+    );
     if (!efectos) ejecutarEfectosDiferidos(pendientes);
     return resultado;
   }
@@ -80,7 +83,7 @@ export const crearNotificacion = async (
     return notificacion;
   }
 
-  if (tiposVisiblesApp.includes(tipo)) {
+  if (datos.push ?? tiposVisiblesApp.includes(tipo)) {
     await encolarEntrega(
       'PUSH',
       {
@@ -131,21 +134,19 @@ export const notificarUsuariosPorRol = async (
     datos.excluirUsuarioId
   );
 
-  await Promise.all(
-    usuarios.map((usuario) =>
-      crearNotificacion(
-        {
-          usuarioId: usuario.id,
-          titulo: datos.titulo,
-          mensaje: datos.mensaje,
-          tipo: datos.tipo,
-          datos: datos.datos
-        },
-        db,
-        efectos
-      )
-    )
-  );
+  for (const usuario of usuarios) {
+    await crearNotificacion(
+      {
+        usuarioId: usuario.id,
+        titulo: datos.titulo,
+        mensaje: datos.mensaje,
+        tipo: datos.tipo,
+        datos: datos.datos
+      },
+      db,
+      efectos
+    );
+  }
 };
 
 export const listarNotificacionesUsuario = async (

@@ -3,6 +3,9 @@ import { prisma, type ClientePrisma } from '../../configuracion/prisma';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import type { TipoNotificacion } from './tipo-notificacion';
 
+export const ejecutarEnTransaccion = <T>(callback: (client: ClientePrisma) => Promise<T>) =>
+  prisma.$transaction(callback);
+
 export const crear = (
   data: Prisma.NotificacionUncheckedCreateInput,
   client: ClientePrisma = prisma

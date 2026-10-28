@@ -1,5 +1,5 @@
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../comun/utils/controlador-async';
+import { controladorAsync } from '../../comun/utilidades/controlador-async';
 import {
   eliminarDispositivo as eliminarDispositivoServicio,
   listarNotificacionesUsuario,
@@ -11,7 +11,7 @@ import {
 export const listarNotificaciones = controladorAsync<SolicitudAutenticada>(async (req, res) => {
   const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
   const limite = req.query.limite ? Number(req.query.limite) : undefined;
-  const soloNoLeidas = req.query.soloNoLeidas === 'true';
+  const soloNoLeidas = Boolean(req.query.soloNoLeidas);
 
   const resultado = await listarNotificacionesUsuario(req.usuario!.usuarioId, {
     cursor,

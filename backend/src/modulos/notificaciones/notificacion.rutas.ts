@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { middlewareAutenticacion } from '../../comun/middlewares/autenticacion.middleware';
-import { validarCuerpo } from '../../comun/middlewares/validar-cuerpo.middleware';
+import {
+  validarConsulta,
+  validarCuerpo,
+  validarParametros
+} from '../../comun/middlewares/validacion.middleware';
+import { esquemaParametroId } from '../../comun/utilidades/esquemas-comunes';
 import {
   eliminarDispositivo,
   listarNotificaciones,
@@ -8,14 +13,18 @@ import {
   marcarTodas,
   registrarDispositivo
 } from './notificacion.controlador';
-import { esquemaEliminarDispositivo, esquemaRegistrarDispositivo } from './dispositivo.validacion';
+import {
+  esquemaConsultaNotificaciones,
+  esquemaEliminarDispositivo,
+  esquemaRegistrarDispositivo
+} from './dispositivo.validacion';
 
 const rutasNotificaciones = Router();
 
 rutasNotificaciones.use(middlewareAutenticacion);
-rutasNotificaciones.get('/', listarNotificaciones);
+rutasNotificaciones.get('/', validarConsulta(esquemaConsultaNotificaciones), listarNotificaciones);
 rutasNotificaciones.patch('/leidas', marcarTodas);
-rutasNotificaciones.patch('/:id/leida', marcarLeida);
+rutasNotificaciones.patch('/:id/leida', validarParametros(esquemaParametroId), marcarLeida);
 rutasNotificaciones.post(
   '/dispositivos',
   validarCuerpo(esquemaRegistrarDispositivo),
