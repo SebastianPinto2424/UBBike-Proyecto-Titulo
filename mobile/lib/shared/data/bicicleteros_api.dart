@@ -13,4 +13,17 @@ class BicicleterosApi {
         .map((item) => BicicleteroApp.desdeJson(item as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> asignarGuardia(String bicicleteroId, String guardiaId) async {
+    await cliente.post(
+      '/bicicleteros/$bicicleteroId/guardia',
+      body: {'guardiaId': guardiaId},
+    );
+  }
+
+  Future<String> liberarGuardia(String bicicleteroId) async {
+    final respuesta =
+        await cliente.delete('/bicicleteros/$bicicleteroId/guardia');
+    return respuesta['message'] as String? ?? 'Bicicletero liberado';
+  }
 }
