@@ -11,8 +11,8 @@ import 'package:ubbike/core/configuracion/configuracion_mapa.dart';
 import 'package:ubbike/core/providers/mapa_provider.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/admin/data/geocodificacion_repository.dart';
-import 'package:ubbike/features/admin/presentation/formulario_bicicletero_sheet.dart';
+import 'package:ubbike/features/admin/data/geocodificacion_repositorio.dart';
+import 'package:ubbike/features/admin/presentation/hoja_formulario_bicicletero.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/modelos/lugar_encontrado.dart';
 import 'package:ubbike/core/modelos/punto_geografico.dart';
@@ -44,7 +44,7 @@ class _Gps extends UbicacionServicio {
   }
 }
 
-class _Buscador implements GeocodificacionRepository {
+class _Buscador implements GeocodificacionRepositorio {
   _Buscador(this.resultado);
   final Future<List<LugarEncontrado>> Function(String) resultado;
   final List<String> consultas = [];
@@ -94,7 +94,7 @@ Future<void> _abrirHoja(
         fabricaTilesMapaProvider.overrideWithValue(() => _TilesMemoria()),
         ubicacionServicioProvider
             .overrideWithValue(gps ?? _Gps(() async => null)),
-        geocodificacionRepositoryProvider
+        geocodificacionRepositorioProvider
             .overrideWithValue(buscador ?? _Buscador((_) async => const [])),
       ],
       child: MaterialApp(
@@ -111,7 +111,7 @@ Future<void> _abrirHoja(
                           showDragHandle: true,
                           isScrollControlled: true,
                           useSafeArea: true,
-                          builder: (_) => FormularioBicicleteroSheet(
+                          builder: (_) => HojaFormularioBicicletero(
                               bicicletero: bicicletero, alGuardar: alGuardar),
                         ),
                     child: const Text('Abrir')))),
@@ -184,7 +184,7 @@ void main() {
 
       expect(enviada!.nombre, 'Bicicletero FACE');
       expect(enviada!.latitud, isNull);
-      expect(find.byType(FormularioBicicleteroSheet), findsNothing);
+      expect(find.byType(HojaFormularioBicicletero), findsNothing);
     });
 
     testWidgets('no llama al servidor si faltan datos obligatorios',
@@ -198,7 +198,7 @@ void main() {
 
       expect(find.text('Ingresa un nombre.'), findsOneWidget);
       expect(llamadas, 0);
-      expect(find.byType(FormularioBicicleteroSheet), findsOneWidget);
+      expect(find.byType(HojaFormularioBicicletero), findsOneWidget);
     });
 
     testWidgets('un error del servidor conserva los datos y deja reintentar',
@@ -218,7 +218,7 @@ void main() {
       await _guardar(tester);
       await _asentar(tester);
       expect(intentos, 2);
-      expect(find.byType(FormularioBicicleteroSheet), findsNothing);
+      expect(find.byType(HojaFormularioBicicletero), findsNothing);
     });
 
     testWidgets('bloquea el doble guardado mientras espera', (tester) async {

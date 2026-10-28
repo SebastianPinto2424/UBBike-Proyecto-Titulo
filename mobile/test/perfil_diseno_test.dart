@@ -52,7 +52,7 @@ class _SesionFalsa extends SesionNotifier {
   final UsuarioApp usuario;
 
   @override
-  Future<SesionState> build() async =>
+  Future<EstadoSesion> build() async =>
       SesionActiva(usuario: usuario, token: 'test');
 }
 
@@ -144,7 +144,7 @@ void main() {
 
     await tester.pumpWidget(
       _app(
-        _usuario(nombre: 'Esmeralda Caroline Pinto Rivera de los Santos'),
+        _usuario(nombre: 'Valentina Antonia Soto Riquelme de los Santos'),
         escala: 1.8,
       ),
     );

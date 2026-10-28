@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
-import 'package:ubbike/features/acceso/presentation/sheet_denegacion_qr.dart';
-import 'package:ubbike/features/acceso/presentation/sheet_solicitar_atencion.dart';
+import 'package:ubbike/features/acceso/presentation/hoja_denegacion_qr.dart';
+import 'package:ubbike/features/acceso/presentation/hoja_solicitar_atencion.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 const _bicicletero = BicicleteroApp(
@@ -43,7 +43,7 @@ void main() {
         (tester) async {
       await _abrirHoja(
         tester,
-        SheetSolicitarAtencion(
+        HojaSolicitarAtencion(
           bicicleteros: const [_bicicletero],
           onEnviar: (_, __) async => 'El guardia ya respondió esta solicitud',
         ),
@@ -55,14 +55,14 @@ void main() {
 
       expect(
           find.text('El guardia ya respondió esta solicitud'), findsOneWidget);
-      expect(find.byType(SheetSolicitarAtencion), findsOneWidget);
+      expect(find.byType(HojaSolicitarAtencion), findsOneWidget);
     });
 
     testWidgets('si se envía, se cierra', (tester) async {
       String? enviadoA;
       await _abrirHoja(
         tester,
-        SheetSolicitarAtencion(
+        HojaSolicitarAtencion(
           bicicleteros: const [_bicicletero],
           onEnviar: (bicicleteroId, _) async {
             enviadoA = bicicleteroId;
@@ -76,7 +76,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(enviadoA, 'bicicletero-1');
-      expect(find.byType(SheetSolicitarAtencion), findsNothing);
+      expect(find.byType(HojaSolicitarAtencion), findsNothing);
     });
   });
 
@@ -85,7 +85,7 @@ void main() {
       var enviados = 0;
       await _abrirHoja(
         tester,
-        SheetDenegacion(
+        HojaDenegacion(
           esIngreso: true,
           onConfirmar: (_) async {
             enviados++;
@@ -107,7 +107,7 @@ void main() {
       String? enviado;
       await _abrirHoja(
         tester,
-        SheetDenegacion(
+        HojaDenegacion(
           esIngreso: false,
           onConfirmar: (motivo) async {
             enviado = motivo;
@@ -123,14 +123,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(enviado, 'La bicicleta no coincide. Es de otro color');
-      expect(find.byType(SheetDenegacion), findsNothing);
+      expect(find.byType(HojaDenegacion), findsNothing);
     });
 
     testWidgets('si el servidor lo impide, muestra el motivo en la hoja',
         (tester) async {
       await _abrirHoja(
         tester,
-        SheetDenegacion(
+        HojaDenegacion(
           esIngreso: true,
           onConfirmar: (_) async => 'Este QR ya se usó',
         ),
@@ -142,7 +142,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Este QR ya se usó'), findsOneWidget);
-      expect(find.byType(SheetDenegacion), findsOneWidget);
+      expect(find.byType(HojaDenegacion), findsOneWidget);
     });
   });
 }

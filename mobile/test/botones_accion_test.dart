@@ -47,7 +47,8 @@ Future<void> _abrirDialogo(
 }
 
 void main() {
-  testWidgets('con espacio quedan lado a lado y del mismo ancho',
+  testWidgets(
+      'con espacio quedan lado a lado, del mismo ancho y cancelar a la izquierda',
       (tester) async {
     await _montar(
       tester,
@@ -70,7 +71,7 @@ void main() {
   });
 
   testWidgets(
-      'en el ingreso confirmar va a la izquierda y rechazar a la derecha',
+      'en el ingreso rechazar va a la izquierda y confirmar a la derecha',
       (tester) async {
     await _montar(
       tester,
@@ -92,7 +93,7 @@ void main() {
     final rechazar =
         tester.getRect(find.widgetWithText(ElevatedButton, 'Rechazar ingreso'));
     expect(confirmar.top, rechazar.top);
-    expect(confirmar.right, lessThan(rechazar.left));
+    expect(rechazar.right, lessThan(confirmar.left));
     expect(_fondo(tester, 'Confirmar ingreso'), ColoresUbb.azulApp);
     expect(_fondo(tester, 'Rechazar ingreso'), ColoresUbb.rojoInstitucional);
   });
@@ -134,7 +135,9 @@ void main() {
     );
   });
 
-  testWidgets('el rojo marca la opcion negativa de cada par', (tester) async {
+  testWidgets(
+      'en una accion destructiva solo la accion es roja y cancelar azul',
+      (tester) async {
     await _montar(
       tester,
       400,
@@ -174,6 +177,8 @@ void main() {
 
     await _abrirDialogo(tester, abrir);
     expect(find.text('Ana Pérez'), findsOneWidget);
+    expect(_fondo(tester, 'Eliminar'), ColoresUbb.rojoInstitucional);
+    expect(_fondo(tester, 'Cancelar'), ColoresUbb.azulApp);
     await tester.tap(find.byKey(const Key('eliminar-confirmar')));
     await tester.pumpAndSettle();
     expect(await resultado, isTrue);
@@ -191,12 +196,12 @@ void main() {
       tester,
       (context) => resultado = showDialog<String>(
         context: context,
-        builder: (_) => const DialogoNotaCierre(estado: 'RESUELTA'),
+        builder: (_) => const DialogoNotaCierre(),
       ),
     );
 
-    expect(_fondo(tester, 'Cancelar'), ColoresUbb.rojoInstitucional);
-    expect(_fondo(tester, 'Confirmar'), ColoresUbb.azulApp);
+    expect(_fondo(tester, 'Confirmar'), ColoresUbb.rojoInstitucional);
+    expect(_fondo(tester, 'Cancelar'), ColoresUbb.azulApp);
 
     await tester.tap(find.widgetWithText(ElevatedButton, 'Confirmar'));
     await tester.pump();
@@ -207,5 +212,40 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Confirmar'));
     await tester.pumpAndSettle();
     expect(await resultado, 'Resuelto en terreno');
+  });
+
+  testWidgets('cancelar la accion manual es rojo y escanear de nuevo no',
+      (tester) async {
+    Widget decision({required bool cancela, required String texto}) =>
+        BotonesDecisionMovimiento(
+          esIngreso: true,
+          procesando: false,
+          habilitado: true,
+          onConfirmar: () {},
+          onRechazar: () {},
+          textoSecundario: texto,
+          iconoSecundario: Icons.close,
+          onSecundario: () {},
+          secundarioCancela: cancela,
+        );
+
+    await _montar(
+      tester,
+      400,
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            decision(cancela: true, texto: 'Cancelar acción'),
+            decision(cancela: false, texto: 'Escanear nuevamente'),
+          ],
+        ),
+      ),
+    );
+
+    expect(_fondo(tester, 'Cancelar acción'), ColoresUbb.rojoInstitucional);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Escanear nuevamente'),
+      findsOneWidget,
+    );
   });
 }

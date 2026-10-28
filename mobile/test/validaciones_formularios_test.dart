@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubbike/shared/utils/identidad.dart';
-import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/utilidades/identidad.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicleta.dart';
+import 'package:flutter/foundation.dart';
+import 'package:ubbike/features/acceso/presentation/dialogo_nota_cierre.dart';
+import 'package:ubbike/features/acceso/presentation/validaciones_gestion_manual.dart';
+import 'package:ubbike/features/notificaciones/data/notificacion_api.dart';
 
 void main() {
   group('validaciones de registro', () {
@@ -59,6 +63,48 @@ void main() {
       expect(validarColorBicicleta('azul123'), isNotNull);
       expect(validarNumeroSerieBicicleta('AB-1234'), isNull);
       expect(validarNumeroSerieBicicleta('AB 1234'), isNotNull);
+    });
+  });
+
+  group('validaciones alineadas con el backend', () {
+    test('la gestion manual exige RUT con digito verificador correcto', () {
+      expect(validarRutGestionManual('12.345.678-5'), isNull);
+      expect(validarRutGestionManual('12.345.678-9'), isNotNull);
+      expect(validarRutGestionManual('12.345.678'), isNotNull);
+      expect(validarRutGestionManual(''), isNull);
+      expect(validarRutGestionManual('', requerido: true), isNotNull);
+    });
+
+    test('un registro parcial nuevo exige correo institucional', () {
+      expect(validarCorreoGestionManual('ana@gmail.com', ''), isNull);
+      expect(
+        validarCorreoGestionManual('ana@gmail.com', '', requiereCorreo: true),
+        'Usa un correo @ubiobio.cl o @alumnos.ubiobio.cl.',
+      );
+      expect(
+        validarCorreoGestionManual('ana@alumnos.ubiobio.cl', '',
+            requiereCorreo: true),
+        isNull,
+      );
+    });
+
+    test('la descripcion manual usa el mismo limite que la bicicleta', () {
+      expect(validarDescripcionBicicletaManual('Bici roja', true), isNull);
+      expect(validarDescripcionBicicletaManual('x' * 101, true), isNotNull);
+      expect(validarDescripcionBicicletaManual('123', true), isNotNull);
+      expect(validarDescripcionBicicletaManual('', false), isNull);
+    });
+
+    test('el motivo de cierre de central tiene entre 3 y 600 caracteres', () {
+      expect(validarNotaCierre(''), isNotNull);
+      expect(validarNotaCierre('ok'), 'Debe tener al menos 3 caracteres.');
+      expect(validarNotaCierre('Duplicada'), isNull);
+      expect(validarNotaCierre('x' * 601), 'Máximo 600 caracteres.');
+    });
+
+    test('el token push se registra con la plataforma real', () {
+      expect(plataformaPush(TargetPlatform.iOS), 'ios');
+      expect(plataformaPush(TargetPlatform.android), 'android');
     });
   });
 }

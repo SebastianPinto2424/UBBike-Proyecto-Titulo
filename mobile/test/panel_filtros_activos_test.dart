@@ -95,7 +95,7 @@ void main() {
               'Ingresos',
               'Confirmados',
               'Bicicletero cercano a la FACE, El Boldo',
-              'Esmeralda Caroline Pinto Rivera',
+              'Valentina Antonia Soto Riquelme',
               'Busca: bicicleta roja',
             ])
               FiltroActivo(etiqueta: etiqueta, onQuitar: () {}),

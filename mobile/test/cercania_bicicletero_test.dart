@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/utils/cercania_bicicletero.dart';
+import 'package:ubbike/shared/utilidades/cercania_bicicletero.dart';
 
 const _centroIdiomas = BicicleteroApp(
   id: 'centro-idiomas',

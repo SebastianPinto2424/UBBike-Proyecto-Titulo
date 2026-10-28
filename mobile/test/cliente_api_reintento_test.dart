@@ -54,7 +54,10 @@ void main() {
           _ClienteInestable(fallos: 99, error: http.ClientException('sin red'));
       final api = ClienteApi(httpClient: cliente);
 
-      await expectLater(api.get('/historial'), throwsA(isA<Exception>()));
+      await expectLater(
+          api.get('/historial'),
+          throwsA(isA<ExcepcionApi>()
+              .having((e) => e.mensaje, 'mensaje', mensajeSinConexion)));
       expect(cliente.intentos, 3);
     });
 
@@ -85,7 +88,10 @@ void main() {
           fallos: 1, error: http.ClientException('conexión perdida'));
       final api = ClienteApi(httpClient: cliente);
 
-      await expectLater(api.post('/incidencias'), throwsA(isA<Exception>()));
+      await expectLater(
+          api.post('/incidencias'),
+          throwsA(isA<ExcepcionApi>()
+              .having((e) => e.mensaje, 'mensaje', mensajeSinConexion)));
       expect(cliente.intentos, 1);
     });
   });

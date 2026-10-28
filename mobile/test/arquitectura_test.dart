@@ -62,7 +62,7 @@ void main() {
   });
 
   test('las vistas leen datos a través de la capa de aplicación', () {
-    final repositorio = RegExp(r'\b\w+RepositoryProvider\b');
+    final repositorio = RegExp(r'\b\w+RepositorioProvider\b');
     final violaciones = [
       for (final archivo in archivos.where((a) => a.esVista))
         for (final coincidencia in repositorio.allMatches(archivo.contenido))

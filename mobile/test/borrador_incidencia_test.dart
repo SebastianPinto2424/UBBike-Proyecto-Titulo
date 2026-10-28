@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/features/incidencias/data/borrador_incidencia.dart';
-import 'package:ubbike/features/incidencias/presentation/sheet_registrar_incidencia.dart';
+import 'package:ubbike/features/incidencias/presentation/hoja_registrar_incidencia.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 const _foto =
@@ -64,7 +64,7 @@ void main() {
         theme: crearTemaUbb(),
         home: Scaffold(
           body: SingleChildScrollView(
-            child: SheetRegistrarIncidencia(
+            child: HojaRegistrarIncidencia(
               bicicleteros: _bicicleteros,
               bicicletas: const [],
               permitirBicicletaPropia: false,

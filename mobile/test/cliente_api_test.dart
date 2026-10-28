@@ -80,7 +80,9 @@ void main() {
           expirada = true;
         });
     await expectLater(
-        cliente.get('/perfil'), throwsA(isA<http.ClientException>()));
+        cliente.get('/perfil'),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.mensaje, 'mensaje', mensajeSinConexion)));
     expect(expirada, false);
   });
   test('refresh rechazado expira la sesión una vez', () async {
@@ -122,6 +124,50 @@ void main() {
     final cliente = ClienteApi(
         timeout: const Duration(milliseconds: 5),
         httpClient: MockClient((_) => Completer<http.Response>().future));
-    await expectLater(cliente.get('/perfil'), throwsA(isA<TimeoutException>()));
+    await expectLater(
+        cliente.get('/perfil'),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.mensaje, 'mensaje', mensajeSinConexion)));
+  });
+  test('un error 500 no muestra detalles del servidor', () async {
+    final cliente = ClienteApi(
+        httpClient: MockClient((_) async =>
+            http.Response('{"message":"Error interno del servidor"}', 500)));
+    await expectLater(
+        cliente.get('/perfil'),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.mensaje, 'mensaje', mensajeServidorNoDisponible)
+            .having((e) => e.statusCode, 'status', 500)));
+  });
+  test('una respuesta que no es JSON se trata como servidor no disponible',
+      () async {
+    final cliente = ClienteApi(
+        httpClient: MockClient(
+            (_) async => http.Response('<html>ERR_NGROK_3200</html>', 404)));
+    await expectLater(
+        cliente.post('/incidencias'),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.mensaje, 'mensaje', mensajeServidorNoDisponible)));
+  });
+  test('el código del error llega a la app', () async {
+    final cliente = ClienteApi(
+        httpClient: MockClient((_) async => http.Response(
+            '{"message":"Aún no confirmas tu correo.","codigo":"CORREO_NO_VERIFICADO"}',
+            403,
+            headers: {'content-type': 'application/json; charset=utf-8'})));
+    await expectLater(
+        cliente.post('/autenticacion/login'),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.codigo, 'codigo', 'CORREO_NO_VERIFICADO')
+            .having((e) => e.statusCode, 'status', 403)));
+  });
+  test('sin red una escritura avisa que no hay conexión', () async {
+    final cliente = ClienteApi(
+        httpClient:
+            MockClient((_) async => throw http.ClientException('sin red')));
+    await expectLater(
+        cliente.post('/incidencias'),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.mensaje, 'mensaje', mensajeSinConexion)));
   });
 }

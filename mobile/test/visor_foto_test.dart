@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 import 'package:ubbike/shared/widgets/visor_foto.dart';
 
 const _pngMinimo =

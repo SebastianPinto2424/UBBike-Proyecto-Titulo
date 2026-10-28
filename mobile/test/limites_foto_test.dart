@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubbike/shared/utils/limites_foto.dart';
+import 'package:ubbike/shared/utilidades/limites_foto.dart';
 
 Uint8List _bytes(List<int> cabecera, {int relleno = 16}) {
   return Uint8List.fromList([...cabecera, ...List<int>.filled(relleno, 0)]);

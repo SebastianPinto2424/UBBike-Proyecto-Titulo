@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 import 'package:ubbike/core/servicios/cliente_api.dart';
-import 'package:ubbike/features/inicio/application/dashboard_central_vm.dart';
-import 'package:ubbike/features/inicio/application/dashboard_administrador_vm.dart';
+import 'package:ubbike/features/inicio/application/tablero_central_vm.dart';
+import 'package:ubbike/features/inicio/application/tablero_administrador_vm.dart';
 import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
 import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 
@@ -35,20 +35,19 @@ void main() {
   tearDown(() => c.dispose());
   test('cambiar períodos de ambos tableros no reasigna un late final',
       () async {
-    c.listen(dashboardCentralVmProvider, (_, __) {});
-    c.listen(dashboardAdministradorVmProvider, (_, __) {});
-    await c.read(dashboardCentralVmProvider.future);
-    await c.read(dashboardAdministradorVmProvider.future);
+    c.listen(tableroCentralVmProvider, (_, __) {});
+    c.listen(tableroAdministradorVmProvider, (_, __) {});
+    await c.read(tableroCentralVmProvider.future);
+    await c.read(tableroAdministradorVmProvider.future);
     for (final periodo in ['DIA', 'MES', 'SEMANA']) {
-      c.read(dashboardCentralVmProvider.notifier).cambiarPeriodo(periodo);
-      c.read(dashboardAdministradorVmProvider.notifier).cambiarPeriodo(periodo);
+      c.read(tableroCentralVmProvider.notifier).cambiarPeriodo(periodo);
+      c.read(tableroAdministradorVmProvider.notifier).cambiarPeriodo(periodo);
       expect(
-          (await c.read(dashboardCentralVmProvider.future))
+          (await c.read(tableroCentralVmProvider.future))
               .totalIncidenciasAbiertas,
           450);
       expect(
-          (await c.read(dashboardAdministradorVmProvider.future))
-              .usuariosActivos,
+          (await c.read(tableroAdministradorVmProvider.future)).usuariosActivos,
           7);
     }
   });
@@ -72,11 +71,11 @@ void main() {
   });
   test('una caída temporal conserva el tablero y lo marca desactualizado',
       () async {
-    c.listen(dashboardCentralVmProvider, (_, __) {});
-    await c.read(dashboardCentralVmProvider.future);
+    c.listen(tableroCentralVmProvider, (_, __) {});
+    await c.read(tableroCentralVmProvider.future);
     fallar = true;
-    await c.read(dashboardCentralVmProvider.notifier).refrescar();
-    final datos = c.read(dashboardCentralVmProvider).requireValue;
+    await c.read(tableroCentralVmProvider.notifier).refrescar();
+    final datos = c.read(tableroCentralVmProvider).requireValue;
     expect(datos.totalIncidenciasAbiertas, 450);
     expect(datos.desactualizado, true);
   });

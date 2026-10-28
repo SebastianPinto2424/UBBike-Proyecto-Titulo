@@ -33,7 +33,7 @@ const _usuario = UsuarioApp(
 
 class _SesionGuardia extends SesionNotifier {
   @override
-  Future<SesionState> build() async =>
+  Future<EstadoSesion> build() async =>
       const SesionActiva(usuario: _guardia, token: 'test');
 }
 

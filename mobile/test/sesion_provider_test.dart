@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
+import 'package:ubbike/core/servicios/excepcion_api.dart';
 
 const usuarioJson = {
   'id': 'u',
@@ -45,7 +46,9 @@ void main() {
     ]);
     addTearDown(c.dispose);
     await expectLater(
-        c.read(sesionProvider.future), throwsA(isA<http.ClientException>()));
+        c.read(sesionProvider.future),
+        throwsA(isA<ExcepcionApi>()
+            .having((e) => e.mensaje, 'mensaje', mensajeSinConexion)));
     expect(await const FlutterSecureStorage().read(key: 'ubbike_jwt'), 'viejo');
   });
   test('rechazo definitivo limpia las credenciales', () async {

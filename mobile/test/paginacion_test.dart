@@ -8,7 +8,7 @@ import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
 import 'package:ubbike/features/notificaciones/application/controlador_notificaciones.dart';
 import 'package:ubbike/features/notificaciones/data/notificacion_api.dart';
-import 'package:ubbike/features/notificaciones/data/notificacion_repository.dart';
+import 'package:ubbike/features/notificaciones/data/notificacion_repositorio.dart';
 
 Map<String, Object> incidencia(int i) => {
       'id': '$i',
@@ -67,8 +67,8 @@ void main() {
           200);
     }));
     final controlador = ControladorNotificaciones(
-        notificacionRepository:
-            NotificacionRepository(NotificacionApi(cliente: cliente)));
+        notificacionRepositorio:
+            NotificacionRepositorio(NotificacionApi(cliente: cliente)));
     addTearDown(controlador.dispose);
     await controlador.actualizar();
     expect(controlador.noLeidas, 150);

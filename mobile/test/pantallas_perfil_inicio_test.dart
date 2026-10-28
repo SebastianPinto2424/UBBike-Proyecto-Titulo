@@ -9,16 +9,16 @@ import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/providers/conexion_provider.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
-import 'package:ubbike/features/inicio/presentation/vista_dashboard_administrador.dart';
-import 'package:ubbike/features/inicio/presentation/vista_dashboard_central.dart';
-import 'package:ubbike/features/inicio/application/dashboard_administrador_vm.dart';
-import 'package:ubbike/features/inicio/application/dashboard_central_vm.dart';
+import 'package:ubbike/features/inicio/presentation/vista_tablero_administrador.dart';
+import 'package:ubbike/features/inicio/presentation/vista_tablero_central.dart';
+import 'package:ubbike/features/inicio/application/tablero_administrador_vm.dart';
+import 'package:ubbike/features/inicio/application/tablero_central_vm.dart';
 import 'package:ubbike/shared/modelos/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
-import 'package:ubbike/shared/modelos/dashboard_modelos.dart';
+import 'package:ubbike/shared/modelos/tablero_modelos.dart';
 import 'package:ubbike/shared/widgets/atencion_operativa_widgets.dart';
 
 final usuario = UsuarioApp.fromJson({
@@ -37,7 +37,7 @@ final rack = BicicleteroApp.desdeJson({
   'cuposDisponibles': 98,
   'porcentajeUso': 18
 });
-final central = DatosDashboardCentral(
+final central = DatosTableroCentral(
   resumen: ResumenHistorialApp.desdeJson({
     'incidenciasAbiertas': 321,
     'usuariosActivos': 7,
@@ -64,18 +64,18 @@ final central = DatosDashboardCentral(
 
 class _Sesion extends SesionNotifier {
   @override
-  Future<SesionState> build() async =>
+  Future<EstadoSesion> build() async =>
       SesionActiva(usuario: usuario, token: 'test');
 }
 
-class _Dashboard extends DashboardAdministradorVm {
+class _Tablero extends TableroAdministradorVm {
   @override
-  Future<DatosDashboardAdministrador> build() async =>
-      DatosDashboardAdministrador(central: central);
+  Future<DatosTableroAdministrador> build() async =>
+      DatosTableroAdministrador(central: central);
 }
 
-DatosDashboardCentral _sinIncidencias({int solicitudes = 0}) =>
-    DatosDashboardCentral(
+DatosTableroCentral _sinIncidencias({int solicitudes = 0}) =>
+    DatosTableroCentral(
         resumen:
             ResumenHistorialApp.desdeJson({'solicitudesAbiertas': solicitudes}),
         bicicleteros: [rack],
@@ -84,15 +84,15 @@ DatosDashboardCentral _sinIncidencias({int solicitudes = 0}) =>
         movimientosRecientes: [],
         actualizadoEn: DateTime(2026, 9, 14, 19, 2));
 
-class _AdministradorVacio extends DashboardAdministradorVm {
+class _AdministradorVacio extends TableroAdministradorVm {
   @override
-  Future<DatosDashboardAdministrador> build() async =>
-      DatosDashboardAdministrador(central: _sinIncidencias());
+  Future<DatosTableroAdministrador> build() async =>
+      DatosTableroAdministrador(central: _sinIncidencias());
 }
 
-class _CentralVacio extends DashboardCentralVm {
+class _CentralVacio extends TableroCentralVm {
   @override
-  Future<DatosDashboardCentral> build() async => _sinIncidencias();
+  Future<DatosTableroCentral> build() async => _sinIncidencias();
 }
 
 Future<void> capturar(WidgetTester tester, GlobalKey key, String nombre) async {
@@ -145,7 +145,7 @@ void main() {
         await tester.pumpWidget(ProviderScope(
             overrides: [
               sesionProvider.overrideWith(_Sesion.new),
-              dashboardAdministradorVmProvider.overrideWith(_Dashboard.new)
+              tableroAdministradorVmProvider.overrideWith(_Tablero.new)
             ],
             child: MaterialApp(
               theme: crearTemaUbb(),
@@ -159,7 +159,7 @@ void main() {
                       appBar: AppBar(title: Text(perfil ? 'Perfil' : 'Inicio')),
                       body: perfil
                           ? const VistaPerfil(rol: RolUsuario.administrador)
-                          : VistaDashboardAdministrador(
+                          : VistaTableroAdministrador(
                               onAbrirIncidencias: () {},
                               onAbrirUsuarios: () {}))),
             )));
@@ -208,7 +208,7 @@ void main() {
     addTearDown(container.dispose);
     container.read(conexionProvider.notifier).state = EstadoConexion.conectado;
     var aperturas = 0;
-    Widget pantalla(DatosDashboardCentral datos) => UncontrolledProviderScope(
+    Widget pantalla(DatosTableroCentral datos) => UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
             theme: crearTemaUbb(),
@@ -248,7 +248,7 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     var abierto = false;
-    Widget pantalla(DatosDashboardCentral datos) => UncontrolledProviderScope(
+    Widget pantalla(DatosTableroCentral datos) => UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
             theme: crearTemaUbb(),
@@ -286,9 +286,9 @@ void main() {
         await tester.pumpWidget(ProviderScope(
             overrides: [
               sesionProvider.overrideWith(_Sesion.new),
-              dashboardAdministradorVmProvider
+              tableroAdministradorVmProvider
                   .overrideWith(_AdministradorVacio.new),
-              dashboardCentralVmProvider.overrideWith(_CentralVacio.new),
+              tableroCentralVmProvider.overrideWith(_CentralVacio.new),
               conexionProvider.overrideWith((ref) => EstadoConexion.conectado),
             ],
             child: MaterialApp(
@@ -302,8 +302,8 @@ void main() {
                   child: Scaffold(
                       appBar: AppBar(title: const Text('Inicio')),
                       body: esCentral
-                          ? VistaDashboardCentral(onAbrirIncidencias: () {})
-                          : VistaDashboardAdministrador(
+                          ? VistaTableroCentral(onAbrirIncidencias: () {})
+                          : VistaTableroAdministrador(
                               onAbrirIncidencias: () {}))),
             )));
         await tester.pumpAndSettle();

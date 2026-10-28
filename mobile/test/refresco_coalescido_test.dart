@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 
 void main() {
   setUp(() {

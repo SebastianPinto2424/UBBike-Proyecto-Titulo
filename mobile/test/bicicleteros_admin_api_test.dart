@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/features/admin/data/bicicleteros_admin_api.dart';
-import 'package:ubbike/features/admin/data/bicicleteros_admin_repository.dart';
+import 'package:ubbike/features/admin/data/bicicleteros_admin_repositorio.dart';
 
 void main() {
   for (final quitar in [false, true]) {
@@ -23,7 +23,7 @@ void main() {
                 200);
           }));
       final repo =
-          BicicleterosAdminRepository(BicicleterosAdminApi(cliente: cliente));
+          BicicleterosAdminRepositorio(BicicleterosAdminApi(cliente: cliente));
       final resultado = await repo.actualizar(
           bicicleteroId: 'rack',
           nombre: 'FACE',
