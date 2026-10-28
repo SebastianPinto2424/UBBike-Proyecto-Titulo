@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 
-class VistaConTabs extends StatelessWidget {
-  const VistaConTabs({
+class VistaConPestanas extends StatelessWidget {
+  const VistaConPestanas({
     super.key,
-    required this.tabs,
+    required this.pestanas,
     required this.vistas,
     this.initialIndex = 0,
   });
 
-  final List<Tab> tabs;
+  final List<Tab> pestanas;
   final List<Widget> vistas;
   final int initialIndex;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: tabs.length,
+      length: pestanas.length,
       initialIndex: initialIndex,
       child: Column(
         children: [
@@ -25,7 +25,7 @@ class VistaConTabs extends StatelessWidget {
             color: ColoresUbb.superficieAzulSuave,
             borderRadius: BorderRadius.circular(14),
             child: TabBar(
-              tabs: tabs,
+              tabs: pestanas,
               padding: const EdgeInsets.all(4),
               labelColor: Colors.white,
               unselectedLabelColor: ColoresUbb.textoSecundario,
@@ -48,7 +48,7 @@ class VistaConTabs extends StatelessWidget {
   }
 }
 
-Tab tabCompacto(IconData icono, String texto) {
+Tab pestanaCompacta(IconData icono, String texto) {
   return Tab(
     height: 44,
     child: Row(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 
-InputDecoration decoracionCampoAuth({
+InputDecoration decoracionCampoAutenticacion({
   required String labelText,
   required IconData icono,
   Widget? suffixIcon,
@@ -31,7 +31,7 @@ InputDecoration decoracionCampoAuth({
   );
 }
 
-ButtonStyle estiloBotonAuth() {
+ButtonStyle estiloBotonAutenticacion() {
   return ElevatedButton.styleFrom(
     backgroundColor: ColoresUbb.azulApp,
     foregroundColor: Colors.white,
@@ -44,7 +44,7 @@ ButtonStyle estiloBotonAuth() {
   );
 }
 
-Widget indicadorBotonAuth() {
+Widget indicadorBotonAutenticacion() {
   return const SizedBox(
     width: 18,
     height: 18,
