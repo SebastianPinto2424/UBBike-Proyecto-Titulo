@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/auth/presentation/validaciones_ingreso.dart';
-import 'package:ubbike/shared/widgets/estilos_formulario_auth.dart';
+import 'package:ubbike/features/autenticacion/presentation/validaciones_ingreso.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario_autenticacion.dart';
 
 class FormularioIngreso extends StatelessWidget {
   const FormularioIngreso({
@@ -56,7 +56,7 @@ class FormularioIngreso extends StatelessWidget {
         const SizedBox(height: 22),
         TextFormField(
           controller: correoController,
-          decoration: decoracionCampoAuth(
+          decoration: decoracionCampoAutenticacion(
             labelText: 'Correo electrónico',
             icono: Icons.mail_outline,
           ),
@@ -69,12 +69,12 @@ class FormularioIngreso extends StatelessWidget {
             AutofillHints.username,
             AutofillHints.email,
           ],
-          validator: validarCorreoAuthFrontend,
+          validator: validarCorreoIngreso,
         ),
         const SizedBox(height: 24),
         TextFormField(
           controller: contrasenaController,
-          decoration: decoracionCampoAuth(
+          decoration: decoracionCampoAutenticacion(
             labelText: 'Contraseña',
             icono: Icons.lock_outline,
             suffixIcon: IconButton(
@@ -95,7 +95,7 @@ class FormularioIngreso extends StatelessWidget {
           autofillHints: const [AutofillHints.password],
           textInputAction: TextInputAction.done,
           onFieldSubmitted: (_) => onIngresar(),
-          validator: validarContrasenaLoginFrontend,
+          validator: validarContrasenaIngreso,
         ),
         const SizedBox(height: 5),
         Align(
@@ -121,8 +121,9 @@ class FormularioIngreso extends StatelessWidget {
         const SizedBox(height: 16),
         ElevatedButton(
           onPressed: cargando ? null : onIngresar,
-          style: estiloBotonAuth(),
-          child: cargando ? indicadorBotonAuth() : const Text('Ingresar'),
+          style: estiloBotonAutenticacion(),
+          child:
+              cargando ? indicadorBotonAutenticacion() : const Text('Ingresar'),
         ),
         const SizedBox(height: 20),
         TextButton(

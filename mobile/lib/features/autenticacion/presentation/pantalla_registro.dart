@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:ubbike/features/auth/application/autenticacion_vm.dart';
+import 'package:ubbike/features/autenticacion/application/autenticacion_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/utils/identidad.dart';
+import 'package:ubbike/features/autenticacion/presentation/dialogo_confirmar_correo.dart';
+import 'package:ubbike/shared/utilidades/identidad.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 import 'package:ubbike/shared/widgets/marca_ubbike.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
-import 'package:ubbike/shared/widgets/estilos_formulario_auth.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario_autenticacion.dart';
 
 class PantallaRegistro extends ConsumerStatefulWidget {
   const PantallaRegistro({super.key});
@@ -85,7 +86,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Se enviará un correo de activación. La cuenta no queda habilitada hasta confirmar el enlace.',
+              'Usa tu correo institucional. Te enviaremos un enlace para confirmarlo y activar tu cuenta.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: ColoresUbb.textoSecundario,
                   ),
@@ -100,7 +101,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     TextFormField(
                       controller: nombreController,
                       focusNode: nombreFocusNode,
-                      decoration: decoracionCampoAuth(
+                      decoration: decoracionCampoAutenticacion(
                         labelText: 'Nombre completo',
                         icono: Icons.person_outline,
                         helperText: _ayudaSiActivo(
@@ -119,7 +120,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     TextFormField(
                       controller: rutController,
                       focusNode: rutFocusNode,
-                      decoration: decoracionCampoAuth(
+                      decoration: decoracionCampoAutenticacion(
                         labelText: 'RUT',
                         icono: Icons.badge_outlined,
                         helperText: _ayudaSiActivo(
@@ -128,7 +129,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                         ),
                       ),
                       keyboardType: TextInputType.text,
-                      inputFormatters: [RutInputFormatter()],
+                      inputFormatters: [FormateadorRut()],
                       textInputAction: TextInputAction.next,
                       autocorrect: false,
                       enableSuggestions: false,
@@ -141,7 +142,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     TextFormField(
                       controller: correoController,
                       focusNode: correoFocusNode,
-                      decoration: decoracionCampoAuth(
+                      decoration: decoracionCampoAutenticacion(
                         labelText: 'Correo institucional',
                         icono: Icons.mail_outline,
                         helperText: _ayudaSiActivo(
@@ -182,7 +183,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     TextFormField(
                       controller: contrasenaController,
                       focusNode: contrasenaFocusNode,
-                      decoration: decoracionCampoAuth(
+                      decoration: decoracionCampoAutenticacion(
                         labelText: 'Contraseña',
                         icono: Icons.lock_outline,
                         helperText: _ayudaSiActivo(
@@ -225,10 +226,10 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     ),
                     const SizedBox(height: 26),
                     ElevatedButton(
-                      style: estiloBotonAuth(),
+                      style: estiloBotonAutenticacion(),
                       onPressed: cargando ? null : _registrar,
                       child: cargando
-                          ? indicadorBotonAuth()
+                          ? indicadorBotonAutenticacion()
                           : const Text('Registrar'),
                     ),
                   ],
@@ -247,98 +248,49 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     }
 
     setState(() => cargando = true);
+    final correo = correoController.text.trim().toLowerCase();
+    var registrado = false;
 
     try {
-      final correo = correoController.text.trim();
-
-      final mensaje = await ref.read(autenticacionVmProvider).registrar(
+      await ref.read(autenticacionVmProvider).registrar(
             nombre: nombreController.text.trim(),
             rut: rutController.text.trim(),
             correo: correo,
             contrasena: contrasenaController.text,
           );
-
-      if (mounted) {
-        _mostrarConfirmacion(context, mensaje);
-      }
+      registrado = true;
     } on ExcepcionApi catch (error) {
       if (mounted) {
         context.mostrarError(error.mensaje);
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     } finally {
       if (mounted) {
         setState(() => cargando = false);
       }
     }
+
+    if (registrado && mounted) {
+      await _mostrarConfirmacion(correo);
+    }
   }
 
-  void _mostrarConfirmacion(BuildContext context, String mensaje) {
-    showDialog<void>(
+  Future<void> _mostrarConfirmacion(String correo) async {
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: ColoresUbb.fondo,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: ColoresUbb.exito.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.mark_email_read_outlined,
-                  color: ColoresUbb.exito,
-                  size: 38,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Correo enviado',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: ColoresUbb.textoPrincipal,
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                mensaje,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: ColoresUbb.textoSecundario,
-                      height: 1.35,
-                    ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: estiloBotonAuth(),
-                  onPressed: () {
-                    Navigator.of(context)
-                      ..pop()
-                      ..pop();
-                  },
-                  child: const Text('Volver al ingreso'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => DialogoConfirmarCorreo.registro(
+        correo: correo,
+        onReenviar: () =>
+            ref.read(autenticacionVmProvider).reenviarVerificacion(correo),
+      ),
     );
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }
 

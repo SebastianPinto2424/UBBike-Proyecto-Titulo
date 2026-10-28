@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:ubbike/features/auth/presentation/validaciones_ingreso.dart';
-import 'package:ubbike/shared/widgets/estilos_formulario_auth.dart';
+import 'package:ubbike/features/autenticacion/presentation/validaciones_ingreso.dart';
+import 'package:ubbike/shared/widgets/estilos_formulario_autenticacion.dart';
 
-class SheetRecuperacion extends StatefulWidget {
-  const SheetRecuperacion({
+class HojaRecuperacion extends StatefulWidget {
+  const HojaRecuperacion({
     super.key,
     required this.correoInicial,
     required this.onEnviar,
@@ -14,10 +14,10 @@ class SheetRecuperacion extends StatefulWidget {
   final Future<void> Function(String correo) onEnviar;
 
   @override
-  State<SheetRecuperacion> createState() => _SheetRecuperacionState();
+  State<HojaRecuperacion> createState() => _HojaRecuperacionState();
 }
 
-class _SheetRecuperacionState extends State<SheetRecuperacion> {
+class _HojaRecuperacionState extends State<HojaRecuperacion> {
   final formKeyRecuperacion = GlobalKey<FormState>();
   late final TextEditingController correoRecuperacionController;
 
@@ -69,15 +69,15 @@ class _SheetRecuperacionState extends State<SheetRecuperacion> {
                   enableSuggestions: false,
                   textCapitalization: TextCapitalization.none,
                   autofillHints: const [AutofillHints.email],
-                  decoration: decoracionCampoAuth(
+                  decoration: decoracionCampoAutenticacion(
                     labelText: 'Correo registrado',
                     icono: Icons.mail_outline,
                   ),
-                  validator: validarCorreoAuthFrontend,
+                  validator: validarCorreoIngreso,
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  style: estiloBotonAuth(),
+                  style: estiloBotonAutenticacion(),
                   onPressed: () {
                     if (formKeyRecuperacion.currentState?.validate() != true) {
                       return;

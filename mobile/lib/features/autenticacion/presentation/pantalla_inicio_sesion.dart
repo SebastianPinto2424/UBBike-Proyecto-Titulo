@@ -1,59 +1,36 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/core/configuracion/rutas_app.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/auth/application/autenticacion_vm.dart';
-import 'package:ubbike/features/auth/presentation/formulario_ingreso.dart';
-import 'package:ubbike/features/auth/presentation/pantalla_registro.dart';
-import 'package:ubbike/features/auth/presentation/sheet_recuperacion_contrasena.dart';
+import 'package:ubbike/features/autenticacion/application/autenticacion_vm.dart';
+import 'package:ubbike/features/autenticacion/presentation/formulario_ingreso.dart';
+import 'package:ubbike/features/autenticacion/presentation/pantalla_registro.dart';
+import 'package:ubbike/features/autenticacion/presentation/hoja_recuperacion_contrasena.dart';
 import 'package:ubbike/shared/widgets/marca_ubbike.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
+import 'package:ubbike/features/autenticacion/presentation/dialogo_confirmar_correo.dart';
 
-class PantallaLogin extends ConsumerStatefulWidget {
-  const PantallaLogin({
+class PantallaInicioSesion extends ConsumerStatefulWidget {
+  const PantallaInicioSesion({
     super.key,
-    this.correoInicial,
     this.mensajeInicial,
   });
 
-  final String? correoInicial;
   final String? mensajeInicial;
 
   @override
-  ConsumerState<PantallaLogin> createState() => _PantallaLoginState();
+  ConsumerState<PantallaInicioSesion> createState() =>
+      _PantallaInicioSesionState();
 }
 
-class _PantallaLoginState extends ConsumerState<PantallaLogin> {
+class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
   final formKeyIngreso = GlobalKey<FormState>();
   final correoController = TextEditingController();
   final contrasenaController = TextEditingController();
   bool cargando = false;
   bool mostrarContrasena = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final correo = widget.correoInicial?.trim();
-    if (correo != null && correo.isNotEmpty) {
-      correoController.text = correo;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant PantallaLogin oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final nuevoCorreo = widget.correoInicial?.trim();
-    if (nuevoCorreo != null &&
-        nuevoCorreo.isNotEmpty &&
-        nuevoCorreo != oldWidget.correoInicial) {
-      correoController.text = nuevoCorreo;
-    }
-  }
 
   @override
   void dispose() {
@@ -160,10 +137,10 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
       return;
     }
 
-    _iniciarSesionAsync();
+    _iniciarSesionAsincrona();
   }
 
-  Future<void> _iniciarSesionAsync() async {
+  Future<void> _iniciarSesionAsincrona() async {
     final correo = correoController.text.trim().toLowerCase();
     final contrasena = contrasenaController.text;
 
@@ -185,18 +162,17 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
             usuario: resultado.usuario,
             refreshToken: resultado.refreshToken,
           );
-      if (mounted && ModalRoute.of(context)?.settings.name != rutaRaiz) {
-        unawaited(
-          Navigator.of(context).pushNamedAndRemoveUntil(rutaRaiz, (_) => false),
-        );
-      }
     } on ExcepcionApi catch (error) {
       if (mounted) {
-        context.mostrarError(error.mensaje);
+        if (error.codigo == 'CORREO_NO_VERIFICADO') {
+          _mostrarCorreoPendiente(correo);
+        } else {
+          context.mostrarError(error.mensaje);
+        }
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     } finally {
       if (mounted) {
@@ -205,13 +181,24 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
     }
   }
 
+  void _mostrarCorreoPendiente(String correo) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => DialogoConfirmarCorreo.pendiente(
+        correo: correo,
+        onReenviar: () =>
+            ref.read(autenticacionVmProvider).reenviarVerificacion(correo),
+      ),
+    );
+  }
+
   void _mostrarRecuperacion(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => SheetRecuperacion(
+      builder: (_) => HojaRecuperacion(
         correoInicial: correoController.text.trim(),
         onEnviar: _enviarRecuperacion,
       ),
@@ -232,7 +219,7 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }

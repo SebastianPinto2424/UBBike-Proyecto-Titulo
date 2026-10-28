@@ -1,19 +1,19 @@
-import 'package:ubbike/features/auth/data/autenticacion_api.dart';
+import 'package:ubbike/features/autenticacion/data/autenticacion_api.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class AutenticacionRepository {
-  const AutenticacionRepository(this._api);
+class AutenticacionRepositorio {
+  const AutenticacionRepositorio(this._api);
 
   final AutenticacionApi _api;
 
-  Future<ResultadoLogin> iniciarSesion({
+  Future<ResultadoInicioSesion> iniciarSesion({
     required String correo,
     required String contrasena,
   }) =>
       _api.iniciarSesion(correo: correo, contrasena: contrasena);
 
-  Future<ResultadoLogin> refrescarToken({
+  Future<ResultadoInicioSesion> refrescarToken({
     required String usuarioId,
     required String refreshToken,
   }) =>
@@ -35,25 +35,8 @@ class AutenticacionRepository {
   Future<String> solicitarCambioContrasena(String correo) =>
       _api.solicitarCambioContrasena(correo);
 
-  Future<ResultadoVerificacionCorreo> verificarCorreo(String token) =>
-      _api.verificarCorreo(token);
-
-  Future<String> completarRegistro({
-    required String token,
-    required String nombre,
-    required String contrasena,
-  }) =>
-      _api.completarRegistro(
-        token: token,
-        nombre: nombre,
-        contrasena: contrasena,
-      );
-
-  Future<String> cambiarContrasena({
-    required String token,
-    required String contrasena,
-  }) =>
-      _api.cambiarContrasena(token: token, contrasena: contrasena);
+  Future<String> reenviarVerificacion(String correo) =>
+      _api.reenviarVerificacion(correo);
 
   Future<String> cambiarContrasenaSesion({
     required String contrasenaActual,
@@ -65,8 +48,8 @@ class AutenticacionRepository {
       );
 }
 
-final autenticacionRepositoryProvider =
-    Provider<AutenticacionRepository>((ref) {
+final autenticacionRepositorioProvider =
+    Provider<AutenticacionRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return AutenticacionRepository(AutenticacionApi(cliente: cliente));
+  return AutenticacionRepositorio(AutenticacionApi(cliente: cliente));
 });

@@ -1,4 +1,4 @@
-String? validarCorreoAuthFrontend(String? valor) {
+String? validarCorreoIngreso(String? valor) {
   final correo = valor?.trim() ?? '';
   if (correo.isEmpty) {
     return 'Ingresa el correo.';
@@ -14,7 +14,7 @@ String? validarCorreoAuthFrontend(String? valor) {
   return null;
 }
 
-String? validarContrasenaLoginFrontend(String? valor) {
+String? validarContrasenaIngreso(String? valor) {
   if (valor == null || valor.isEmpty) {
     return 'Ingresa la contraseña.';
   }

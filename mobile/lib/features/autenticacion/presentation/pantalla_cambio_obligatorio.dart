@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ubbike/features/auth/application/autenticacion_vm.dart';
+import 'package:ubbike/features/autenticacion/application/autenticacion_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/sesion_provider.dart';
@@ -23,6 +23,7 @@ class _PantallaCambioObligatorioState
   final confirmarController = TextEditingController();
   bool verActual = false;
   bool verNueva = false;
+  bool verConfirmacion = false;
   bool guardando = false;
 
   @override
@@ -58,7 +59,7 @@ class _PantallaCambioObligatorioState
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     } finally {
       if (mounted) {
@@ -176,13 +177,23 @@ class _PantallaCambioObligatorioState
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: confirmarController,
-                          obscureText: !verNueva,
+                          obscureText: !verConfirmacion,
                           autocorrect: false,
                           enableSuggestions: false,
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) => _guardar(),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Confirmar nueva contraseña',
+                            suffixIcon: IconButton(
+                              onPressed: () => setState(
+                                () => verConfirmacion = !verConfirmacion,
+                              ),
+                              icon: Icon(
+                                verConfirmacion
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                            ),
                           ),
                           validator: (valor) => valor != nuevaController.text
                               ? 'Las contraseñas no coinciden.'

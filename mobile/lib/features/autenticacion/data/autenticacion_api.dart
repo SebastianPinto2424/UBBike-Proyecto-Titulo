@@ -1,8 +1,8 @@
 import 'package:ubbike/core/servicios/cliente_api.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
 
-class ResultadoLogin {
-  const ResultadoLogin(
+class ResultadoInicioSesion {
+  const ResultadoInicioSesion(
       {required this.token, required this.usuario, this.refreshToken});
 
   final String token;
@@ -10,19 +10,12 @@ class ResultadoLogin {
   final UsuarioApp usuario;
 }
 
-class ResultadoVerificacionCorreo {
-  const ResultadoVerificacionCorreo({required this.mensaje, this.correo});
-
-  final String mensaje;
-  final String? correo;
-}
-
 class AutenticacionApi {
   const AutenticacionApi({required this.cliente});
 
   final ClienteApi cliente;
 
-  Future<ResultadoLogin> iniciarSesion({
+  Future<ResultadoInicioSesion> iniciarSesion({
     required String correo,
     required String contrasena,
   }) async {
@@ -31,7 +24,7 @@ class AutenticacionApi {
       body: {'correo': correo, 'contrasena': contrasena},
     );
 
-    return ResultadoLogin(
+    return ResultadoInicioSesion(
       token: respuesta['token'] as String,
       refreshToken: respuesta['refreshToken'] as String?,
       usuario:
@@ -39,7 +32,7 @@ class AutenticacionApi {
     );
   }
 
-  Future<ResultadoLogin> refrescarToken({
+  Future<ResultadoInicioSesion> refrescarToken({
     required String usuarioId,
     required String refreshToken,
   }) async {
@@ -48,7 +41,7 @@ class AutenticacionApi {
       body: {'usuarioId': usuarioId, 'refreshToken': refreshToken},
     );
 
-    return ResultadoLogin(
+    return ResultadoInicioSesion(
       token: respuesta['token'] as String,
       refreshToken: respuesta['refreshToken'] as String?,
       usuario: UsuarioApp.fromJson({}),
@@ -81,38 +74,10 @@ class AutenticacionApi {
     return respuesta['message'] as String;
   }
 
-  Future<ResultadoVerificacionCorreo> verificarCorreo(String token) async {
+  Future<String> reenviarVerificacion(String correo) async {
     final respuesta = await cliente.post(
-      '/autenticacion/verificar-correo',
-      body: {'token': token},
-    );
-    final usuario = respuesta['usuario'] as Map<String, dynamic>?;
-
-    return ResultadoVerificacionCorreo(
-      mensaje: respuesta['message'] as String,
-      correo: usuario?['correo'] as String?,
-    );
-  }
-
-  Future<String> completarRegistro({
-    required String token,
-    required String nombre,
-    required String contrasena,
-  }) async {
-    final respuesta = await cliente.post(
-      '/autenticacion/completar-registro',
-      body: {'token': token, 'nombre': nombre, 'contrasena': contrasena},
-    );
-    return respuesta['message'] as String;
-  }
-
-  Future<String> cambiarContrasena({
-    required String token,
-    required String contrasena,
-  }) async {
-    final respuesta = await cliente.post(
-      '/autenticacion/cambiar-contrasena',
-      body: {'token': token, 'contrasena': contrasena},
+      '/autenticacion/reenviar-verificacion',
+      body: {'correo': correo},
     );
     return respuesta['message'] as String;
   }
