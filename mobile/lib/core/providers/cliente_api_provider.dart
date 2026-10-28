@@ -6,7 +6,7 @@ import 'package:ubbike/core/providers/sesion_provider.dart';
 final clienteApiProvider = Provider<ClienteApi>((ref) {
   ref.watch(sesionProvider);
 
-  SesionState? sesionActual() => ref.read(sesionProvider).value;
+  EstadoSesion? sesionActual() => ref.read(sesionProvider).value;
 
   return ClienteApi(
     obtenerToken: () => switch (sesionActual()) {

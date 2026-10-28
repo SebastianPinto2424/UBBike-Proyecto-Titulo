@@ -1,7 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:ubbike/core/servicios/almacen_navegador.dart';
-
 class AlmacenSeguro {
   const AlmacenSeguro();
 
@@ -9,26 +7,14 @@ class AlmacenSeguro {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
-  Future<String?> read({required String key}) async => requiereAlmacenNavegador
-      ? leerAlmacenNavegador(key)
-      : _seguro.read(key: key);
+  Future<String?> leer({required String clave}) => _seguro.read(key: clave);
 
-  Future<void> write({required String key, required String? value}) async {
-    if (value == null) {
-      return delete(key: key);
+  Future<void> escribir({required String clave, required String? valor}) async {
+    if (valor == null) {
+      return borrar(clave: clave);
     }
-    if (requiereAlmacenNavegador) {
-      escribirAlmacenNavegador(key, value);
-    } else {
-      await _seguro.write(key: key, value: value);
-    }
+    await _seguro.write(key: clave, value: valor);
   }
 
-  Future<void> delete({required String key}) async {
-    if (requiereAlmacenNavegador) {
-      borrarAlmacenNavegador(key);
-    } else {
-      await _seguro.delete(key: key);
-    }
-  }
+  Future<void> borrar({required String clave}) => _seguro.delete(key: clave);
 }

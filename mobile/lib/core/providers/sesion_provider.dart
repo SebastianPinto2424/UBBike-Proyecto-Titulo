@@ -8,21 +8,21 @@ import 'package:ubbike/core/servicios/sesion_api.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
 
-sealed class SesionState {
-  const SesionState();
+sealed class EstadoSesion {
+  const EstadoSesion();
 }
 
-class SesionCargando extends SesionState {
+class SesionCargando extends EstadoSesion {
   const SesionCargando();
 }
 
-class SesionVacia extends SesionState {
+class SesionVacia extends EstadoSesion {
   const SesionVacia({this.motivo});
 
   final String? motivo;
 }
 
-class SesionActiva extends SesionState {
+class SesionActiva extends EstadoSesion {
   const SesionActiva({
     required this.usuario,
     required this.token,
@@ -42,16 +42,16 @@ const mensajeSesionEnOtroDispositivo =
     'Iniciaste sesión con esta cuenta en otro dispositivo, por eso se '
     'cerró aquí.';
 
-const _storageKeyToken = 'ubbike_jwt';
-const _storageKeyRefreshToken = 'ubbike_refresh';
-const _storageKeyUsuarioId = 'ubbike_usuario_id';
-const _storageKeyUsuarioNombre = 'ubbike_usuario_nombre';
-const _storageKeyUsuarioCorreo = 'ubbike_usuario_correo';
-const _storageKeyUsuarioRol = 'ubbike_usuario_rol';
+const _claveToken = 'ubbike_jwt';
+const _claveRefreshToken = 'ubbike_refresh';
+const _claveUsuarioId = 'ubbike_usuario_id';
+const _claveUsuarioNombre = 'ubbike_usuario_nombre';
+const _claveUsuarioCorreo = 'ubbike_usuario_correo';
+const _claveUsuarioRol = 'ubbike_usuario_rol';
 
-const _storage = AlmacenSeguro();
+const _almacen = AlmacenSeguro();
 
-class SesionNotifier extends AsyncNotifier<SesionState> {
+class SesionNotifier extends AsyncNotifier<EstadoSesion> {
   int _epoca = 0;
   Future<void> _escrituras = Future.value();
   Future<void> _persistir(Future<void> Function() accion) {
@@ -61,14 +61,14 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
   }
 
   @override
-  Future<SesionState> build() => _restaurarSesion();
+  Future<EstadoSesion> build() => _restaurarSesion();
 
-  Future<SesionState> _restaurarSesion() async {
+  Future<EstadoSesion> _restaurarSesion() async {
     final epoca = ++_epoca;
     await _escrituras;
-    var token = await _storage.read(key: _storageKeyToken);
-    var refresh = await _storage.read(key: _storageKeyRefreshToken);
-    final id = await _storage.read(key: _storageKeyUsuarioId);
+    var token = await _almacen.leer(clave: _claveToken);
+    var refresh = await _almacen.leer(clave: _claveRefreshToken);
+    final id = await _almacen.leer(clave: _claveUsuarioId);
     if (token == null) return const SesionVacia();
     try {
       final api = ClienteApi(
@@ -81,8 +81,8 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
           token = t;
           refresh = r;
           await _persistir(() async {
-            await _storage.write(key: _storageKeyToken, value: t);
-            await _storage.write(key: _storageKeyRefreshToken, value: r);
+            await _almacen.escribir(clave: _claveToken, valor: t);
+            await _almacen.escribir(clave: _claveRefreshToken, valor: r);
           });
         },
       );
@@ -93,7 +93,7 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
     } on ExcepcionApi catch (error) {
       if (epoca != _epoca) return state.valueOrNull ?? const SesionVacia();
       if (error.statusCode == 401 || error.statusCode == 403) {
-        await _persistir(_limpiarStorage);
+        await _persistir(_limpiarAlmacen);
         return const SesionVacia();
       }
       rethrow;
@@ -106,18 +106,18 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
       String? refreshToken}) async {
     final epoca = ++_epoca;
     await _persistir(() async {
-      await _storage.write(key: _storageKeyToken, value: token);
-      await _storage.write(key: _storageKeyUsuarioId, value: usuario.id);
-      await _storage.write(
-          key: _storageKeyUsuarioNombre, value: usuario.nombre);
-      await _storage.write(
-          key: _storageKeyUsuarioCorreo, value: usuario.correo);
-      await _storage.write(
-          key: _storageKeyUsuarioRol, value: usuario.rol.valorApi);
+      await _almacen.escribir(clave: _claveToken, valor: token);
+      await _almacen.escribir(clave: _claveUsuarioId, valor: usuario.id);
+      await _almacen.escribir(
+          clave: _claveUsuarioNombre, valor: usuario.nombre);
+      await _almacen.escribir(
+          clave: _claveUsuarioCorreo, valor: usuario.correo);
+      await _almacen.escribir(
+          clave: _claveUsuarioRol, valor: usuario.rol.valorApi);
       if (refreshToken == null) {
-        await _storage.delete(key: _storageKeyRefreshToken);
+        await _almacen.borrar(clave: _claveRefreshToken);
       } else {
-        await _storage.write(key: _storageKeyRefreshToken, value: refreshToken);
+        await _almacen.escribir(clave: _claveRefreshToken, valor: refreshToken);
       }
     });
     if (epoca == _epoca) {
@@ -135,12 +135,12 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
     state = AsyncData(SesionActiva(
         usuario: actual.usuario, token: nuevoToken, refreshToken: refresh));
     await _persistir(() async {
-      await _storage.write(key: _storageKeyToken, value: nuevoToken);
-      await _storage.write(key: _storageKeyRefreshToken, value: refresh);
+      await _almacen.escribir(clave: _claveToken, valor: nuevoToken);
+      await _almacen.escribir(clave: _claveRefreshToken, valor: refresh);
     });
   }
 
-  Future<void> refrescarPerfil() async {
+  Future<void> renovarSesion() async {
     final actual = state.valueOrNull;
     if (actual is! SesionActiva) return;
     final epoca = _epoca;
@@ -157,7 +157,7 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
         _ => null
       },
       alActualizarTokens: actualizarToken,
-      alExpirarSesion: olvidar,
+      alExpirarSesion: () => olvidar(motivo: mensajeSesionExpirada),
     );
     final usuario = await SesionApi(cliente: api).obtenerPerfil();
     final vigente = state.valueOrNull;
@@ -193,25 +193,25 @@ class SesionNotifier extends AsyncNotifier<SesionState> {
   Future<void> olvidar({String? motivo}) async {
     _epoca++;
     state = AsyncData(SesionVacia(motivo: motivo));
-    await _persistir(_limpiarStorage);
+    await _persistir(_limpiarAlmacen);
   }
 
-  Future<void> _limpiarStorage() async {
+  Future<void> _limpiarAlmacen() async {
     for (final clave in [
-      _storageKeyToken,
-      _storageKeyRefreshToken,
-      _storageKeyUsuarioId,
-      _storageKeyUsuarioNombre,
-      _storageKeyUsuarioCorreo,
-      _storageKeyUsuarioRol
+      _claveToken,
+      _claveRefreshToken,
+      _claveUsuarioId,
+      _claveUsuarioNombre,
+      _claveUsuarioCorreo,
+      _claveUsuarioRol
     ]) {
-      await _storage.delete(key: clave);
+      await _almacen.borrar(clave: clave);
     }
   }
 }
 
 final sesionHttpProvider = Provider<http.Client?>((ref) => null);
 
-final sesionProvider = AsyncNotifierProvider<SesionNotifier, SesionState>(
+final sesionProvider = AsyncNotifierProvider<SesionNotifier, EstadoSesion>(
   SesionNotifier.new,
 );
