@@ -10,6 +10,8 @@ type OpcionesLimitador = {
   contarSoloFallos?: boolean;
 
   clave?: (req: Request) => string;
+
+  alBloquear?: (res: Response, mensaje: string) => Response;
 };
 
 type RegistroIntentos = {
@@ -37,10 +39,15 @@ const sumarEnMemoria = (clave: string, ventanaMs: number, ahora: number) => {
   intentos.set(clave, registro);
 };
 
-const responderBloqueo = (res: Response, mensaje: string, segundos: number) => {
+const responderBloqueo = (res: Response, opciones: OpcionesLimitador, segundos: number) => {
   res.setHeader('Retry-After', Math.max(segundos, 1).toString());
-  return res.status(429).json({ message: mensaje });
+  return opciones.alBloquear
+    ? opciones.alBloquear(res, opciones.mensaje)
+    : res.status(429).json({ message: opciones.mensaje });
 };
+
+export const ajustarMaximo = (maximo: number): number =>
+  Math.max(1, Math.round(maximo * entorno.limitadorIntentos.factor));
 
 export const limitarIntentos =
   (opciones: OpcionesLimitador) => async (req: Request, res: Response, next: NextFunction) => {
@@ -82,7 +89,7 @@ export const limitarIntentos =
       const segundos = redis
         ? Math.ceil((await redis.pTTL(claveRedis)) / 1000)
         : Math.ceil((leerEnMemoria(clave, ahora).reiniciaEn - ahora) / 1000);
-      return responderBloqueo(res, opciones.mensaje, segundos);
+      return responderBloqueo(res, opciones, segundos);
     }
 
     if (!opciones.contarSoloFallos) {
