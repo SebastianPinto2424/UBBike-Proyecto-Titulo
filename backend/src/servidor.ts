@@ -3,8 +3,9 @@ import { cargarDatosIniciales } from './configuracion/datos-iniciales';
 import { entorno } from './configuracion/entorno';
 import { prisma } from './configuracion/prisma';
 import { inicializarTiempoReal } from './tiempo-real/tiempo-real';
-import { iniciarEntregas } from './modulos/entregas/entrega.worker';
+import { iniciarEntregas } from './modulos/entregas/entrega.procesador';
 import { cerrarRedis } from './configuracion/redis';
+import { asegurarAdministradorInicial } from './modulos/usuarios/administrador-inicial.servicio';
 
 const iniciarServidor = async (): Promise<void> => {
   try {
@@ -12,6 +13,7 @@ const iniciarServidor = async (): Promise<void> => {
     if (entorno.datosDemo.habilitados) {
       await cargarDatosIniciales();
     }
+    await asegurarAdministradorInicial();
 
     const servidor = aplicacion.listen(entorno.puerto, () => {
       console.log(`UBBike backend escuchando en puerto ${entorno.puerto}`);
