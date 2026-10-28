@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 
 String etiquetaFotosIncidencia(int cantidad) {
   return cantidad == 1

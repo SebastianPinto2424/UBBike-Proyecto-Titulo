@@ -3,8 +3,8 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/central_widgets.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
-import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
+import 'package:ubbike/shared/utilidades/etiquetas_movimiento.dart';
 
 class TarjetaMovimientoCentral extends StatelessWidget {
   const TarjetaMovimientoCentral({

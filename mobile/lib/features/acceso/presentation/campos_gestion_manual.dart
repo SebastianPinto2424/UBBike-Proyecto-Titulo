@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/modelos/usuario_app.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
-import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicleta.dart';
 import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 
 class CamposGestionManual {

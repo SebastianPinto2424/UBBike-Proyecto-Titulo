@@ -15,7 +15,7 @@ import 'package:ubbike/features/qr/presentation/panel_qr_usuario.dart';
 import 'package:ubbike/features/qr/presentation/seleccion_bicicletero_qr.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/utils/cercania_bicicletero.dart';
+import 'package:ubbike/shared/utilidades/cercania_bicicletero.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 

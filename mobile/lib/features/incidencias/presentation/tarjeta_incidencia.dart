@@ -4,7 +4,7 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/incidencias/presentation/etiquetas_incidencia.dart';
 import 'package:ubbike/features/incidencias/presentation/galeria_fotos_incidencia.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 import 'package:ubbike/shared/widgets/bloque_mensaje.dart';
 import 'package:ubbike/shared/widgets/boton_con_espera.dart';
 import 'package:ubbike/shared/widgets/central_widgets.dart';

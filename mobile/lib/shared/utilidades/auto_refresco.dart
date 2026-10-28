@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 
 mixin AutoRefrescoMixin<T extends StatefulWidget> on State<T> {
   RefrescoCoalescido? _refresco;

@@ -9,7 +9,7 @@ import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
-import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
+import 'package:ubbike/shared/utilidades/utilidades_sesion.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 
 class SelectorFoto extends StatelessWidget {
   const SelectorFoto({

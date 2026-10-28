@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 
 class PantallaNotificaciones extends ConsumerStatefulWidget {

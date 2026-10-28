@@ -8,7 +8,7 @@ import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
 import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 import 'package:ubbike/shared/widgets/tarjeta_movimiento.dart';
-import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
+import 'package:ubbike/shared/utilidades/etiquetas_movimiento.dart';
 import 'package:ubbike/features/historial/application/movimientos_vm.dart';
 
 class VistaMovimientosUsuario extends ConsumerStatefulWidget {

@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
+import 'package:ubbike/shared/utilidades/utilidades_sesion.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
 import 'package:ubbike/shared/widgets/encabezado_widgets.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-class RutInputFormatter extends TextInputFormatter {
+class FormateadorRut extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,

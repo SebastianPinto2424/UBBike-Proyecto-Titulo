@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicleta.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 
 class CampoColorBicicleta extends StatefulWidget {

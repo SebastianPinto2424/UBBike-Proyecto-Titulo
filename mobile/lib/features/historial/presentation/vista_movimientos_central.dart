@@ -15,7 +15,7 @@ import 'package:ubbike/features/historial/presentation/panel_exportar_reporte.da
 import 'package:ubbike/features/historial/presentation/pie_lista_movimientos.dart';
 import 'package:ubbike/shared/modelos/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
-import 'package:ubbike/shared/utils/etiquetas_movimiento.dart';
+import 'package:ubbike/shared/utilidades/etiquetas_movimiento.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 import 'package:ubbike/shared/widgets/lista_con_filtros.dart';
