@@ -1,39 +1,15 @@
-import { controladorAsync } from '../../comun/utils/controlador-async';
-import {
-  actualizarPermisosUsuario,
-  crearUsuarioAdmin,
-  eliminarUsuarioAdmin,
-  listarUsuarios,
-  reenviarCorreoAccesoAdmin,
-  reenviarVerificacionCorreoAdmin
-} from './usuario.servicio';
+import { controladorAsync } from '../../comun/utilidades/controlador-async';
+import { actualizarPermisosUsuario } from './permisos.servicio';
+import { crearUsuarioAdmin, eliminarUsuarioAdmin, listarUsuarios } from './usuario.servicio';
+import { reenviarCorreoAccesoAdmin, reenviarVerificacionCorreoAdmin } from './invitacion.servicio';
 import { RolUsuario } from './rol-usuario';
 
-const leerBooleano = (valor: unknown) => {
-  if (valor === 'true') {
-    return true;
-  }
-  if (valor === 'false') {
-    return false;
-  }
-  return undefined;
-};
-
-const leerRol = (valor: unknown) => {
-  if (typeof valor !== 'string') {
-    return undefined;
-  }
-
-  const normalizado = valor.toUpperCase();
-  return Object.values(RolUsuario).includes(normalizado as RolUsuario)
-    ? (normalizado as RolUsuario)
-    : undefined;
-};
+const leerBooleano = (valor: unknown) => (typeof valor === 'boolean' ? valor : undefined);
 
 export const listar = controladorAsync(async (req, res) => {
   const usuarios = await listarUsuarios({
     q: typeof req.query.q === 'string' ? req.query.q : undefined,
-    rol: leerRol(req.query.rol),
+    rol: req.query.rol as RolUsuario | undefined,
     cuentaActiva: leerBooleano(req.query.cuentaActiva),
     correoVerificado: leerBooleano(req.query.correoVerificado)
   });

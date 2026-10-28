@@ -1,36 +1,52 @@
 import Joi from 'joi';
 import { RolUsuario } from './rol-usuario';
-import { validarRutChileno } from '../../comun/utils/rut';
+import { validarRutChileno } from '../../comun/utilidades/rut';
+import { esquemaTextoBusqueda } from '../../comun/utilidades/esquemas-comunes';
+import { esquemaContrasena, esquemaNombre } from '../autenticacion/autenticacion.validacion';
 
-const esquemaContrasenaAdmin = Joi.string()
-  .min(12)
-  .max(72)
-  .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/)
-  .messages({
-    'string.min': 'La contraseña debe tener al menos 12 caracteres',
-    'string.pattern.base': 'La contraseña debe incluir mayúscula, minúscula, número y símbolo'
-  });
+const esquemaNombreUsuario = esquemaNombre.messages({
+  'string.empty': 'El nombre es obligatorio',
+  'any.required': 'El nombre es obligatorio'
+});
+
+const esquemaCorreoUsuario = Joi.string().trim().lowercase().email().max(160).messages({
+  'string.empty': 'El correo es obligatorio',
+  'any.required': 'El correo es obligatorio',
+  'string.email': 'Ingresa un correo válido',
+  'string.max': 'El correo no puede superar 160 caracteres'
+});
+
+const esquemaRutUsuario = Joi.string().trim().max(20).custom(validarRutChileno).messages({
+  'string.empty': 'El RUT es obligatorio',
+  'any.required': 'El RUT es obligatorio',
+  'any.invalid': 'RUT inválido. Usa el formato con guion: xx.xxx.xxx-x'
+});
+
+const esquemaRol = Joi.string()
+  .trim()
+  .uppercase()
+  .valid(...Object.values(RolUsuario))
+  .messages({ 'any.only': 'Rol inválido' });
 
 export const esquemaCrearUsuario = Joi.object({
-  nombre: Joi.string().trim().min(3).max(120).required(),
-  correo: Joi.string().trim().email().max(160).required(),
-  rut: Joi.string().trim().max(20).allow('', null).custom(validarRutChileno).messages({
-    'any.invalid': 'RUT inválido. Usa el formato con guion: xx.xxx.xxx-x'
-  }),
-  rol: Joi.string()
-    .valid(...Object.values(RolUsuario))
-    .required(),
-  contrasena: esquemaContrasenaAdmin.optional()
+  nombre: esquemaNombreUsuario.required(),
+  correo: esquemaCorreoUsuario.required(),
+  rut: esquemaRutUsuario.required(),
+  rol: esquemaRol.required(),
+  contrasena: esquemaContrasena.optional()
 });
 
 export const esquemaActualizarPermisosUsuario = Joi.object({
-  nombre: Joi.string().trim().min(3).max(120).optional(),
-  correo: Joi.string().trim().email().max(160).optional(),
-  rut: Joi.string().trim().max(20).allow('', null).custom(validarRutChileno).optional().messages({
-    'any.invalid': 'RUT inválido. Usa el formato con guion: xx.xxx.xxx-x'
-  }),
-  rol: Joi.string()
-    .valid(...Object.values(RolUsuario))
-    .optional(),
+  nombre: esquemaNombreUsuario.optional(),
+  correo: esquemaCorreoUsuario.optional(),
+  rut: esquemaRutUsuario.optional(),
+  rol: esquemaRol.optional(),
   cuentaActiva: Joi.boolean().optional()
 }).min(1);
+
+export const esquemaConsultaUsuarios = Joi.object({
+  q: esquemaTextoBusqueda,
+  rol: esquemaRol,
+  cuentaActiva: Joi.boolean(),
+  correoVerificado: Joi.boolean()
+});
