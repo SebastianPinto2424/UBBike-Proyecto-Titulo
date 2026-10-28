@@ -87,7 +87,8 @@ Table solicitudes_guardia {
   respondidaPorGuardiaEn DateTime
   enCaminoEn DateTime
   resueltaEn DateTime
-  notaCierreCentral String
+  motivoCierre String
+  cerradaPorUsuarioId String
   creadaEn DateTime [default: `now()`, not null]
   actualizadaEn DateTime [not null]
 }
@@ -258,45 +259,47 @@ Enum TipoNotificacion {
 
 Ref: bicicletas.usuarioId > usuarios.id [delete: Cascade]
 
-Ref: bicicletas.bicicleteroActualId > bicicleteros.id
+Ref: bicicletas.bicicleteroActualId > bicicleteros.id [delete: Set Null]
 
-Ref: asignaciones_guardias.guardiaId > usuarios.id
+Ref: asignaciones_guardias.guardiaId > usuarios.id [delete: Restrict]
 
-Ref: asignaciones_guardias.bicicleteroId > bicicleteros.id
+Ref: asignaciones_guardias.bicicleteroId > bicicleteros.id [delete: Restrict]
 
-Ref: solicitudes_guardia.solicitadaPorUsuarioId > usuarios.id [delete: Cascade]
+Ref: solicitudes_guardia.solicitadaPorUsuarioId > usuarios.id [delete: Restrict]
 
-Ref: solicitudes_guardia.bicicleteroId > bicicleteros.id
+Ref: solicitudes_guardia.bicicleteroId > bicicleteros.id [delete: Restrict]
 
-Ref: solicitudes_guardia.guardiaAsignadoId > usuarios.id [delete: Cascade]
+Ref: solicitudes_guardia.guardiaAsignadoId > usuarios.id [delete: Set Null]
 
-Ref: movimientos.bicicletaId > bicicletas.id [delete: Cascade]
+Ref: solicitudes_guardia.cerradaPorUsuarioId > usuarios.id [delete: Set Null]
 
-Ref: movimientos.usuarioId > usuarios.id [delete: Cascade]
+Ref: movimientos.bicicletaId > bicicletas.id [delete: Restrict]
 
-Ref: movimientos.bicicleteroId > bicicleteros.id
+Ref: movimientos.usuarioId > usuarios.id [delete: Restrict]
 
-Ref: movimientos.validadoPorGuardiaId > usuarios.id [delete: Cascade]
+Ref: movimientos.bicicleteroId > bicicleteros.id [delete: Restrict]
+
+Ref: movimientos.validadoPorGuardiaId > usuarios.id [delete: Restrict]
 
 Ref: codigos_qr_temporales.usuarioId > usuarios.id [delete: Cascade]
 
 Ref: codigos_qr_temporales.bicicletaId > bicicletas.id [delete: Cascade]
 
-Ref: codigos_qr_temporales.bicicleteroId > bicicleteros.id
+Ref: codigos_qr_temporales.bicicleteroId > bicicleteros.id [delete: Set Null]
 
-Ref: codigos_qr_temporales.escaneadoPorGuardiaId > usuarios.id [delete: Cascade]
+Ref: codigos_qr_temporales.escaneadoPorGuardiaId > usuarios.id [delete: Set Null]
 
 Ref: notificaciones.usuarioId > usuarios.id [delete: Cascade]
 
 Ref: dispositivos_tokens.usuarioId > usuarios.id [delete: Cascade]
 
-Ref: incidencias.reportadaPorUsuarioId > usuarios.id [delete: Cascade]
+Ref: incidencias.reportadaPorUsuarioId > usuarios.id [delete: Restrict]
 
-Ref: incidencias.gestionadaPorUsuarioId > usuarios.id [delete: Cascade]
+Ref: incidencias.gestionadaPorUsuarioId > usuarios.id [delete: Set Null]
 
-Ref: incidencias.bicicleteroId > bicicleteros.id
+Ref: incidencias.bicicleteroId > bicicleteros.id [delete: Restrict]
 
-Ref: incidencias.bicicletaId > bicicletas.id
+Ref: incidencias.bicicletaId > bicicletas.id [delete: Set Null]
 
 Ref: incidencias_fotos.incidenciaId > incidencias.id [delete: Cascade]
 

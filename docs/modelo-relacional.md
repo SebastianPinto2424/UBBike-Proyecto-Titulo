@@ -14,6 +14,7 @@ erDiagram
   USUARIOS ||--o{ ASIGNACIONES_GUARDIAS : tiene
   USUARIOS ||--o{ SOLICITUDES_GUARDIA : solicita
   USUARIOS ||--o{ SOLICITUDES_GUARDIA : atiende
+  USUARIOS ||--o{ SOLICITUDES_GUARDIA : cierra
   USUARIOS ||--o{ CODIGOS_QR_TEMPORALES : escanea_como_guardia
   USUARIOS ||--o{ NOTIFICACIONES : recibe
   USUARIOS ||--o{ DISPOSITIVOS_TOKENS : registra
@@ -113,7 +114,8 @@ erDiagram
     timestamptz respondida_por_guardia_en
     timestamptz en_camino_en
     timestamptz resuelta_en
-    text nota_cierre_central
+    text motivo_cierre
+    uuid cerrada_por_usuario_id FK
     timestamptz creada_en
     timestamptz actualizada_en
   }
@@ -243,8 +245,10 @@ erDiagram
   la ocupación calculada nunca se desvía de la realidad física.
 - Las solicitudes de guardia registran quién pidió ayuda, en qué bicicletero,
   qué guardia fue asignado, cuántas veces se notificó, cuándo respondió el
-  guardia y cuándo quedó en camino o resuelta. Si central cierra una solicitud
-  sin que el guardia responda, el motivo queda en `nota_cierre_central`.
+  guardia y cuándo quedó en camino o resuelta. Al cerrarse queda registrado
+  quién la cerró (`cerrada_por_usuario_id`) y, si la cancela quien la pidió o
+  la cierra central sin resolver, el motivo en `motivo_cierre`. Solo el guardia
+  puede marcarla resuelta.
 - Las incidencias registran problemas operativos del bicicletero, bicicleta, QR,
   movimientos o datos de usuario. Cualquier actor autenticado puede reportar.
   Los guardias pueden ver las incidencias asociadas a su bicicletero asignado,
@@ -261,8 +265,17 @@ erDiagram
   la incidencia se eliminan sus fotos en cascada.
 - Los eventos críticos quedan registrados en `auditoria_eventos` para
   trazabilidad operativa y revisión posterior.
+- El historial está protegido: las claves foráneas de `movimientos` hacia
+  usuario y bicicleta, y las de solicitudes e incidencias hacia quien las
+  creó, usan `ON DELETE RESTRICT`. Usuarios y bicicletas se eliminan de forma
+  lógica con `eliminado_en`, así que un borrado físico accidental no puede
+  dejar movimientos ni reportes sin dueño.
+- La base de datos valida rangos con restricciones `CHECK`: capacidad del
+  bicicletero entre 1 y 1000, latitud entre -90 y 90, longitud entre -180 y
+  180 (ambas presentes o ambas nulas), tamaños de foto mayores que cero y
+  contadores de avisos, recordatorios e intentos no negativos.
 - `entregas_pendientes` conserva los trabajos de correo y push hasta que un
-  worker los procesa. Los avisos de incidencias y movimientos se encolan en la
+  procesador de entregas los procesa. Los avisos de incidencias y movimientos se encolan en la
   misma transacción del negocio. La entrega admite reintentos y posibles
   duplicados; no garantiza exactamente un envío. El contenido se borra al
   completar o agotar los intentos, y los metadatos permanecen para seguimiento.
@@ -289,7 +302,9 @@ erDiagram
 El archivo `docs/modelo-relacional.dbml` se genera automáticamente desde
 `backend/prisma/schema.prisma` mediante `prisma-dbml-generator`. Este archivo no
 debe editarse manualmente, porque representa el modelo actual definido en
-Prisma.
+Prisma. El generador copia mal la regla de borrado cuando una tabla tiene dos
+relaciones hacia la misma tabla, así que `npm run generate` la corrige después
+con `backend/scripts/ajustar-dbml.mjs` tomando las reglas del schema.
 
 Para regenerar el diagrama:
 
