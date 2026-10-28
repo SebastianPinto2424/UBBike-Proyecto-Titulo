@@ -1,11 +1,12 @@
 import { ErrorRequestHandler } from 'express';
 import { Prisma } from '../../generated/prisma/client';
-import { ErrorHttp } from '../errors/error-http';
+import { ErrorHttp } from '../errores/error-http';
 
 export const middlewareErrores: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof ErrorHttp) {
     return res.status(error.statusCode).json({
-      message: error.message
+      message: error.message,
+      ...(error.codigo ? { codigo: error.codigo } : {})
     });
   }
 
