@@ -1,11 +1,11 @@
 # UBBike
 
-Aplicacion web/mobile y API REST para registrar bicicletas, validar ingresos y retiros en bicicleteros, y mantener trazabilidad operativa para la Universidad del Bio-Bio.
+Aplicacion movil (Android e iOS) y API REST para registrar bicicletas, validar ingresos y retiros en bicicleteros, y mantener trazabilidad operativa para la Universidad del Bio-Bio.
 
 ## Estructura
 
 - `backend/`: API REST con Node.js, Express, Prisma y PostgreSQL.
-- `mobile/`: aplicacion Flutter para Web y Android.
+- `mobile/`: aplicacion Flutter para Android e iOS.
 - `deploy/`: plantillas y scripts para el despliegue en el contenedor.
 - `docs/`: documentacion tecnica complementaria.
 
@@ -22,6 +22,7 @@ Requisitos:
 Levantar el entorno:
 
 ```bash
+cp .env.example .env
 docker compose up -d --build
 ```
 
@@ -35,8 +36,7 @@ Accesos locales por defecto:
 
 | Servicio | URL |
 | --- | --- |
-| Web Flutter | `http://localhost:8082` |
-| Backend health | `http://localhost:3001/health` |
+| Backend health | `http://localhost:3000/health` |
 | PostgreSQL local | `127.0.0.1:5433` |
 
 Detener:
@@ -53,9 +53,79 @@ Para probar desde celulares reales, el PC y los celulares deben estar en la mism
 .\preparar-demo.ps1
 ```
 
-El script detecta la IP local, actualiza `.env`, levanta Docker, verifica el backend y genera una APK debug que queda en la carpeta `apks-pruebas` del Escritorio.
+El script detecta la IP local, actualiza `.env`, levanta Docker, verifica el backend y genera una APK release que queda en la carpeta `apks-pruebas` del Escritorio.
 
-Antes de instalar la APK conviene comprobar desde el celular que `http://IP_DEL_PC:3000/salud` responde. Si no responde, hay que ejecutar el script una vez como administrador o habilitar el puerto TCP 3000 en el Firewall de Windows. Esta APK es solo para pruebas locales por HTTP; la APK de produccion se compila en release apuntando a HTTPS.
+Antes de instalar la APK conviene comprobar desde el celular que `http://IP_DEL_PC:3000/salud` responde. Si no responde, hay que ejecutar el script una vez como administrador o habilitar el puerto TCP 3000 en el Firewall de Windows. Esta APK es solo para pruebas locales por HTTP; la APK de produccion se compila apuntando a HTTPS.
+
+### Prueba y compilacion para iOS
+
+Se hace en un Mac con Xcode, CocoaPods y Flutter instalados (`flutter doctor` debe mostrar Xcode sin errores). El backend puede correr en el mismo Mac con Docker Desktop:
+
+```bash
+git clone -b rama-dev-contenedor https://github.com/SebastianPinto2424/UBBike-Taller2.git ubbike
+cd ubbike
+cp .env.example .env
+docker compose up -d --build
+cd mobile
+flutter pub get
+```
+
+En el simulador, `localhost` es el propio Mac, asi que basta con abrirlo y ejecutar la app:
+
+```bash
+open -a Simulator
+flutter run
+```
+
+En un iPhone real:
+
+1. En `.env` cambiar `BACKEND_BIND_ADDRESS=0.0.0.0` y `PUBLIC_API_BASE_URL=http://IP_DEL_MAC:3000`, y volver a ejecutar `docker compose up -d`. Desde Safari del iPhone, `http://IP_DEL_MAC:3000/health` debe responder.
+2. Abrir `mobile/ios/Runner.xcworkspace` en Xcode y, en Runner > Signing & Capabilities, elegir el equipo (sirve un Apple ID personal). Si Xcode avisa que el identificador `cl.ubiobio.ubbike` no esta disponible, cambiarlo por uno propio.
+3. Conectar el iPhone por cable, activar el Modo desarrollador (Ajustes > Privacidad y seguridad) y, con un Apple ID personal, confiar en el certificado en Ajustes > General > VPN y gestion de dispositivos.
+4. Con el iPhone en la misma red Wi-Fi que el Mac, ejecutar `flutter run --release --dart-define=API_BASE_URL=http://IP_DEL_MAC:3000` y aceptar el permiso de red local que pide la app.
+
+La primera compilacion genera el `Podfile` y ejecuta `pod install`; el proyecto ya fija iOS 15.5 como version minima, la que necesitan el escaner y Firebase.
+
+Las notificaciones push en iOS requieren ademas una cuenta de Apple Developer Program, una llave APNs cargada en Firebase, el archivo `GoogleService-Info.plist` en `ios/Runner` (agregado desde Xcode) y las capacidades Push Notifications y Background Modes > Remote notifications. Sin eso la app funciona igual, con las actualizaciones en tiempo real dentro de la app, pero no recibe push.
+
+Para produccion:
+
+```bash
+flutter build ios --release --dart-define=API_BASE_URL=https://DOMINIO
+```
+
+### Prueba con el dominio gratis de ngrok
+
+ngrok publica con HTTPS el backend que corre en Docker en este PC, en un dominio fijo. Asi el iPhone o cualquier celular se conecta desde cualquier red, iOS no exige excepciones de seguridad y no hay que recompilar la app cuando cambia la IP del PC.
+
+En el PC donde corre Docker:
+
+1. Crear una cuenta en ngrok.com, instalar el agente desde `https://ngrok.com/download` y registrar el token del panel con `ngrok config add-authtoken TOKEN`.
+2. En el panel de ngrok, en Domains, copiar el dominio gratis asignado (`NOMBRE.ngrok-free.dev`; las cuentas antiguas usan `.ngrok-free.app`).
+3. En `.env` dejar `PUBLIC_API_BASE_URL=https://NOMBRE.ngrok-free.dev` y `TRUST_PROXY=1`, y aplicar con `docker compose up -d`. Asi los enlaces de los correos usan el dominio y el limite de intentos ve la IP real de cada persona.
+4. Abrir el tunel hacia el puerto del backend (`BACKEND_PORT`, 3000 en `.env.example`) y dejarlo abierto mientras se prueba:
+
+   ```bash
+   ngrok http --url=https://NOMBRE.ngrok-free.dev 3000
+   ```
+
+   Desde el navegador del celular, `https://NOMBRE.ngrok-free.dev/health` debe responder.
+
+En el Mac solo se compila la app, con el iPhone conectado y firmado como se explica arriba:
+
+```bash
+cd mobile
+flutter pub get
+flutter run --release --dart-define=API_BASE_URL=https://NOMBRE.ngrok-free.dev
+```
+
+La APK de Android usa el mismo dominio:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://NOMBRE.ngrok-free.dev
+```
+
+Limites del plan gratis: la app no ve ningun aviso de ngrok, pero un enlace de correo abierto en el navegador muestra una vez la advertencia de ngrok; se pasa con "Visit Site" y no vuelve a aparecer en 7 dias en ese celular. El plan incluye 20.000 peticiones y 1 GB al mes, suficiente para pruebas; conviene cerrar el tunel (Ctrl+C) al terminar.
 
 ## Despliegue en un servidor con Docker
 
@@ -71,15 +141,13 @@ Editar `.env` con los valores del servidor:
 
 | Variable | Valor |
 | --- | --- |
-| `PUBLIC_API_BASE_URL` | `https://DOMINIO` |
-| `PUBLIC_WS_BASE_URL` | `wss://DOMINIO` |
-| `FRONTEND_URL` y `DOCKER_FRONTEND_URL` | `https://DOMINIO` |
-| `CORS_ORIGINS` y `DOCKER_CORS_ORIGINS` | `https://DOMINIO` |
+| `PUBLIC_API_BASE_URL` | `https://DOMINIO`; tambien arma los enlaces de los correos |
 | `POSTGRES_PASSWORD` | Clave unica de al menos 16 caracteres |
 | `JWT_SECRET` | Cadena aleatoria de al menos 32 caracteres |
-| `TRUST_PROXY` | `1` cuando la app queda detras de Apache o Nginx |
+| `TRUST_PROXY` | `1` cuando la app queda detras de un proxy (Apache, Nginx o ngrok); es la cantidad de proxies de confianza |
 | `SMTP_USER` y `SMTP_PASSWORD` | Cuenta de correo para los avisos |
 | `FIREBASE_CREDENTIALS_BASE64` | Credencial de Firebase en base64, para las notificaciones push |
+| `ADMIN_INICIAL_CORREO` y `ADMIN_INICIAL_NOMBRE` | Administrador real (correo `@ubiobio.cl`) que se crea al iniciar, si aun no existe |
 
 La credencial de Firebase se convierte a base64 con `base64 -w0 firebase-admin.json` en Linux o con `[Convert]::ToBase64String([IO.File]::ReadAllBytes("firebase-admin.json"))` en PowerShell.
 
@@ -89,13 +157,31 @@ Levantar:
 docker compose up -d --build
 ```
 
-Los contenedores escuchan solo en `127.0.0.1`. El servidor web publica el dominio enviando `/` a `127.0.0.1:8081` (web) y las rutas de la API, `/socket.io` y `/uploads` a `127.0.0.1:3000`; la plantilla `deploy/apache/ubbike-https.conf.example` sirve de base. La APK se compila apuntando al mismo dominio:
+Los contenedores escuchan solo en `127.0.0.1`. El servidor web publica el dominio enviando todo el trafico, incluido `/socket.io`, a `127.0.0.1:3000`; la plantilla `deploy/apache/ubbike-https.conf.example` sirve de base. La APK se compila apuntando al mismo dominio:
 
 ```bash
 flutter build apk --release --dart-define=API_BASE_URL=https://DOMINIO
 ```
 
-`SEED_DEMO_DATA=true` crea las cuentas de demostracion, incluida la del administrador; en un servidor publico hay que cambiar sus contrasenas despues del primer inicio.
+## Enlaces de los correos
+
+Los correos de verificacion, recuperacion de contrasena y activacion de cuenta apuntan a `https://DOMINIO/enlaces/...`. Esas paginas las sirve el backend con la paleta de la app y funcionan desde el computador o el celular: ahi la persona confirma su correo o crea su contrasena. Los formularios validan igual que la app (mismos mensajes, ayuda al tocar cada campo y un boton por campo para ver la contrasena) y piden la contrasena dos veces para confirmar que coincida. Al terminar, la pagina muestra el mensaje que corresponde (correo confirmado, cuenta activada o contrasena actualizada) y un boton que abre la app. Si el enlace para confirmar el correo vencio, la pagina ofrece enviar uno nuevo; tambien se puede pedir desde la app al registrarse o al intentar iniciar sesion. El token del correo nunca pasa por la app.
+
+## Cuentas de demostracion y paso a produccion
+
+Con `SEED_DEMO_DATA=true` el backend crea al iniciar las cuentas de demostracion (estudiante, funcionario, guardia, central y administrador) para probar todos los roles. Para dejar el sistema solo con registro normal:
+
+1. En `.env` dejar `SEED_DEMO_DATA=false`, completar `ADMIN_INICIAL_CORREO` y `ADMIN_INICIAL_NOMBRE` con el administrador real, y usar `POSTGRES_PASSWORD` y `JWT_SECRET` propios. Con los datos demo apagados, el backend no arranca si esas claves siguen siendo las de ejemplo.
+2. Recrear el backend con `docker compose up -d backend`. Al iniciar crea al administrador real y le envia el correo para definir su contrasena.
+3. Una vez que el administrador real definio su contrasena, desactivar las cuentas demo:
+
+```bash
+docker compose exec backend npm run quitar-demo
+```
+
+El comando cierra las sesiones de las cuentas demo y las deja eliminadas. No hace nada si `SEED_DEMO_DATA` sigue activo o si no hay otro administrador activo y verificado.
+
+Si la base de datos ya se habia creado con la clave de ejemplo, primero hay que cambiarla dentro de PostgreSQL con `docker compose exec db psql -U ubbike -d ubbike -c "ALTER USER ubbike PASSWORD 'CLAVE_NUEVA'"` y despues poner la misma en `POSTGRES_PASSWORD`.
 
 ## Despliegue en el contenedor institucional (pm2)
 
@@ -105,13 +191,12 @@ En produccion el proyecto corre sin Docker, con este stack:
 - Node.js 20 para el backend, mantenido activo con pm2.
 - PostgreSQL institucional externo.
 - Redis local para los refresh tokens y el limite de intentos.
-- Flutter Web compilado como archivos estaticos.
 
 El codigo vive en `/opt/ubbike`. Las plantillas incluidas en el repo son:
 
 | Archivo | Uso |
 | --- | --- |
-| `deploy/apache/ubbike-https.conf.example` | VirtualHost Apache con HTTPS, Flutter Web y proxy al backend. |
+| `deploy/apache/ubbike-https.conf.example` | VirtualHost Apache con HTTPS y proxy al backend. |
 | `deploy/systemd/ubbike-backend.service.example` | Alternativa a pm2 con systemd, si se prefiere. |
 
 ### Variables de entorno
@@ -132,9 +217,10 @@ JWT_EXPIRES_IN=2h
 JWT_ISSUER=ubbike-api
 JWT_AUDIENCE=ubbike-app
 REFRESH_TOKEN_EXPIRES_DAYS=30
-FRONTEND_URL=https://DOMINIO_O_IP_PUBLICA
-CORS_ORIGINS=https://DOMINIO_O_IP_PUBLICA
+ENLACES_BASE_URL=https://DOMINIO_O_IP_PUBLICA
 SEED_DEMO_DATA=false
+ADMIN_INICIAL_CORREO=<CORREO_ADMINISTRADOR>
+ADMIN_INICIAL_NOMBRE=<NOMBRE_ADMINISTRADOR>
 SWAGGER_ENABLED=false
 QR_DURATION_SECONDS=15
 UPLOADS_DIR=/opt/ubbike/uploads
@@ -150,6 +236,8 @@ MAIL_FROM="UBBike <no-reply@ubiobio.cl>"
 FIREBASE_CREDENTIALS_PATH=
 FIREBASE_CREDENTIALS_BASE64=
 ```
+
+Si en este servidor se habilitan las cuentas demo con `SEED_DEMO_DATA=true`, se quitan despues con `npm run quitar-demo` desde `/opt/ubbike/backend`, siguiendo los mismos pasos de la seccion de paso a produccion.
 
 ### Redis
 
@@ -194,19 +282,6 @@ pm2 restart ubbike-backend
 ```
 
 Tras actualizar el codigo (`git pull`), repetir la compilacion del backend y luego `pm2 restart ubbike-backend`.
-
-### Compilacion de Flutter Web
-
-Desde el servidor, si Flutter esta instalado:
-
-```bash
-cd /opt/ubbike/mobile
-flutter pub get
-flutter build web --release --dart-define=API_BASE_URL=https://DOMINIO_O_IP_PUBLICA
-sudo rsync -a --delete build/web/ /var/www/ubbike/
-```
-
-Si Flutter no esta instalado en el servidor, se compila en local y se sube `mobile/build/web/` a `/var/www/ubbike/`.
 
 ### Apache
 
@@ -258,12 +333,11 @@ flutter pub get
 flutter build apk --release --dart-define=API_BASE_URL=https://<IP_DEL_CONTENEDOR>:<PUERTO_HTTPS_PUBLICO>
 ```
 
-El certificado autofirmado cifra y autentica la conexion para la APK, pero los navegadores mostraran una advertencia. Para Flutter Web sin advertencias se requiere un certificado publico emitido para un dominio institucional (Certbot/Let's Encrypt).
+El certificado autofirmado sirve para la APK, pero la pagina de los enlaces de correo se abre en el navegador del celular y mostrara una advertencia. Para evitarla se requiere un dominio institucional con certificado publico (Certbot/Let's Encrypt).
 
 ### Verificacion en produccion
 
 ```bash
-curl -I https://DOMINIO_O_IP_PUBLICA
 curl https://DOMINIO_O_IP_PUBLICA/salud
 redis-cli ping
 pm2 status
@@ -273,11 +347,11 @@ pm2 logs ubbike-backend
 ## Notas de seguridad
 
 - `JWT_SECRET` debe tener al menos 32 caracteres y ser unico.
-- `SEED_DEMO_DATA=false` en produccion.
+- `SEED_DEMO_DATA=false` en produccion, con las cuentas demo quitadas mediante `npm run quitar-demo`.
 - PostgreSQL no debe exponerse publicamente desde el servidor de la app.
 - Redis debe quedar escuchando solo en `127.0.0.1`.
 - No publicar `.env`, certificados, llaves privadas, APKs ni credenciales de Firebase.
-- Usar HTTPS para web, API, WebSocket y APK.
+- Usar HTTPS para la API, el WebSocket, los enlaces de correo y la APK.
 
 ## Documentacion adicional
 
