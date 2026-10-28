@@ -127,6 +127,7 @@ model Usuario {
   asignacionesGuardia             AsignacionGuardia[]
   solicitudesGuardiaCreadas       SolicitudGuardia[]  @relation("SolicitudGuardiaSolicitante")
   solicitudesGuardiaAsignadas     SolicitudGuardia[]  @relation("SolicitudGuardiaAsignado")
+  solicitudesGuardiaCerradas      SolicitudGuardia[]  @relation("SolicitudGuardiaCerradaPor")
   movimientos                     Movimiento[]        @relation("MovimientoUsuario")
   movimientosValidados            Movimiento[]        @relation("MovimientoGuardia")
   codigosQrTemporales             CodigoQrTemporal[]  @relation("CodigoQrUsuario")
@@ -161,7 +162,7 @@ model Bicicleta {
   actualizadoEn       DateTime           @updatedAt @map("actualizado_en") @db.Timestamptz(6)
   eliminadoEn         DateTime?          @map("eliminado_en") @db.Timestamptz(6)
   usuario             Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  bicicleteroActual   Bicicletero?       @relation("BicicletaBicicleteroActual", fields: [bicicleteroActualId], references: [id])
+  bicicleteroActual   Bicicletero?       @relation("BicicletaBicicleteroActual", fields: [bicicleteroActualId], references: [id], onDelete: SetNull)
   movimientos         Movimiento[]
   codigosQrTemporales CodigoQrTemporal[]
   incidencias         Incidencia[]
@@ -200,8 +201,8 @@ model AsignacionGuardia {
   activa        Boolean     @default(true)
   creadaEn      DateTime    @default(now()) @map("creada_en") @db.Timestamptz(6)
   actualizadaEn DateTime    @updatedAt @map("actualizada_en") @db.Timestamptz(6)
-  guardia       Usuario     @relation(fields: [guardiaId], references: [id])
-  bicicletero   Bicicletero @relation(fields: [bicicleteroId], references: [id])
+  guardia       Usuario     @relation(fields: [guardiaId], references: [id], onDelete: Restrict)
+  bicicletero   Bicicletero @relation(fields: [bicicleteroId], references: [id], onDelete: Restrict)
 
   @@index([guardiaId, bicicleteroId, activa], map: "idx_asignaciones_guardia_activa")
   @@map("asignaciones_guardias")
@@ -221,12 +222,14 @@ model SolicitudGuardia {
   respondidaPorGuardiaEn      DateTime?              @map("respondida_por_guardia_en") @db.Timestamptz(6)
   enCaminoEn                  DateTime?              @map("en_camino_en") @db.Timestamptz(6)
   resueltaEn                  DateTime?              @map("resuelta_en") @db.Timestamptz(6)
-  notaCierreCentral           String?                @map("nota_cierre_central")
+  motivoCierre                String?                @map("motivo_cierre")
+  cerradaPorUsuarioId         String?                @map("cerrada_por_usuario_id") @db.Uuid
   creadaEn                    DateTime               @default(now()) @map("creada_en") @db.Timestamptz(6)
   actualizadaEn               DateTime               @updatedAt @map("actualizada_en") @db.Timestamptz(6)
-  solicitadaPorUsuario        Usuario                @relation("SolicitudGuardiaSolicitante", fields: [solicitadaPorUsuarioId], references: [id], onDelete: Cascade)
-  bicicletero                 Bicicletero            @relation(fields: [bicicleteroId], references: [id])
-  guardiaAsignado             Usuario?               @relation("SolicitudGuardiaAsignado", fields: [guardiaAsignadoId], references: [id])
+  solicitadaPorUsuario        Usuario                @relation("SolicitudGuardiaSolicitante", fields: [solicitadaPorUsuarioId], references: [id], onDelete: Restrict)
+  bicicletero                 Bicicletero            @relation(fields: [bicicleteroId], references: [id], onDelete: Restrict)
+  guardiaAsignado             Usuario?               @relation("SolicitudGuardiaAsignado", fields: [guardiaAsignadoId], references: [id], onDelete: SetNull)
+  cerradaPorUsuario           Usuario?               @relation("SolicitudGuardiaCerradaPor", fields: [cerradaPorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([estado, creadaEn], map: "idx_solicitudes_guardia_estado")
   @@index([guardiaAsignadoId], map: "idx_solicitudes_guardia_guardia")
@@ -245,10 +248,10 @@ model Movimiento {
   comentarioGuardia    String?              @map("comentario_guardia")
   origen               TipoOrigenMovimiento @default(QR)
   creadoEn             DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
-  bicicleta            Bicicleta            @relation(fields: [bicicletaId], references: [id], onDelete: Cascade)
-  usuario              Usuario              @relation("MovimientoUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
-  bicicletero          Bicicletero          @relation(fields: [bicicleteroId], references: [id])
-  validadoPorGuardia   Usuario              @relation("MovimientoGuardia", fields: [validadoPorGuardiaId], references: [id])
+  bicicleta            Bicicleta            @relation(fields: [bicicletaId], references: [id], onDelete: Restrict)
+  usuario              Usuario              @relation("MovimientoUsuario", fields: [usuarioId], references: [id], onDelete: Restrict)
+  bicicletero          Bicicletero          @relation(fields: [bicicleteroId], references: [id], onDelete: Restrict)
+  validadoPorGuardia   Usuario              @relation("MovimientoGuardia", fields: [validadoPorGuardiaId], references: [id], onDelete: Restrict)
 
   @@index([usuarioId, creadoEn], map: "idx_movimientos_usuario_creado")
   @@index([validadoPorGuardiaId, creadoEn], map: "idx_movimientos_guardia_creado")
@@ -270,10 +273,9 @@ model CodigoQrTemporal {
   creadoEn              DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
   usuario               Usuario              @relation("CodigoQrUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
   bicicleta             Bicicleta            @relation(fields: [bicicletaId], references: [id], onDelete: Cascade)
-  bicicletero           Bicicletero?         @relation(fields: [bicicleteroId], references: [id])
+  bicicletero           Bicicletero?         @relation(fields: [bicicleteroId], references: [id], onDelete: SetNull)
   escaneadoPorGuardia   Usuario?             @relation("CodigoQrGuardiaEscaneo", fields: [escaneadoPorGuardiaId], references: [id], onDelete: SetNull)
 
-  @@index([token], map: "idx_qr_token")
   @@index([escaneadoPorGuardiaId, escaneadoEn], map: "idx_qr_escaneo_guardia")
   @@map("codigos_qr_temporales")
 }
@@ -335,10 +337,10 @@ model Incidencia {
   recordatorios          Int              @default(0) @map("recordatorios")
   creadaEn               DateTime         @default(now()) @map("creada_en") @db.Timestamptz(6)
   actualizadaEn          DateTime         @updatedAt @map("actualizada_en") @db.Timestamptz(6)
-  reportadaPorUsuario    Usuario          @relation("IncidenciaReportante", fields: [reportadaPorUsuarioId], references: [id], onDelete: Cascade)
+  reportadaPorUsuario    Usuario          @relation("IncidenciaReportante", fields: [reportadaPorUsuarioId], references: [id], onDelete: Restrict)
   gestionadaPorUsuario   Usuario?         @relation("IncidenciaGestor", fields: [gestionadaPorUsuarioId], references: [id], onDelete: SetNull)
-  bicicletero            Bicicletero      @relation(fields: [bicicleteroId], references: [id])
-  bicicleta              Bicicleta?       @relation(fields: [bicicletaId], references: [id])
+  bicicletero            Bicicletero      @relation(fields: [bicicleteroId], references: [id], onDelete: Restrict)
+  bicicleta              Bicicleta?       @relation(fields: [bicicletaId], references: [id], onDelete: SetNull)
   fotos                  IncidenciaFoto[]
 
   @@index([estado, creadaEn], map: "idx_incidencias_estado_creada")
