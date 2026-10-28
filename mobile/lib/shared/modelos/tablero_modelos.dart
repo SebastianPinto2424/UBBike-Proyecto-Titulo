@@ -4,8 +4,8 @@ import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
 
-class DatosDashboardCentral {
-  const DatosDashboardCentral({
+class DatosTableroCentral {
+  const DatosTableroCentral({
     required this.resumen,
     required this.bicicleteros,
     required this.solicitudes,
@@ -25,7 +25,7 @@ class DatosDashboardCentral {
   int get totalIncidenciasAbiertas => resumen.incidenciasAbiertas;
   int get totalSolicitudesAbiertas => resumen.solicitudesAbiertas;
 
-  DatosDashboardCentral marcarDesactualizado() => DatosDashboardCentral(
+  DatosTableroCentral marcarDesactualizado() => DatosTableroCentral(
         resumen: resumen,
         bicicleteros: bicicleteros,
         solicitudes: solicitudes,

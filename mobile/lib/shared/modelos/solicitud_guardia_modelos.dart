@@ -18,7 +18,8 @@ class SolicitudGuardiaApp {
     this.respondidaPorGuardiaEn,
     this.enCaminoEn,
     this.resueltaEn,
-    this.notaCierreCentral,
+    this.motivoCierre,
+    this.cerradaPor,
     this.segundosParaNotificarGuardia,
     this.guardiasAsignados = const [],
   });
@@ -38,7 +39,8 @@ class SolicitudGuardiaApp {
   final DateTime? respondidaPorGuardiaEn;
   final DateTime? enCaminoEn;
   final DateTime? resueltaEn;
-  final String? notaCierreCentral;
+  final String? motivoCierre;
+  final String? cerradaPor;
   final bool puedeNotificarGuardia;
   final int? segundosParaNotificarGuardia;
 
@@ -79,7 +81,8 @@ class SolicitudGuardiaApp {
       resueltaEn: json['resueltaEn'] == null
           ? null
           : DateTime.parse(json['resueltaEn'] as String),
-      notaCierreCentral: json['notaCierreCentral'] as String?,
+      motivoCierre: json['motivoCierre'] as String?,
+      cerradaPor: json['cerradaPor'] as String?,
       puedeNotificarGuardia: json['puedeNotificarGuardia'] as bool? ?? false,
       segundosParaNotificarGuardia:
           json['segundosParaNotificarGuardia'] as int?,

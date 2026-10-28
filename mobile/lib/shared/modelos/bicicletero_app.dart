@@ -9,6 +9,8 @@ class BicicleteroApp {
     required this.ocupados,
     required this.cuposDisponibles,
     required this.porcentajeUso,
+    this.guardiaActivoId,
+    this.guardiaActivoNombre,
   });
 
   final String id;
@@ -20,10 +22,15 @@ class BicicleteroApp {
   final int ocupados;
   final int cuposDisponibles;
   final int porcentajeUso;
+  final String? guardiaActivoId;
+  final String? guardiaActivoNombre;
 
   bool get tieneCoordenadas => latitud != null && longitud != null;
 
+  bool get tieneGuardia => guardiaActivoId != null;
+
   factory BicicleteroApp.desdeJson(Map<String, dynamic> json) {
+    final guardia = json['guardiaActivo'] as Map<String, dynamic>?;
     return BicicleteroApp(
       id: json['id'] as String,
       nombre: json['nombre'] as String,
@@ -34,6 +41,8 @@ class BicicleteroApp {
       ocupados: json['ocupados'] as int? ?? 0,
       cuposDisponibles: json['cuposDisponibles'] as int? ?? 0,
       porcentajeUso: json['porcentajeUso'] as int? ?? 0,
+      guardiaActivoId: guardia?['id'] as String?,
+      guardiaActivoNombre: guardia?['nombre'] as String?,
     );
   }
 }
