@@ -3,7 +3,7 @@ import {
   limpiarDatos,
   prepararBaseDatosPruebas,
   urlBaseDatosPruebas
-} from './helpers/base-datos-real';
+} from './apoyo/base-datos-real';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'secreto-de-e2e-suficientemente-largo-para-pasar-validacion';

@@ -16,7 +16,7 @@ jest.mock('../../src/configuracion/entorno', () => ({
   }
 }));
 
-import { ErrorHttp } from '../../src/comun/errors/error-http';
+import { ErrorHttp } from '../../src/comun/errores/error-http';
 import {
   eliminarArchivosFotosIncidencia,
   guardarFotosIncidencia,

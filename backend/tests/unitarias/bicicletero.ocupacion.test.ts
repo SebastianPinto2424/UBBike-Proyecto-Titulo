@@ -1,4 +1,4 @@
-import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 import { construirStatsBicicletero } from '../../src/modulos/bicicleteros/bicicletero.ocupacion';
 import type { Bicicletero } from '../../src/generated/prisma/client';
 

@@ -1,13 +1,16 @@
-﻿import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 
-jest.mock('../helpers/prisma-mock');
+jest.mock('../apoyo/prisma-simulado');
 
 jest.mock('../../src/configuracion/redis', () => ({
   obtenerClienteRedis: jest.fn().mockResolvedValue(null)
 }));
 
+jest.mock('../../src/modulos/correos/cuenta.plantillas', () => ({
+  crearCorreoVerificacion: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' })
+}));
+
 jest.mock('../../src/modulos/correos/correo.servicio', () => ({
-  crearCorreoVerificacion: jest.fn().mockReturnValue({ asunto: '', texto: '', html: '' }),
   enviarCorreo: jest.fn().mockResolvedValue(undefined)
 }));
 
@@ -53,6 +56,27 @@ describe('POST /autenticacion/login', () => {
       .post('/autenticacion/login')
       .send({ correo: 'noexiste@alumnos.ubiobio.cl', contrasena: 'cualquier' });
     expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /autenticacion/reenviar-verificacion', () => {
+  it('responde lo mismo exista o no una cuenta pendiente', async () => {
+    const res = await request(aplicacion)
+      .post('/autenticacion/reenviar-verificacion')
+      .send({ correo: 'Nadie@Alumnos.ubiobio.cl' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe(
+      'Si hay una cuenta pendiente de confirmar con ese correo, te enviamos un enlace nuevo.'
+    );
+  });
+
+  it('responde 400 si el correo no es válido', async () => {
+    const res = await request(aplicacion)
+      .post('/autenticacion/reenviar-verificacion')
+      .send({ correo: 'no-es-correo' });
+
+    expect(res.status).toBe(400);
   });
 });
 

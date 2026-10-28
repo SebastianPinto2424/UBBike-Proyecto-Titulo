@@ -1,4 +1,4 @@
-import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 
 jest.mock('../../src/configuracion/redis', () => ({
   obtenerClienteRedis: jest.fn().mockResolvedValue(null)

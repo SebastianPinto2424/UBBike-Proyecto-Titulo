@@ -1,4 +1,4 @@
-﻿import '../helpers/env-setup';
+import '../apoyo/configurar-entorno';
 import {
   validarBicicleteroDelRetiro,
   validarReglaMovimiento
