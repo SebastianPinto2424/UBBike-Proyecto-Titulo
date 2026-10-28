@@ -6,10 +6,11 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/features/acceso/presentation/gestion_manual_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
-import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicleta.dart';
 import 'package:ubbike/features/acceso/presentation/validaciones_gestion_manual.dart';
 import 'package:ubbike/shared/widgets/campo_color_bicicleta.dart';
 import 'package:ubbike/shared/widgets/selector_foto.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 class SeccionBicicletaManual extends StatelessWidget {
   const SeccionBicicletaManual({
@@ -149,6 +150,8 @@ class SeccionBicicletaManual extends StatelessWidget {
             ],
             TextFormField(
               controller: campos.descripcion,
+              spellCheckConfiguration: revisionOrtografica(),
+              textCapitalization: TextCapitalization.sentences,
               focusNode: campos.focoDescripcion,
               readOnly:
                   bicicletaSeleccionadaId != null && operacion == 'RETIRO',

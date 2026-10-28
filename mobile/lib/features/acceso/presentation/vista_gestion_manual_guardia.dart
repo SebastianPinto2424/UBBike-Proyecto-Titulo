@@ -13,10 +13,10 @@ import 'package:ubbike/features/acceso/presentation/dialogo_resultado_movimiento
 import 'package:ubbike/features/acceso/presentation/encabezado_operacion_manual.dart';
 import 'package:ubbike/features/acceso/presentation/seccion_bicicleta_manual.dart';
 import 'package:ubbike/features/acceso/presentation/secciones_gestion_manual.dart';
-import 'package:ubbike/features/acceso/presentation/sheet_denegacion_qr.dart';
+import 'package:ubbike/features/acceso/presentation/hoja_denegacion_qr.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/servicios/captura_fotos.dart';
-import 'package:ubbike/shared/utils/sesion_ui_utils.dart';
+import 'package:ubbike/shared/utilidades/utilidades_sesion.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
 class VistaGestionManualGuardia extends ConsumerStatefulWidget {
@@ -380,7 +380,7 @@ class _VistaGestionManualGuardiaState
       showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => SheetDenegacion(
+      builder: (_) => HojaDenegacion(
         esIngreso: operacion == 'INGRESO',
         onConfirmar: (motivo) => _registrarManual(
           denegar: true,
@@ -464,7 +464,7 @@ class _VistaGestionManualGuardiaState
     } on ExcepcionApi catch (error) {
       return error.mensaje;
     } catch (_) {
-      return 'No se pudo conectar con el servidor.';
+      return mensajeSinConexion;
     } finally {
       if (mounted) {
         setState(() => registrando = false);

@@ -4,7 +4,8 @@ import 'package:ubbike/features/acceso/presentation/campos_gestion_manual.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/acceso/presentation/gestion_manual_widgets.dart';
 import 'package:ubbike/features/acceso/presentation/validaciones_gestion_manual.dart';
-import 'package:ubbike/shared/utils/identidad.dart';
+import 'package:ubbike/shared/utilidades/identidad.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 class SeccionUsuarioManual extends StatelessWidget {
   const SeccionUsuarioManual({
@@ -62,7 +63,7 @@ class SeccionUsuarioManual extends StatelessWidget {
           controller: campos.rut,
           focusNode: campos.focoRut,
           autocorrect: false,
-          inputFormatters: [RutInputFormatter()],
+          inputFormatters: [FormateadorRut()],
           decoration: decoracionCampoGestionManual(
             labelText: 'RUT',
             helperText: ayudaSiActivo(
@@ -137,6 +138,8 @@ class AccionesGestionManual extends StatelessWidget {
       children: [
         TextFormField(
           controller: campos.comentario,
+          spellCheckConfiguration: revisionOrtografica(),
+          textCapitalization: TextCapitalization.sentences,
           focusNode: campos.focoComentario,
           maxLines: 3,
           decoration: InputDecoration(
@@ -172,6 +175,7 @@ class AccionesGestionManual extends StatelessWidget {
           textoSecundario: 'Cancelar acción',
           iconoSecundario: Icons.close,
           onSecundario: onCancelar,
+          secundarioCancela: true,
         ),
       ],
     );

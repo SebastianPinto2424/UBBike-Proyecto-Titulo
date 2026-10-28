@@ -1,4 +1,5 @@
-import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/utilidades/identidad.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicleta.dart';
 
 String? validarNombreGestionManual(
   String? valor, {
@@ -43,6 +44,11 @@ String? validarCorreoGestionManual(
   if (!correoValido.hasMatch(correo)) {
     return 'Ingresa un correo válido. Ej: usuario@ubiobio.cl';
   }
+  final institucional = correo.toLowerCase().endsWith('@ubiobio.cl') ||
+      correo.toLowerCase().endsWith('@alumnos.ubiobio.cl');
+  if (requiereCorreo && !institucional) {
+    return 'Usa un correo @ubiobio.cl o @alumnos.ubiobio.cl.';
+  }
   return null;
 }
 
@@ -57,13 +63,11 @@ String? validarRutGestionManual(
   if (rut.isEmpty) {
     return null;
   }
-  if (rut.length > 20) {
-    return 'Máximo 20 caracteres.';
+  if (!rut.contains('-')) {
+    return 'El RUT debe incluir el guion (xx.xxx.xxx-x).';
   }
-
-  final rutLimpio = rut.replaceAll('.', '').replaceAll('-', '');
-  if (rutLimpio.length < 7) {
-    return 'Ingresa un RUT válido.';
+  if (!rutValido(rut)) {
+    return 'RUT inválido. Revisa el número y el dígito verificador.';
   }
   return null;
 }
@@ -109,16 +113,7 @@ String? validarDescripcionBicicletaManual(
   if (!requerida && texto.isEmpty) {
     return null;
   }
-  if (texto.isEmpty) {
-    return 'Ingresa una descripción.';
-  }
-  if (texto.length < 3) {
-    return 'Debe tener al menos 3 caracteres.';
-  }
-  if (texto.length > 255) {
-    return 'Máximo 255 caracteres.';
-  }
-  return null;
+  return validarDescripcionBicicleta(texto);
 }
 
 String? validarCampoOpcionalGestionManual(String? valor, int maximo) {

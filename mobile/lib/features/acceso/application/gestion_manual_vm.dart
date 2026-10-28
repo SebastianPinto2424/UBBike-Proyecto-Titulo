@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/versiones_provider.dart';
-import 'package:ubbike/features/acceso/data/acceso_repository.dart';
+import 'package:ubbike/features/acceso/data/acceso_repositorio.dart';
 import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/shared/data/bicicleteros_repositorio.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
 
 class GestionManualVm {
@@ -17,13 +17,13 @@ class GestionManualVm {
     required String correo,
     required String rut,
   }) =>
-      _ref.read(accesoRepositoryProvider).buscarCoincidenciaManual(
+      _ref.read(accesoRepositorioProvider).buscarCoincidenciaManual(
             correo: correo,
             rut: rut,
           );
 
   Future<MovimientoApp> registrarManual(SolicitudRegistroManual solicitud) =>
-      _ref.read(accesoRepositoryProvider).registrarManual(solicitud);
+      _ref.read(accesoRepositorioProvider).registrarManual(solicitud);
 
   bool datoBusquedaSuficiente(String correo, String rut) {
     final rutLimpio = rut.replaceAll('.', '').replaceAll('-', '');
@@ -68,6 +68,6 @@ final bicicleterosGestionManualProvider =
     FutureProvider.autoDispose<List<BicicleteroApp>>(
   (ref) {
     ref.watch(bicicleterosVersionProvider);
-    return ref.watch(bicicleterosRepositoryProvider).listar();
+    return ref.watch(bicicleterosRepositorioProvider).listar();
   },
 );

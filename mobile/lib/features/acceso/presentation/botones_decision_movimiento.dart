@@ -14,6 +14,7 @@ class BotonesDecisionMovimiento extends StatelessWidget {
     required this.textoSecundario,
     required this.iconoSecundario,
     required this.onSecundario,
+    this.secundarioCancela = false,
   });
 
   final bool esIngreso;
@@ -24,6 +25,7 @@ class BotonesDecisionMovimiento extends StatelessWidget {
   final String textoSecundario;
   final IconData iconoSecundario;
   final VoidCallback onSecundario;
+  final bool secundarioCancela;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,6 @@ class BotonesDecisionMovimiento extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         BotonesAccion(
-          principalALaIzquierda: true,
           secundaria: AccionBoton(
             texto: 'Rechazar $operacion',
             color: ColoresUbb.rojoInstitucional,
@@ -51,11 +52,21 @@ class BotonesDecisionMovimiento extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: procesando ? null : onSecundario,
-          icon: Icon(iconoSecundario),
-          label: Text(textoSecundario),
-        ),
+        if (secundarioCancela)
+          BotonAccion(
+            accion: AccionBoton(
+              texto: textoSecundario,
+              color: ColoresUbb.rojoInstitucional,
+              icono: iconoSecundario,
+              onPressed: procesando ? null : onSecundario,
+            ),
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: procesando ? null : onSecundario,
+            icon: Icon(iconoSecundario),
+            label: Text(textoSecundario),
+          ),
       ],
     );
   }
