@@ -47,7 +47,7 @@ const convertirTrustProxy = (valor: string | undefined): boolean | number | stri
     return false;
   }
 
-  if (['true', '1', 'yes', 'si'].includes(valor.toLowerCase())) {
+  if (['true', 'yes', 'si'].includes(valor.toLowerCase())) {
     return true;
   }
 
@@ -81,6 +81,33 @@ if (ambiente === 'production' && !process.env.REDIS_URL) {
   throw new Error(
     'REDIS_URL es obligatorio en produccion: sin Redis los refresh tokens no se pueden renovar'
   );
+}
+
+const datosDemoHabilitados = convertirBooleano(
+  process.env.SEED_DEMO_DATA,
+  ambiente !== 'production'
+);
+const secretosDeEjemplo = new Set([
+  'ubbike_jwt_secret_demo_para_entrega_2026',
+  'ubbike_local_dev_password_segura_2026'
+]);
+const esValorDeEjemplo = (valor: string) => secretosDeEjemplo.has(valor) || /[<>]/.test(valor);
+
+if (
+  ambiente === 'production' &&
+  !datosDemoHabilitados &&
+  (esValorDeEjemplo(secretoJwt) || esValorDeEjemplo(contrasenaBaseDatos))
+) {
+  throw new Error(
+    'En produccion sin datos demo, JWT_SECRET y DB_PASSWORD deben ser propios y no los de ejemplo'
+  );
+}
+
+const correoAdministradorInicial =
+  process.env.ADMIN_INICIAL_CORREO?.trim().toLowerCase() || undefined;
+
+if (correoAdministradorInicial && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoAdministradorInicial)) {
+  throw new Error('ADMIN_INICIAL_CORREO debe ser un correo valido');
 }
 
 const construirUrlBaseDatos = () => {
@@ -150,7 +177,7 @@ export const entorno = {
     remitente: process.env.MAIL_FROM ?? 'UBBike <no-reply@ubbike.local>'
   },
   app: {
-    urlFrontend: process.env.FRONTEND_URL ?? 'http://localhost:8081'
+    urlEnlaces: process.env.ENLACES_BASE_URL ?? 'http://localhost:3000'
   },
   firebase: {
     credencialesPath: process.env.FIREBASE_CREDENTIALS_PATH,
@@ -161,6 +188,10 @@ export const entorno = {
     rutaPublicaUploads: process.env.UPLOADS_PUBLIC_PATH ?? '/uploads'
   },
   datosDemo: {
-    habilitados: convertirBooleano(process.env.SEED_DEMO_DATA, ambiente !== 'production')
+    habilitados: datosDemoHabilitados
+  },
+  administradorInicial: {
+    correo: correoAdministradorInicial,
+    nombre: process.env.ADMIN_INICIAL_NOMBRE?.trim() || 'Administrador UBBike'
   }
 };
