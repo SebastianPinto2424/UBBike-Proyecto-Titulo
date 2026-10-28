@@ -7,8 +7,15 @@ const validarParCoordenadas = (valor: Record<string, unknown>, helpers: Joi.Cust
   return valor;
 };
 
+const esquemaNombreBicicletero = Joi.string()
+  .trim()
+  .min(3)
+  .max(120)
+  .pattern(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/)
+  .messages({ 'string.pattern.base': 'El nombre debe incluir texto, no solo símbolos' });
+
 export const esquemaCrearBicicletero = Joi.object({
-  nombre: Joi.string().trim().min(3).max(120).required(),
+  nombre: esquemaNombreBicicletero.required(),
   ubicacion: Joi.string().trim().min(3).max(255).required(),
   capacidad: Joi.number().integer().min(1).max(1000).default(80),
   latitud: Joi.number().min(-90).max(90).allow(null),
@@ -22,7 +29,7 @@ export const esquemaCrearBicicletero = Joi.object({
   });
 
 export const esquemaActualizarBicicletero = Joi.object({
-  nombre: Joi.string().trim().min(3).max(120),
+  nombre: esquemaNombreBicicletero,
   ubicacion: Joi.string().trim().min(3).max(255),
   capacidad: Joi.number().integer().min(1).max(1000),
   latitud: Joi.number().min(-90).max(90).allow(null),
@@ -35,3 +42,7 @@ export const esquemaActualizarBicicletero = Joi.object({
     'object.and': 'Indica latitud y longitud juntas, o ninguna de las dos',
     'any.custom': 'Latitud y longitud deben ser ambas numéricas o ambas nulas'
   });
+
+export const esquemaAsignarGuardia = Joi.object({
+  guardiaId: Joi.string().uuid().required()
+});

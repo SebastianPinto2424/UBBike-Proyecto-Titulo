@@ -1,6 +1,6 @@
-import { ErrorHttp } from '../../comun/errors/error-http';
-import { prisma, type ClientePrisma } from '../../configuracion/prisma';
-import { bloquearFila } from '../../comun/utils/bloqueos';
+import { ErrorHttp } from '../../comun/errores/error-http';
+import type { ClientePrisma } from '../../configuracion/prisma';
+import { bloquearFila } from '../../comun/utilidades/bloqueos';
 import {
   construirStatsBicicletero,
   contarOcupadosBicicletero,
@@ -8,21 +8,34 @@ import {
 } from './bicicletero.ocupacion';
 import * as bicicleteroRepositorio from './bicicletero.repositorio';
 import { EventosTiempoReal, emitirATodos } from '../../tiempo-real/tiempo-real';
+import { RolUsuario } from '../usuarios/rol-usuario';
+
+const rolesQueVenGuardias: string[] = [
+  RolUsuario.GUARDIA,
+  RolUsuario.ADMIN_CENTRAL,
+  RolUsuario.ADMINISTRADOR
+];
 
 const avisarCambioBicicleteros = <T>(resultado: T): T => {
   emitirATodos(EventosTiempoReal.BICICLETEROS);
   return resultado;
 };
 
-export const listarBicicleteros = async () => {
-  const [bicicleteros, ocupadosPorId] = await Promise.all([
+export const listarBicicleteros = async (rol?: string) => {
+  const incluirGuardias = rol !== undefined && rolesQueVenGuardias.includes(rol);
+  const [bicicleteros, ocupadosPorId, guardias] = await Promise.all([
     bicicleteroRepositorio.listarActivos(),
-    contarOcupadosPorBicicletero()
+    contarOcupadosPorBicicletero(),
+    incluirGuardias ? bicicleteroRepositorio.listarGuardiasActivos() : Promise.resolve([])
   ]);
-
-  return bicicleteros.map((bicicletero) =>
-    construirStatsBicicletero(bicicletero, ocupadosPorId[bicicletero.id] ?? 0)
+  const guardiaPorBicicletero = new Map(
+    guardias.map((asignacion) => [asignacion.bicicleteroId, asignacion.guardia])
   );
+
+  return bicicleteros.map((bicicletero) => ({
+    ...construirStatsBicicletero(bicicletero, ocupadosPorId[bicicletero.id] ?? 0),
+    ...(incluirGuardias ? { guardiaActivo: guardiaPorBicicletero.get(bicicletero.id) ?? null } : {})
+  }));
 };
 
 type DatosCrearBicicletero = {
@@ -87,8 +100,8 @@ export const actualizarBicicletero = async (
   bicicleteroId: string,
   datos: DatosActualizarBicicletero
 ) =>
-  prisma
-    .$transaction(async (db) => {
+  bicicleteroRepositorio
+    .ejecutarEnTransaccion(async (db) => {
       await buscarBicicleteroExistente(bicicleteroId, db);
       const ocupados = await contarOcupadosBicicletero(bicicleteroId, db);
       if (datos.capacidad !== undefined && datos.capacidad < ocupados) {
@@ -112,8 +125,8 @@ export const actualizarBicicletero = async (
     .then(avisarCambioBicicleteros);
 
 export const eliminarBicicletero = async (bicicleteroId: string) =>
-  prisma
-    .$transaction(async (db) => {
+  bicicleteroRepositorio
+    .ejecutarEnTransaccion(async (db) => {
       await buscarBicicleteroExistente(bicicleteroId, db);
 
       const ocupados = await contarOcupadosBicicletero(bicicleteroId, db);
@@ -127,12 +140,10 @@ export const eliminarBicicletero = async (bicicleteroId: string) =>
         );
       }
 
-      const [asignaciones, solicitudes] = await Promise.all([
-        db.asignacionGuardia.count({ where: { bicicleteroId, activa: true } }),
-        db.solicitudGuardia.count({
-          where: { bicicleteroId, estado: { in: ['PENDIENTE', 'NOTIFICADA', 'EN_CAMINO'] } }
-        })
-      ]);
+      const { asignaciones, solicitudes } = await bicicleteroRepositorio.contarCompromisosActivos(
+        bicicleteroId,
+        db
+      );
       if (asignaciones || solicitudes)
         throw new ErrorHttp(
           409,
