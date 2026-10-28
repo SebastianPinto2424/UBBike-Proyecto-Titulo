@@ -1,7 +1,10 @@
 import { SolicitudAutenticada } from '../../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../../comun/utils/controlador-async';
+import { controladorAsync } from '../../../comun/utilidades/controlador-async';
 import {
   actualizarEstadoSolicitudGuardia,
+  cancelarSolicitudGuardia
+} from './seguimiento-solicitud.servicio';
+import {
   crearSolicitudGuardia,
   listarSolicitudesGuardia,
   notificarGuardiaSolicitud
@@ -50,6 +53,16 @@ export const notificarGuardia = controladorAsync<SolicitudAutenticada>(async (re
     solicitudId: req.params.id,
     mensaje: req.body.mensaje
   });
+
+  return res.status(200).json({ solicitud });
+});
+
+export const cancelar = controladorAsync<SolicitudAutenticada>(async (req, res) => {
+  const solicitud = await cancelarSolicitudGuardia(
+    req.usuario!.usuarioId,
+    req.params.id,
+    req.body?.motivo
+  );
 
   return res.status(200).json({ solicitud });
 });

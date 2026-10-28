@@ -1,4 +1,8 @@
 import Joi from 'joi';
+import {
+  esquemaLimitePagina,
+  esquemaTextoBusqueda
+} from '../../../comun/utilidades/esquemas-comunes';
 import { EstadoSolicitudGuardia } from './estado-solicitud-guardia';
 import { TipoSolicitudGuardia } from './tipo-solicitud-guardia';
 
@@ -14,9 +18,25 @@ export const esquemaActualizarEstadoSolicitudGuardia = Joi.object({
   estado: Joi.string()
     .valid(...Object.values(EstadoSolicitudGuardia))
     .required(),
-  nota: Joi.string().trim().max(600).allow('', null)
+  nota: Joi.when('estado', {
+    is: EstadoSolicitudGuardia.CANCELADA,
+    then: Joi.string().trim().min(3).max(600).allow('', null).messages({
+      'string.min': 'El motivo del cierre debe tener al menos 3 caracteres'
+    }),
+    otherwise: Joi.string().trim().max(600).allow('', null)
+  })
 });
 
 export const esquemaNotificarGuardiaSolicitud = Joi.object({
   mensaje: Joi.string().trim().max(600).allow('', null).optional()
 }).default({});
+
+export const esquemaCancelarSolicitudGuardia = Joi.object({
+  motivo: Joi.string().trim().min(3).max(200).required()
+}).required();
+
+export const esquemaConsultaSolicitudesGuardia = Joi.object({
+  estado: Joi.string().valid(...Object.values(EstadoSolicitudGuardia), 'TODOS'),
+  q: esquemaTextoBusqueda,
+  limite: esquemaLimitePagina
+});
