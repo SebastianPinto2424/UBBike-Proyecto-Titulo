@@ -2,7 +2,7 @@ import { Prisma } from '../../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../../configuracion/prisma';
 import { EstadoSolicitudGuardia } from './estado-solicitud-guardia';
 import { TipoSolicitudGuardia } from './tipo-solicitud-guardia';
-import { bloquearFila } from '../../../comun/utils/bloqueos';
+import { bloquearFila } from '../../../comun/utilidades/bloqueos';
 
 export const includeSolicitudCompleta = {
   solicitadaPorUsuario: true,
@@ -107,4 +107,68 @@ export const listar = (
       creadaEn: 'desc'
     },
     ...(params.limite ? { take: params.limite } : {})
+  });
+
+export const listarSinAtenderDeBicicletero = (
+  params: { bicicleteroId: string; guardiaId: string; estados: EstadoSolicitudGuardia[] },
+  client: ClientePrisma = prisma
+) =>
+  client.solicitudGuardia.findMany({
+    where: {
+      bicicleteroId: params.bicicleteroId,
+      estado: { in: params.estados },
+      OR: [{ guardiaAsignadoId: null }, { guardiaAsignadoId: { not: params.guardiaId } }]
+    },
+    select: { id: true, solicitadaPorUsuarioId: true },
+    orderBy: { creadaEn: 'asc' }
+  });
+
+export const asignarGuardia = (
+  ids: string[],
+  guardiaId: string,
+  ahora: Date,
+  client: ClientePrisma = prisma
+) =>
+  client.solicitudGuardia.updateMany({
+    where: { id: { in: ids } },
+    data: {
+      guardiaAsignadoId: guardiaId,
+      estado: EstadoSolicitudGuardia.NOTIFICADA,
+      notificadaGuardiaEn: ahora,
+      notificacionesGuardia: { increment: 1 }
+    }
+  });
+
+export const listarSinRespuestaDeGuardia = (
+  params: {
+    guardiaId: string;
+    estados: EstadoSolicitudGuardia[];
+    exceptoBicicleteroId: string | null;
+  },
+  client: ClientePrisma = prisma
+) =>
+  client.solicitudGuardia.findMany({
+    where: {
+      guardiaAsignadoId: params.guardiaId,
+      estado: { in: params.estados },
+      ...(params.exceptoBicicleteroId
+        ? { bicicleteroId: { not: params.exceptoBicicleteroId } }
+        : {})
+    },
+    select: {
+      id: true,
+      solicitadaPorUsuarioId: true,
+      bicicletero: { select: { id: true, nombre: true } },
+      guardiaAsignado: { select: { nombre: true } }
+    },
+    orderBy: { creadaEn: 'asc' }
+  });
+
+export const dejarSinGuardia = (ids: string[], client: ClientePrisma = prisma) =>
+  client.solicitudGuardia.updateMany({
+    where: { id: { in: ids } },
+    data: {
+      guardiaAsignadoId: null,
+      estado: EstadoSolicitudGuardia.PENDIENTE
+    }
   });
