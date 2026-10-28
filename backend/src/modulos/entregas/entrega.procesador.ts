@@ -1,27 +1,18 @@
-import { prisma } from '../../configuracion/prisma';
 import { entregarCorreo, type CorreoEncolado } from '../correos/correo.servicio';
 import { enviarPushAUsuario } from '../notificaciones/push.servicio';
+import * as entregaRepositorio from './entrega.repositorio';
 
 const MAX_INTENTOS = 12;
 export const procesarEntregas = async () => {
   const ahora = new Date();
-  const pendientes = await prisma.entregaPendiente.findMany({
-    where: { entregadaEn: null, agotada: false, disponibleEn: { lte: ahora } },
-    orderBy: { disponibleEn: 'asc' },
-    take: 20
-  });
+  const pendientes = await entregaRepositorio.buscarPendientes(ahora);
   for (const entrega of pendientes) {
     const intento = entrega.intentos + 1;
-    const reserva = await prisma.entregaPendiente.updateMany({
-      where: {
-        id: entrega.id,
-        intentos: entrega.intentos,
-        entregadaEn: null,
-        agotada: false,
-        disponibleEn: { lte: ahora }
-      },
-      data: { intentos: intento, disponibleEn: new Date(Date.now() + 10 * 60000) }
-    });
+    const reserva = await entregaRepositorio.reservar(
+      entrega,
+      ahora,
+      new Date(Date.now() + 10 * 60000)
+    );
     if (reserva.count !== 1) continue;
     try {
       if (Date.now() - entrega.creadaEn.getTime() > 24 * 3600000)
@@ -33,25 +24,20 @@ export const procesarEntregas = async () => {
           usuarioId: string;
           push: Parameters<typeof enviarPushAUsuario>[1];
         };
-        const usuario = await prisma.usuario.findUnique({ where: { id: datos.usuarioId } });
+        const usuario = await entregaRepositorio.buscarDestinatario(datos.usuarioId);
         if (usuario?.cuentaActiva && !usuario.eliminadoEn)
           await enviarPushAUsuario(datos.usuarioId, datos.push);
       } else throw new Error('Tipo de entrega desconocido');
-      await prisma.entregaPendiente.updateMany({
-        where: { id: entrega.id, intentos: intento },
-        data: { entregadaEn: new Date(), datos: {} }
-      });
+      await entregaRepositorio.marcarEntregada(entrega.id, intento);
     } catch {
       const agotada =
         intento >= MAX_INTENTOS || Date.now() - entrega.creadaEn.getTime() > 24 * 3600000;
-      await prisma.entregaPendiente.updateMany({
-        where: { id: entrega.id, intentos: intento },
-        data: {
-          agotada,
-          disponibleEn: new Date(Date.now() + Math.min(3600000, 10000 * 2 ** intento)),
-          ...(agotada ? { datos: {} } : {})
-        }
-      });
+      await entregaRepositorio.registrarFallo(
+        entrega.id,
+        intento,
+        agotada,
+        new Date(Date.now() + Math.min(3600000, 10000 * 2 ** intento))
+      );
       console.error('[entregas]', { id: entrega.id, tipo: entrega.tipo, intento, agotada });
     }
   }
