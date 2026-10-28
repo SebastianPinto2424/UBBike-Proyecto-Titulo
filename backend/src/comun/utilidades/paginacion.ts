@@ -1,4 +1,4 @@
-import { ErrorHttp } from '../errors/error-http';
+import { ErrorHttp } from '../errores/error-http';
 
 export const limitarPagina = (valor: number | undefined, defecto = 20, maximo = 100) => {
   if (valor === undefined) return defecto;

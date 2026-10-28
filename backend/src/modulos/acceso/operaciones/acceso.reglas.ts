@@ -1,4 +1,4 @@
-import { ErrorHttp } from '../../../comun/errors/error-http';
+import { ErrorHttp } from '../../../comun/errores/error-http';
 import { TipoMovimiento } from '../../historial/tipo-movimiento';
 
 type BicicletaConEstado = {

@@ -1,5 +1,5 @@
 import cors from 'cors';
-import { conTiempoLimite } from './comun/utils/tiempo-limite';
+import { conTiempoLimite } from './comun/utilidades/tiempo-limite';
 import helmet from 'helmet';
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';

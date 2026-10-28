@@ -1,5 +1,5 @@
 import { eliminarArchivoFoto, FotoGuardada, guardarFoto } from '../../comun/archivos/foto.servicio';
-import { ErrorHttp } from '../../comun/errors/error-http';
+import { ErrorHttp } from '../../comun/errores/error-http';
 
 export const maximoFotosIncidencia = 3;
 

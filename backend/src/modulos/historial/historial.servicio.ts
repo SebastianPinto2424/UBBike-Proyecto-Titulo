@@ -1,4 +1,4 @@
-import { ErrorHttp } from '../../comun/errors/error-http';
+import { ErrorHttp } from '../../comun/errores/error-http';
 import { Prisma } from '../../generated/prisma/client';
 import { listarBicicleteros } from '../bicicleteros/bicicletero.servicio';
 import { RolUsuario } from '../usuarios/rol-usuario';

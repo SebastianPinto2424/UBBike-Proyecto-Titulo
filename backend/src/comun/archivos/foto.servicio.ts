@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { ErrorHttp } from '../errors/error-http';
+import { ErrorHttp } from '../errores/error-http';
 import { entorno } from '../../configuracion/entorno';
 
 export type FotoGuardada = {

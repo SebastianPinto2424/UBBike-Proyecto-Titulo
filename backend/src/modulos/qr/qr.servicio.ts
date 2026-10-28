@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { bloquearClave } from '../../comun/utils/bloqueos';
-import { ErrorHttp } from '../../comun/errors/error-http';
+import { bloquearClave } from '../../comun/utilidades/bloqueos';
+import { ErrorHttp } from '../../comun/errores/error-http';
 import { entorno } from '../../configuracion/entorno';
 import type { ClientePrisma } from '../../configuracion/prisma';
 import type {

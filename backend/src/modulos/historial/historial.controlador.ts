@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
-import { ErrorHttp } from '../../comun/errors/error-http';
+import { ErrorHttp } from '../../comun/errores/error-http';
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../comun/utils/controlador-async';
+import { controladorAsync } from '../../comun/utilidades/controlador-async';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import {
   listarMovimientos,

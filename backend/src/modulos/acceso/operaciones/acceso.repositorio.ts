@@ -1,7 +1,7 @@
 import { Prisma } from '../../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../../configuracion/prisma';
 import { includeMovimientoCompleto } from './acceso.mapeador';
-import { bloquearFila } from '../../../comun/utils/bloqueos';
+import { bloquearFila } from '../../../comun/utilidades/bloqueos';
 
 export const ejecutarEnTransaccion = <T>(callback: (client: ClientePrisma) => Promise<T>) =>
   prisma.$transaction(callback);

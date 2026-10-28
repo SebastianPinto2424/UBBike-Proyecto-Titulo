@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { ErrorHttp } from '../../comun/errors/error-http';
+import { ErrorHttp } from '../../comun/errores/error-http';
 import { entorno } from '../../configuracion/entorno';
 import { obtenerClienteRedis } from '../../configuracion/redis';
 import { RolUsuario } from '../usuarios/rol-usuario';

@@ -1,7 +1,7 @@
 import { Prisma } from '../../generated/prisma/client';
 import { prisma, type ClientePrisma } from '../../configuracion/prisma';
 import type { RolUsuario } from '../usuarios/rol-usuario';
-import { bloquearFila } from '../../comun/utils/bloqueos';
+import { bloquearFila } from '../../comun/utilidades/bloqueos';
 
 export const includeIncidenciaCompleta = {
   reportadaPorUsuario: true,

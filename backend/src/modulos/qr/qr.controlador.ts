@@ -1,5 +1,5 @@
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../comun/utils/controlador-async';
+import { controladorAsync } from '../../comun/utilidades/controlador-async';
 import {
   consultarEstadoQr,
   generarQrTemporal,
