@@ -5,11 +5,19 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'package:ubbike/core/configuracion/configuracion_api.dart';
 
-class TiempoRealService {
-  TiempoRealService({this.alCambiarConexion});
+bool esRechazoDelServidor(Object? error) =>
+    error is Map && error['message'] != null;
+
+bool esCierreDelServidor(Object? motivo) => motivo == 'io server disconnect';
+
+class TiempoRealServicio {
+  TiempoRealServicio({this.alCambiarConexion});
   final void Function(EstadoConexion)? alCambiarConexion;
   io.Socket? _socket;
   String? _tokenActual;
+  Timer? _vigilante;
+
+  static const intervaloVigilancia = Duration(seconds: 15);
 
   final _notificacionesController = StreamController<void>.broadcast();
   final _solicitudesController = StreamController<void>.broadcast();
@@ -19,6 +27,7 @@ class TiempoRealService {
   final _qrController = StreamController<Map<String, dynamic>>.broadcast();
   final _sesionController = StreamController<void>.broadcast();
   final _bicicleterosController = StreamController<void>.broadcast();
+  final _rechazosController = StreamController<void>.broadcast();
 
   Stream<void> get notificaciones => _notificacionesController.stream;
   Stream<void> get solicitudes => _solicitudesController.stream;
@@ -27,6 +36,7 @@ class TiempoRealService {
   Stream<void> get usuarios => _usuariosController.stream;
   Stream<void> get sesionCerrada => _sesionController.stream;
   Stream<void> get bicicleteros => _bicicleterosController.stream;
+  Stream<void> get rechazos => _rechazosController.stream;
 
   Stream<Map<String, dynamic>> get qr => _qrController.stream;
 
@@ -55,8 +65,8 @@ class TiempoRealService {
           .disableAutoConnect()
           .enableForceNew()
           .enableReconnection()
-          .setReconnectionAttempts(8)
           .setReconnectionDelay(1000)
+          .setReconnectionDelayMax(5000)
           .setTimeout(8000)
           .setAuth({'token': tokenLimpio})
           .build(),
@@ -75,10 +85,14 @@ class TiempoRealService {
         if (!controller.isClosed) controller.add(null);
       }
     });
-    socket.onDisconnect(
-        (_) => alCambiarConexion?.call(EstadoConexion.desconectado));
-    socket.onConnectError(
-        (_) => alCambiarConexion?.call(EstadoConexion.desconectado));
+    socket.onDisconnect((motivo) {
+      alCambiarConexion?.call(EstadoConexion.desconectado);
+      if (esCierreDelServidor(motivo)) _avisarRechazo();
+    });
+    socket.onConnectError((error) {
+      alCambiarConexion?.call(EstadoConexion.desconectado);
+      if (esRechazoDelServidor(error)) _avisarRechazo();
+    });
     socket.on('notificacion', (_) {
       if (!_notificacionesController.isClosed) {
         _notificacionesController.add(null);
@@ -122,9 +136,18 @@ class TiempoRealService {
 
     _socket = socket;
     socket.connect();
+    _vigilante = Timer.periodic(intervaloVigilancia, (_) {
+      if (!socket.connected && !socket.active) socket.connect();
+    });
+  }
+
+  void _avisarRechazo() {
+    if (!_rechazosController.isClosed) _rechazosController.add(null);
   }
 
   void desconectar() {
+    _vigilante?.cancel();
+    _vigilante = null;
     alCambiarConexion?.call(EstadoConexion.desconectado);
     final socket = _socket;
     if (socket != null) {
@@ -145,5 +168,6 @@ class TiempoRealService {
     _qrController.close();
     _sesionController.close();
     _bicicleterosController.close();
+    _rechazosController.close();
   }
 }
