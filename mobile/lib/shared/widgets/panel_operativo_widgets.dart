@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/modelos/dashboard_modelos.dart';
+import 'package:ubbike/shared/modelos/tablero_modelos.dart';
 import 'package:ubbike/shared/widgets/central_widgets.dart';
 
 class EstadoInicioOperativo extends StatelessWidget {
   const EstadoInicioOperativo(
       {super.key, required this.datos, this.sobreOscuro = false});
-  final DatosDashboardCentral? datos;
+  final DatosTableroCentral? datos;
   final bool sobreOscuro;
   @override
   Widget build(BuildContext context) => Text(
@@ -19,8 +19,8 @@ class EstadoInicioOperativo extends StatelessWidget {
       );
 }
 
-class PanelDashboardOperativoCargando extends StatelessWidget {
-  const PanelDashboardOperativoCargando({
+class PanelTableroOperativoCargando extends StatelessWidget {
+  const PanelTableroOperativoCargando({
     super.key,
     required this.periodo,
     required this.onPeriodo,
@@ -38,7 +38,7 @@ class PanelDashboardOperativoCargando extends StatelessWidget {
           height: 96,
           child: Center(child: CircularProgressIndicator()),
         ),
-        SelectorPeriodoDashboard(
+        SelectorPeriodoTablero(
           seleccionado: periodo,
           onChange: onPeriodo,
         ),
@@ -73,7 +73,7 @@ class PanelDashboardOperativoCargando extends StatelessWidget {
 class EstadoCampusOperativo extends StatelessWidget {
   const EstadoCampusOperativo({super.key, required this.datos});
 
-  final DatosDashboardCentral datos;
+  final DatosTableroCentral datos;
 
   @override
   Widget build(BuildContext context) {
@@ -158,10 +158,10 @@ class EstadoCampusOperativo extends StatelessWidget {
   }
 }
 
-class MetricasDashboardOperativo extends StatelessWidget {
-  const MetricasDashboardOperativo({super.key, required this.datos});
+class MetricasTableroOperativo extends StatelessWidget {
+  const MetricasTableroOperativo({super.key, required this.datos});
 
-  final DatosDashboardCentral datos;
+  final DatosTableroCentral datos;
 
   @override
   Widget build(BuildContext context) {

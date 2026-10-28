@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/conexion_provider.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/shared/modelos/dashboard_modelos.dart';
-import 'package:ubbike/shared/utils/utiles_comun.dart';
+import 'package:ubbike/shared/modelos/tablero_modelos.dart';
+import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 
 class PanelAtencionOperativa extends ConsumerWidget {
@@ -15,7 +15,7 @@ class PanelAtencionOperativa extends ConsumerWidget {
       this.onAbrirGuardias,
       this.onAbrirSolicitudes,
       this.onAbrirIncidencias});
-  final DatosDashboardCentral datos;
+  final DatosTableroCentral datos;
   final VoidCallback? onAbrirMovimientos;
   final VoidCallback? onAbrirGuardias;
   final VoidCallback? onAbrirSolicitudes;

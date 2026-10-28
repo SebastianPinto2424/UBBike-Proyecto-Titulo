@@ -183,8 +183,8 @@ class BannerTasaExito extends StatelessWidget {
   }
 }
 
-class SelectorPeriodoDashboard extends StatelessWidget {
-  const SelectorPeriodoDashboard({
+class SelectorPeriodoTablero extends StatelessWidget {
+  const SelectorPeriodoTablero({
     super.key,
     required this.seleccionado,
     required this.onChange,
