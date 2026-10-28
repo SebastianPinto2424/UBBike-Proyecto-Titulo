@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/admin/application/gestion_bicicleteros_vm.dart';
-import 'package:ubbike/features/admin/presentation/formulario_bicicletero_sheet.dart';
+import 'package:ubbike/features/admin/presentation/hoja_formulario_bicicletero.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
@@ -32,7 +32,7 @@ class _VistaGestionBicicleterosState
       isScrollControlled: true,
       useRootNavigator: true,
       useSafeArea: true,
-      builder: (_) => FormularioBicicleteroSheet(
+      builder: (_) => HojaFormularioBicicletero(
         bicicletero: bicicletero,
         alGuardar: (datos) async {
           if (bicicletero == null) {
@@ -85,7 +85,7 @@ class _VistaGestionBicicleterosState
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }

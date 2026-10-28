@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/admin/data/usuarios_admin_repository.dart';
+import 'package:ubbike/features/admin/data/usuarios_admin_repositorio.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/modelos/usuario_app.dart';
 
@@ -106,8 +106,8 @@ class GestionUsuariosVm extends AutoDisposeAsyncNotifier<List<UsuarioApp>> {
     final filtros = ref.watch(filtrosGestionUsuariosProvider);
     ref.onDispose(() => _debounceBusqueda?.cancel());
 
-    final usuariosRepository = ref.read(usuariosAdminRepositoryProvider);
-    return usuariosRepository.listarUsuarios(
+    final usuariosRepositorio = ref.read(usuariosAdminRepositorioProvider);
+    return usuariosRepositorio.listarUsuarios(
       q: filtros.busqueda,
       rol: filtros.rol,
       cuentaActiva: filtros.estadoCuenta.valor,
@@ -164,7 +164,7 @@ class GestionUsuariosVm extends AutoDisposeAsyncNotifier<List<UsuarioApp>> {
     RolUsuario? rol,
     bool? cuentaActiva,
   }) async {
-    await ref.read(usuariosAdminRepositoryProvider).actualizarPermisos(
+    await ref.read(usuariosAdminRepositorioProvider).actualizarPermisos(
           usuarioId: usuario.id,
           nombre: nombre,
           correo: correo,
@@ -176,10 +176,10 @@ class GestionUsuariosVm extends AutoDisposeAsyncNotifier<List<UsuarioApp>> {
   }
 
   Future<void> reenviarCorreoCuenta(UsuarioApp usuario) {
-    final usuariosRepository = ref.read(usuariosAdminRepositoryProvider);
+    final usuariosRepositorio = ref.read(usuariosAdminRepositorioProvider);
     return usuario.debeCambiarContrasena
-        ? usuariosRepository.reenviarAcceso(usuario.id)
-        : usuariosRepository.reenviarVerificacion(usuario.id);
+        ? usuariosRepositorio.reenviarAcceso(usuario.id)
+        : usuariosRepositorio.reenviarVerificacion(usuario.id);
   }
 
   Future<void> crearUsuario({
@@ -188,7 +188,7 @@ class GestionUsuariosVm extends AutoDisposeAsyncNotifier<List<UsuarioApp>> {
     required String rut,
     required RolUsuario rol,
   }) async {
-    await ref.read(usuariosAdminRepositoryProvider).crearUsuario(
+    await ref.read(usuariosAdminRepositorioProvider).crearUsuario(
           nombre: nombre,
           correo: correo,
           rut: rut,
@@ -198,7 +198,9 @@ class GestionUsuariosVm extends AutoDisposeAsyncNotifier<List<UsuarioApp>> {
   }
 
   Future<void> eliminarUsuario(UsuarioApp usuario) async {
-    await ref.read(usuariosAdminRepositoryProvider).eliminarUsuario(usuario.id);
+    await ref
+        .read(usuariosAdminRepositorioProvider)
+        .eliminarUsuario(usuario.id);
     recargar();
   }
 }

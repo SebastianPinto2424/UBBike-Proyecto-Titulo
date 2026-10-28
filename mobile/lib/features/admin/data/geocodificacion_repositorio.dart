@@ -2,8 +2,8 @@ import 'package:ubbike/features/admin/data/geocodificacion_api.dart';
 import 'package:ubbike/shared/modelos/lugar_encontrado.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GeocodificacionRepository {
-  const GeocodificacionRepository(this._api);
+class GeocodificacionRepositorio {
+  const GeocodificacionRepositorio(this._api);
 
   final GeocodificacionApi _api;
 
@@ -11,7 +11,7 @@ class GeocodificacionRepository {
       _api.buscar(consulta);
 }
 
-final geocodificacionRepositoryProvider =
-    Provider<GeocodificacionRepository>((ref) {
-  return const GeocodificacionRepository(GeocodificacionApi());
+final geocodificacionRepositorioProvider =
+    Provider<GeocodificacionRepositorio>((ref) {
+  return const GeocodificacionRepositorio(GeocodificacionApi());
 });

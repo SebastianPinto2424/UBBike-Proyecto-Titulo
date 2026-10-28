@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/admin/data/geocodificacion_repository.dart';
+import 'package:ubbike/features/admin/data/geocodificacion_repositorio.dart';
 import 'package:ubbike/shared/modelos/lugar_encontrado.dart';
 
 class BuscadorLugaresVm {
@@ -9,7 +9,7 @@ class BuscadorLugaresVm {
   final Ref _ref;
 
   Future<List<LugarEncontrado>> buscar(String consulta) =>
-      _ref.read(geocodificacionRepositoryProvider).buscar(consulta);
+      _ref.read(geocodificacionRepositorioProvider).buscar(consulta);
 }
 
 final buscadorLugaresVmProvider = Provider.autoDispose<BuscadorLugaresVm>(

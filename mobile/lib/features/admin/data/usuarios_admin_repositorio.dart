@@ -4,8 +4,8 @@ import 'package:ubbike/features/admin/data/usuarios_admin_api.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class UsuariosAdminRepository {
-  const UsuariosAdminRepository(this._api);
+class UsuariosAdminRepositorio {
+  const UsuariosAdminRepositorio(this._api);
 
   final UsuariosAdminApi _api;
 
@@ -62,8 +62,8 @@ class UsuariosAdminRepository {
       _api.eliminarUsuario(usuarioId);
 }
 
-final usuariosAdminRepositoryProvider =
-    Provider<UsuariosAdminRepository>((ref) {
+final usuariosAdminRepositorioProvider =
+    Provider<UsuariosAdminRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return UsuariosAdminRepository(UsuariosAdminApi(cliente: cliente));
+  return UsuariosAdminRepositorio(UsuariosAdminApi(cliente: cliente));
 });

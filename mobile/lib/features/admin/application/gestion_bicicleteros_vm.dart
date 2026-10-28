@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/versiones_provider.dart';
-import 'package:ubbike/features/admin/data/bicicleteros_admin_repository.dart';
+import 'package:ubbike/features/admin/data/bicicleteros_admin_repositorio.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 class GestionBicicleterosVm
@@ -10,13 +10,13 @@ class GestionBicicleterosVm
   Future<List<BicicleteroApp>> build() {
     ref.listen<int>(
         bicicleterosVersionProvider, (_, __) => _refrescarEnSilencio());
-    return ref.read(bicicleterosAdminRepositoryProvider).listar();
+    return ref.read(bicicleterosAdminRepositorioProvider).listar();
   }
 
   Future<void> _refrescarEnSilencio() async {
     try {
       final bicicleteros =
-          await ref.read(bicicleterosAdminRepositoryProvider).listar();
+          await ref.read(bicicleterosAdminRepositorioProvider).listar();
       state = AsyncData(bicicleteros);
     } catch (_) {}
   }
@@ -32,7 +32,7 @@ class GestionBicicleterosVm
     double? latitud,
     double? longitud,
   }) async {
-    await ref.read(bicicleterosAdminRepositoryProvider).crear(
+    await ref.read(bicicleterosAdminRepositorioProvider).crear(
           nombre: nombre,
           ubicacion: ubicacion,
           capacidad: capacidad,
@@ -50,7 +50,7 @@ class GestionBicicleterosVm
     double? latitud,
     double? longitud,
   }) async {
-    await ref.read(bicicleterosAdminRepositoryProvider).actualizar(
+    await ref.read(bicicleterosAdminRepositorioProvider).actualizar(
           bicicleteroId: bicicleteroId,
           nombre: nombre,
           ubicacion: ubicacion,
@@ -62,7 +62,9 @@ class GestionBicicleterosVm
   }
 
   Future<void> eliminar(String bicicleteroId) async {
-    await ref.read(bicicleterosAdminRepositoryProvider).eliminar(bicicleteroId);
+    await ref
+        .read(bicicleterosAdminRepositorioProvider)
+        .eliminar(bicicleteroId);
     recargar();
   }
 }

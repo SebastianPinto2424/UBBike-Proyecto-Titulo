@@ -6,9 +6,10 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/admin/presentation/bicicletero_ubicacion_widgets.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/core/modelos/punto_geografico.dart';
-import 'package:ubbike/shared/utils/opciones_bicicletero.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicletero.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 typedef DatosFormularioBicicletero = ({
   String nombre,
@@ -18,20 +19,20 @@ typedef DatosFormularioBicicletero = ({
   double? longitud
 });
 
-class FormularioBicicleteroSheet extends ConsumerStatefulWidget {
-  const FormularioBicicleteroSheet(
+class HojaFormularioBicicletero extends ConsumerStatefulWidget {
+  const HojaFormularioBicicletero(
       {super.key, this.bicicletero, required this.alGuardar});
 
   final BicicleteroApp? bicicletero;
   final Future<void> Function(DatosFormularioBicicletero) alGuardar;
 
   @override
-  ConsumerState<FormularioBicicleteroSheet> createState() =>
-      _FormularioBicicleteroSheetState();
+  ConsumerState<HojaFormularioBicicletero> createState() =>
+      _HojaFormularioBicicleteroState();
 }
 
-class _FormularioBicicleteroSheetState
-    extends ConsumerState<FormularioBicicleteroSheet> {
+class _HojaFormularioBicicleteroState
+    extends ConsumerState<HojaFormularioBicicletero> {
   final _formulario = GlobalKey<FormState>();
 
   late final TextEditingController _nombre;
@@ -156,6 +157,7 @@ class _FormularioBicicleteroSheetState
                   TextFormField(
                     key: const Key('bicicletero-nombre'),
                     controller: _nombre,
+                    spellCheckConfiguration: revisionOrtografica(),
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: decoracionCampoFormularioBicicleta(
@@ -168,6 +170,7 @@ class _FormularioBicicleteroSheetState
                   TextFormField(
                     key: const Key('bicicletero-referencia'),
                     controller: _referencia,
+                    spellCheckConfiguration: revisionOrtografica(),
                     textCapitalization: TextCapitalization.sentences,
                     textInputAction: TextInputAction.next,
                     decoration: decoracionCampoFormularioBicicleta(

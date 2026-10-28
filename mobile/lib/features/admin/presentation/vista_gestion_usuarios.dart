@@ -82,7 +82,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }
@@ -103,7 +103,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }
@@ -122,7 +122,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
       isDismissible: false,
       showDragHandle: false,
       useSafeArea: true,
-      builder: (_) => const SheetCrearUsuario(),
+      builder: (_) => const HojaCrearUsuario(),
     );
 
     if (resultado == null) {
@@ -145,7 +145,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }
@@ -174,7 +174,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }
@@ -267,7 +267,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
         child: _EstadoUsuarios(
           icono: Icons.cloud_off_outlined,
           titulo: 'No se pudieron cargar usuarios',
-          detalle: 'Revisa la conexión con el backend.',
+          detalle: 'Revisa tu conexión y toca para reintentar.',
         ),
       );
     }
@@ -312,7 +312,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
       isDismissible: false,
       showDragHandle: false,
       useSafeArea: true,
-      builder: (_) => SheetEditarCuenta(usuario: usuario),
+      builder: (_) => HojaEditarCuenta(usuario: usuario),
     );
 
     if (resultado != null) {

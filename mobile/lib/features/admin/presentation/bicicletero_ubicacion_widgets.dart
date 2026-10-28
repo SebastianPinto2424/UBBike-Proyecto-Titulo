@@ -12,7 +12,7 @@ import 'package:ubbike/features/admin/application/buscador_lugares_vm.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/lugar_encontrado.dart';
 import 'package:ubbike/core/modelos/punto_geografico.dart';
-import 'package:ubbike/shared/utils/opciones_bicicletero.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicletero.dart';
 import 'package:ubbike/shared/widgets/mapa_ubicacion.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
@@ -213,6 +213,8 @@ class _PanelUbicacionBicicleteroState
       if (punto != null)
         TextButton(
             key: const Key('quitar-ubicacion'),
+            style: TextButton.styleFrom(
+                foregroundColor: ColoresUbb.rojoInstitucional),
             onPressed: widget.habilitado ? _quitarPunto : null,
             child: const Text('Quitar')),
     ]);

@@ -3,8 +3,8 @@ import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class BicicleterosAdminRepository {
-  const BicicleterosAdminRepository(this._api);
+class BicicleterosAdminRepositorio {
+  const BicicleterosAdminRepositorio(this._api);
 
   final BicicleterosAdminApi _api;
 
@@ -45,8 +45,8 @@ class BicicleterosAdminRepository {
   Future<void> eliminar(String bicicleteroId) => _api.eliminar(bicicleteroId);
 }
 
-final bicicleterosAdminRepositoryProvider =
-    Provider<BicicleterosAdminRepository>((ref) {
+final bicicleterosAdminRepositorioProvider =
+    Provider<BicicleterosAdminRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return BicicleterosAdminRepository(BicicleterosAdminApi(cliente: cliente));
+  return BicicleterosAdminRepositorio(BicicleterosAdminApi(cliente: cliente));
 });
