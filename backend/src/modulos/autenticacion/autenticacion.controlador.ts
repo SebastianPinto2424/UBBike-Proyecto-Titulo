@@ -1,17 +1,22 @@
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
-import { controladorAsync } from '../../comun/utils/controlador-async';
+import { controladorAsync } from '../../comun/utilidades/controlador-async';
 import {
   cambiarContrasena as cambiarContrasenaServicio,
   cambiarContrasenaSesion as cambiarContrasenaSesionServicio,
+  solicitarCambioContrasena as solicitarCambioContrasenaServicio
+} from './contrasena.servicio';
+import {
   cerrarSesion as cerrarSesionServicio,
-  completarRegistro as completarRegistroServicio,
   iniciarSesion as iniciarSesionServicio,
   obtenerUsuarioActual,
-  refrescarToken as refrescarTokenServicio,
-  registrarUsuario,
-  solicitarCambioContrasena as solicitarCambioContrasenaServicio,
-  verificarCorreo as verificarCorreoServicio
+  refrescarToken as refrescarTokenServicio
 } from './autenticacion.servicio';
+import {
+  completarRegistro as completarRegistroServicio,
+  reenviarVerificacion as reenviarVerificacionServicio,
+  registrarUsuario,
+  verificarCorreo as verificarCorreoServicio
+} from './registro.servicio';
 
 export const registrar = controladorAsync(async (req, res) => {
   const resultado = await registrarUsuario(req.body);
@@ -31,6 +36,11 @@ export const obtenerPerfil = controladorAsync<SolicitudAutenticada>(async (req, 
 export const verificarCorreo = controladorAsync(async (req, res) => {
   const token = String(req.body?.token ?? req.query.token ?? '');
   const resultado = await verificarCorreoServicio(token);
+  return res.status(200).json(resultado);
+});
+
+export const reenviarVerificacion = controladorAsync(async (req, res) => {
+  const resultado = await reenviarVerificacionServicio(req.body.correo);
   return res.status(200).json(resultado);
 });
 
@@ -69,6 +79,10 @@ export const refrescarToken = controladorAsync(async (req, res) => {
 });
 
 export const cerrarSesion = controladorAsync<SolicitudAutenticada>(async (req, res) => {
-  const resultado = await cerrarSesionServicio(req.usuario!.usuarioId, req.body?.refreshToken);
+  const resultado = await cerrarSesionServicio(
+    req.usuario!.usuarioId,
+    req.body?.refreshToken,
+    req.usuario!.rol
+  );
   return res.status(200).json(resultado);
 });
