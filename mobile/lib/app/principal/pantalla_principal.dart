@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 import 'package:ubbike/core/providers/conexion_provider.dart';
 
 import 'package:flutter/material.dart';
@@ -7,14 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/core/servicios/fcm_service.dart';
-import 'package:ubbike/core/servicios/tiempo_real_service.dart';
+import 'package:ubbike/core/servicios/fcm_servicio.dart';
+import 'package:ubbike/core/servicios/tiempo_real_servicio.dart';
 import 'package:ubbike/features/incidencias/application/incidencias_vm.dart';
 import 'package:ubbike/features/notificaciones/application/controlador_notificaciones.dart';
 import 'package:ubbike/features/notificaciones/presentation/pantalla_notificaciones.dart';
 import 'package:ubbike/shared/modelos/notificacion_app.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
+import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
 import 'package:ubbike/features/inicio/presentation/vista_inicio_usuario.dart';
 import 'package:ubbike/features/bicicletas/presentation/vista_bicicletas_usuario.dart';
@@ -22,18 +23,17 @@ import 'package:ubbike/features/qr/application/qr_usuario_vm.dart';
 import 'package:ubbike/features/qr/presentation/vista_qr_usuario.dart';
 import 'package:ubbike/features/acceso/presentation/vista_inicio_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_ingreso_guardia.dart';
-import 'package:ubbike/features/inicio/presentation/vista_dashboard_central.dart';
-import 'package:ubbike/features/inicio/presentation/vista_dashboard_administrador.dart';
+import 'package:ubbike/features/inicio/presentation/vista_tablero_central.dart';
+import 'package:ubbike/features/inicio/presentation/vista_tablero_administrador.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_bicicleteros.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_usuarios.dart';
-import 'package:ubbike/app/shell/vista_menu_gestion.dart';
+import 'package:ubbike/app/principal/vista_menu_gestion.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_central.dart';
-import 'package:ubbike/features/historial/presentation/vista_operaciones_guardias_central.dart';
-import 'package:ubbike/app/shell/aviso_notificacion.dart';
-import 'package:ubbike/app/shell/destino_inicial.dart';
-import 'package:ubbike/app/shell/destinos_por_rol.dart';
-import 'package:ubbike/app/shell/puente_tiempo_real.dart';
-import 'package:ubbike/app/shell/vista_soporte.dart';
+import 'package:ubbike/app/principal/aviso_notificacion.dart';
+import 'package:ubbike/app/principal/destino_inicial.dart';
+import 'package:ubbike/app/principal/destinos_por_rol.dart';
+import 'package:ubbike/app/principal/puente_tiempo_real.dart';
+import 'package:ubbike/app/principal/vista_soporte.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_usuario.dart';
@@ -57,7 +57,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
   late final ControladorNotificaciones controladorNotificaciones;
   late final PuenteTiempoReal puenteTiempoReal;
 
-  TiempoRealService get tiempoRealService => puenteTiempoReal.servicio;
+  TiempoRealServicio get tiempoRealService => puenteTiempoReal.servicio;
 
   void _seleccionarIndice(int nuevoIndice) {
     setState(() {
@@ -94,6 +94,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       },
       alCerrarSesionRemota: () =>
           ref.read(sesionProvider.notifier).cerrarPorOtroDispositivo(),
+      alRenovarSesion: () => ref.read(sesionProvider.notifier).renovarSesion(),
     );
     controladorNotificaciones =
         ref.read(crearControladorNotificacionesProvider)(
@@ -101,7 +102,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     );
     controladorNotificaciones.addListener(_sincronizarNotificaciones);
     controladorNotificaciones.iniciar();
-    FcmService.instancia.notificacionTocada.addListener(_alTocarPush);
+    FcmServicio.instancia.notificacionTocada.addListener(_alTocarPush);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _sincronizarTiempoRealConSesion(ref.read(sesionProvider).value);
@@ -116,7 +117,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     WidgetsBinding.instance.removeObserver(this);
     controladorNotificaciones.removeListener(_sincronizarNotificaciones);
     controladorNotificaciones.dispose();
-    FcmService.instancia.notificacionTocada.removeListener(_alTocarPush);
+    FcmServicio.instancia.notificacionTocada.removeListener(_alTocarPush);
     puenteTiempoReal.dispose();
     super.dispose();
   }
@@ -153,7 +154,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
   }
 
   void _alTocarPush() {
-    final data = FcmService.instancia.notificacionTocada.value;
+    final data = FcmServicio.instancia.notificacionTocada.value;
     if (data == null || !mounted) {
       return;
     }
@@ -175,21 +176,21 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
         break;
     }
 
-    FcmService.instancia.notificacionTocada.value = null;
+    FcmServicio.instancia.notificacionTocada.value = null;
     controladorNotificaciones.actualizar();
   }
 
-  void _sincronizarTiempoRealConSesion(SesionState? sesion) {
+  void _sincronizarTiempoRealConSesion(EstadoSesion? sesion) {
     final repositorio = ref.read(registroDispositivoPushProvider);
 
     if (sesion is SesionActiva) {
       tiempoRealService.conectar(sesion.token);
-      FcmService.instancia.registrarToken(repositorio);
+      FcmServicio.instancia.registrarToken(repositorio);
       return;
     }
 
     tiempoRealService.desconectar();
-    FcmService.instancia.eliminarToken(repositorio);
+    FcmServicio.instancia.eliminarToken(repositorio);
   }
 
   Future<void> _abrirNotificaciones() async {
@@ -246,7 +247,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       abrirSeccionGestion(
         context,
         titulo: 'Atención',
-        pantalla: const VistaSoporteAdministrador(initialIndex: 1),
+        pantalla: const VistaSoporteAdministrador(initialIndex: 0),
       );
     }
   }
@@ -267,7 +268,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       abrirSeccionGestion(
         context,
         titulo: 'Atención',
-        pantalla: const VistaSoporteAdministrador(initialIndex: 2),
+        pantalla: const VistaSoporteAdministrador(initialIndex: 1),
       );
     }
   }
@@ -320,7 +321,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     }
 
     controladorNotificaciones.marcarNuevaNotificacionMostrada();
-    ScaffoldMessenger.of(context).showSnackBar(
+    context.mostrarAvisoUnico(
       avisoNotificacion(nueva, onVer: _abrirNotificaciones),
     );
   }
@@ -420,7 +421,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
 
     if (rol == RolUsuario.adminCentral) {
       return [
-        VistaDashboardCentral(
+        VistaTableroCentral(
           onAbrirMovimientos: () => _seleccionarIndice(1),
           onAbrirGuardias: () => _seleccionarIndice(2),
           onAbrirSolicitudes: () =>
@@ -429,7 +430,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
               _abrirDestinoIncidencia(RolUsuario.adminCentral),
         ),
         const VistaMovimientosCentral(),
-        const VistaOperacionesGuardiasCentral(),
+        const VistaGuardias(),
         VistaSoporteCentral(
           key: ValueKey('soporte-central-$tabSoporte'),
           initialIndex: tabSoporte,
@@ -440,12 +441,12 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
 
     if (rol == RolUsuario.administrador) {
       return [
-        VistaDashboardAdministrador(
+        VistaTableroAdministrador(
           onAbrirMovimientos: () =>
               _abrirDestinoMovimiento(RolUsuario.administrador),
           onAbrirGuardias: () => _abrirGestionAdmin(
-            'Atención',
-            const VistaSoporteAdministrador(initialIndex: 0),
+            'Guardias',
+            const VistaGuardias(),
           ),
           onAbrirSolicitudes: () =>
               _abrirDestinoSolicitudGuardia(RolUsuario.administrador),
