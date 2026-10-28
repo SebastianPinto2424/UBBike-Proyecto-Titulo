@@ -3,8 +3,8 @@ import 'package:ubbike/features/qr/data/qr_modelos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class QrRepository {
-  const QrRepository(this._api);
+class QrRepositorio {
+  const QrRepositorio(this._api);
 
   final QrApi _api;
 
@@ -23,7 +23,7 @@ class QrRepository {
       );
 }
 
-final qrRepositoryProvider = Provider<QrRepository>((ref) {
+final qrRepositorioProvider = Provider<QrRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return QrRepository(QrApi(cliente: cliente));
+  return QrRepositorio(QrApi(cliente: cliente));
 });

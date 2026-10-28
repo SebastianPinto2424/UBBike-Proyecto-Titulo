@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/utils/cercania_bicicletero.dart';
+import 'package:ubbike/shared/utilidades/cercania_bicicletero.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 
@@ -60,6 +60,14 @@ class BannerSugerenciaBicicletero extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: ColoresUbb.rojoInstitucional,
+                      ),
+                      onPressed: onDescartar,
+                      child: const Text('Ahora no'),
+                    ),
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ColoresUbb.azulApp,
@@ -73,11 +81,6 @@ class BannerSugerenciaBicicletero extends StatelessWidget {
                       ),
                       onPressed: onAceptar,
                       child: const Text('Aceptar'),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: onDescartar,
-                      child: const Text('Ahora no'),
                     ),
                   ],
                 ),

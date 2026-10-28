@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/bicicletas/data/bicicleta_repository.dart';
-import 'package:ubbike/features/qr/data/qr_repository.dart';
+import 'package:ubbike/features/bicicletas/data/bicicleta_repositorio.dart';
+import 'package:ubbike/features/qr/data/qr_repositorio.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/features/qr/data/qr_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
-import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/shared/data/bicicleteros_repositorio.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 
 class QrUsuarioVm {
@@ -18,20 +18,20 @@ class QrUsuarioVm {
     String? bicicleteroId,
     String? tipo,
   }) =>
-      _ref.read(qrRepositoryProvider).generar(
+      _ref.read(qrRepositorioProvider).generar(
             bicicletaId: bicicletaId,
             bicicleteroId: bicicleteroId,
             tipo: tipo,
           );
 
   Future<BicicletaApp?> obtenerActiva() =>
-      _ref.read(bicicletaRepositoryProvider).obtenerActiva();
+      _ref.read(bicicletaRepositorioProvider).obtenerActiva();
 
   Future<List<BicicleteroApp>> listarBicicleteros() =>
-      _ref.read(bicicleterosRepositoryProvider).listar();
+      _ref.read(bicicleterosRepositorioProvider).listar();
 
   Future<EventoQrApp?> consultarEstado(String qrId) =>
-      _ref.read(qrRepositoryProvider).consultarEstado(qrId);
+      _ref.read(qrRepositorioProvider).consultarEstado(qrId);
 
   void notificarCambioBicicleta() {
     _ref.read(bicicletasVersionProvider.notifier).state++;
