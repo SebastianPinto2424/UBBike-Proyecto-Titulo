@@ -2,23 +2,32 @@ import request from 'supertest';
 import type { Response } from 'supertest';
 import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { activarBicicleta, eliminarBicicleta } from '../../src/modulos/bicicletas/bicicleta.servicio';
+import {
+  activarBicicleta,
+  eliminarBicicleta
+} from '../../src/modulos/bicicletas/bicicleta.servicio';
 import {
   crearClientePruebas,
   limpiarDatos,
   prepararBaseDatosPruebas,
   urlBaseDatosPruebas
-} from './helpers/base-datos-real';
+} from './apoyo/base-datos-real';
 import { prisma as apiPrisma } from '../../src/configuracion/prisma';
 import { aplicacion } from '../../src/aplicacion';
 import { cerrarRedis } from '../../src/configuracion/redis';
-import {
-  registrarGestionManual,
-  confirmarQr
-} from '../../src/modulos/acceso/operaciones/acceso.servicio';
+import { registrarGestionManual } from '../../src/modulos/acceso/operaciones/gestion-manual.servicio';
+import { confirmarQr } from '../../src/modulos/acceso/operaciones/acceso.servicio';
 import { generarQrTemporal, validarQrTemporal } from '../../src/modulos/qr/qr.servicio';
 import { crearSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/solicitud-guardia.servicio';
-import { seleccionarBicicleteroGuardia } from '../../src/modulos/acceso/asignaciones/asignacion-guardia.servicio';
+import {
+  asignarGuardiaABicicletero,
+  liberarBicicleteroGuardia,
+  liberarGuardiaDeBicicletero,
+  seleccionarBicicleteroGuardia
+} from '../../src/modulos/acceso/asignaciones/asignacion-guardia.servicio';
+import { cancelarSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/seguimiento-solicitud.servicio';
+import { actualizarEstadoSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/seguimiento-solicitud.servicio';
+import { cerrarSesion } from '../../src/modulos/autenticacion/autenticacion.servicio';
 import { actualizarBicicletero } from '../../src/modulos/bicicleteros/bicicletero.servicio';
 import {
   guardarRefreshToken,
@@ -33,6 +42,7 @@ import { TipoMovimiento } from '../../src/modulos/historial/tipo-movimiento';
 import { TipoSolicitudGuardia } from '../../src/modulos/acceso/solicitudes/tipo-solicitud-guardia';
 import { TipoNotificacion } from '../../src/modulos/notificaciones/tipo-notificacion';
 import { RolUsuario } from '../../src/modulos/usuarios/rol-usuario';
+import { eliminarUsuarioAdmin } from '../../src/modulos/usuarios/usuario.servicio';
 
 const prisma = crearClientePruebas(urlBaseDatosPruebas);
 beforeAll(prepararBaseDatosPruebas);
@@ -83,53 +93,104 @@ describe('servicios reales y API sobre PostgreSQL/Redis aislados', () => {
     const admin = await usuario(RolUsuario.ADMINISTRADOR);
     const token = crearTokenSesion(admin.id, admin.rol, admin.versionSesion);
     const auth = `Bearer ${token}`;
-    const creada = await request(aplicacion).post('/bicicleteros').set('Authorization', auth)
-      .send({ nombre: 'Bicicletero mapa', ubicacion: 'Acceso FACE', capacidad: 80,
-        latitud: -36.821728, longitud: -73.011604 });
+    const creada = await request(aplicacion).post('/bicicleteros').set('Authorization', auth).send({
+      nombre: 'Bicicletero mapa',
+      ubicacion: 'Acceso FACE',
+      capacidad: 80,
+      latitud: -36.821728,
+      longitud: -73.011604
+    });
     expect(creada.status).toBe(201);
     const id = creada.body.bicicletero.id;
     expect(await prisma.bicicletero.findUnique({ where: { id } })).toMatchObject({
-      latitud: -36.821728, longitud: -73.011604, capacidad: 80
+      latitud: -36.821728,
+      longitud: -73.011604,
+      capacidad: 80
     });
-    const incompleta = await request(aplicacion).patch(`/bicicleteros/${id}`)
-      .set('Authorization', auth).send({ latitud: null, longitud: -73 });
+    const incompleta = await request(aplicacion)
+      .patch(`/bicicleteros/${id}`)
+      .set('Authorization', auth)
+      .send({ latitud: null, longitud: -73 });
     expect(incompleta.status).toBe(400);
-    const movida = await request(aplicacion).patch(`/bicicleteros/${id}`)
-      .set('Authorization', auth).send({ latitud: -36.822, longitud: -73.012 });
+    const movida = await request(aplicacion)
+      .patch(`/bicicleteros/${id}`)
+      .set('Authorization', auth)
+      .send({ latitud: -36.822, longitud: -73.012 });
     expect(movida.status).toBe(200);
     expect(movida.body.bicicletero).toMatchObject({ latitud: -36.822, longitud: -73.012 });
-    const quitada = await request(aplicacion).patch(`/bicicleteros/${id}`)
-      .set('Authorization', auth).send({ latitud: null, longitud: null });
+    const quitada = await request(aplicacion)
+      .patch(`/bicicleteros/${id}`)
+      .set('Authorization', auth)
+      .send({ latitud: null, longitud: null });
     expect(quitada.status).toBe(200);
     const lista = await request(aplicacion).get('/bicicleteros').set('Authorization', auth);
-    expect(lista.body.bicicleteros).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id, nombre: 'Bicicletero mapa', latitud: null, longitud: null })
-    ]));
+    expect(lista.body.bicicleteros).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id, nombre: 'Bicicletero mapa', latitud: null, longitud: null })
+      ])
+    );
   });
   it('login, perfil, refresh y logout funcionan juntos y revocan sesiones anteriores', async () => {
     const persona = await usuario();
     const contrasena = 'Clave-Solo-Pruebas-2026!';
-    await prisma.usuario.update({ where: { id: persona.id }, data: { contrasenaHash: await bcrypt.hash(contrasena, 4) } });
-    const login = await request(aplicacion).post('/autenticacion/login').send({ correo: persona.correo, contrasena });
+    await prisma.usuario.update({
+      where: { id: persona.id },
+      data: { contrasenaHash: await bcrypt.hash(contrasena, 4) }
+    });
+    const login = await request(aplicacion)
+      .post('/autenticacion/login')
+      .send({ correo: persona.correo, contrasena });
     expect(login.status).toBe(200);
-    const perfil = await request(aplicacion).get('/autenticacion/yo').set('Authorization', `Bearer ${login.body.token}`);
-    expect(perfil.status).toBe(200); expect(perfil.body.usuario.id).toBe(persona.id);
-    const refresh = await request(aplicacion).post('/autenticacion/refresh').send({ usuarioId: persona.id, refreshToken: login.body.refreshToken });
+    const perfil = await request(aplicacion)
+      .get('/autenticacion/yo')
+      .set('Authorization', `Bearer ${login.body.token}`);
+    expect(perfil.status).toBe(200);
+    expect(perfil.body.usuario.id).toBe(persona.id);
+    const refresh = await request(aplicacion)
+      .post('/autenticacion/refresh')
+      .send({ usuarioId: persona.id, refreshToken: login.body.refreshToken });
     expect(refresh.status).toBe(200);
-    const logout = await request(aplicacion).post('/autenticacion/logout').set('Authorization', `Bearer ${refresh.body.token}`).send({ refreshToken: refresh.body.refreshToken });
+    const logout = await request(aplicacion)
+      .post('/autenticacion/logout')
+      .set('Authorization', `Bearer ${refresh.body.token}`)
+      .send({ refreshToken: refresh.body.refreshToken });
     expect(logout.status).toBe(200);
-    expect((await request(aplicacion).get('/autenticacion/yo').set('Authorization', `Bearer ${refresh.body.token}`)).status).toBe(401);
-    expect((await request(aplicacion).post('/autenticacion/refresh').send({ usuarioId: persona.id, refreshToken: refresh.body.refreshToken })).status).toBe(401);
+    expect(
+      (
+        await request(aplicacion)
+          .get('/autenticacion/yo')
+          .set('Authorization', `Bearer ${refresh.body.token}`)
+      ).status
+    ).toBe(401);
+    expect(
+      (
+        await request(aplicacion)
+          .post('/autenticacion/refresh')
+          .send({ usuarioId: persona.id, refreshToken: refresh.body.refreshToken })
+      ).status
+    ).toBe(401);
   });
   it('activar dos bicicletas simultáneamente conserva una sola activa', async () => {
     const { persona, bicicleta } = await escenario();
-    const otra = await prisma.bicicleta.create({ data: { usuarioId: persona.id, descripcion: 'Otra bicicleta' } });
-    await Promise.all([activarBicicleta(persona.id, bicicleta.id), activarBicicleta(persona.id, otra.id)]);
-    expect(await prisma.bicicleta.count({ where: { usuarioId: persona.id, activa: true, eliminadoEn: null } })).toBe(1);
+    const otra = await prisma.bicicleta.create({
+      data: { usuarioId: persona.id, descripcion: 'Otra bicicleta' }
+    });
+    await Promise.all([
+      activarBicicleta(persona.id, bicicleta.id),
+      activarBicicleta(persona.id, otra.id)
+    ]);
+    expect(
+      await prisma.bicicleta.count({
+        where: { usuarioId: persona.id, activa: true, eliminadoEn: null }
+      })
+    ).toBe(1);
   });
   it('ingreso y eliminación simultáneos no dejan una bicicleta eliminada dentro', async () => {
     const { persona, bicicleta, datos } = await escenario();
-    await Promise.allSettled([registrarGestionManual(datos), eliminarBicicleta(persona.id, bicicleta.id)]);
+    await Promise.allSettled([
+      registrarGestionManual(datos),
+      eliminarBicicleta(persona.id, bicicleta.id)
+    ]);
     const actual = await prisma.bicicleta.findUniqueOrThrow({ where: { id: bicicleta.id } });
     expect(actual.eliminadoEn != null && actual.dentroBicicletero).toBe(false);
   });
@@ -216,6 +277,203 @@ describe('servicios reales y API sobre PostgreSQL/Redis aislados', () => {
     expect(
       await prisma.asignacionGuardia.count({ where: { guardiaId: guardia.id, activa: true } })
     ).toBe(1);
+  });
+  it('dos guardias no gestionan el mismo bicicletero aunque lo elijan a la vez', async () => {
+    const [primero, segundo] = await Promise.all([
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.GUARDIA)
+    ]);
+    const bicicletero = await rack();
+    const resultados = await Promise.allSettled([
+      seleccionarBicicleteroGuardia(primero.id, bicicletero.id),
+      seleccionarBicicleteroGuardia(segundo.id, bicicletero.id)
+    ]);
+
+    expect(resultados.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(resultados.find((r) => r.status === 'rejected')).toMatchObject({
+      reason: expect.objectContaining({ statusCode: 409 })
+    });
+    expect(
+      await prisma.asignacionGuardia.count({
+        where: { bicicleteroId: bicicletero.id, activa: true }
+      })
+    ).toBe(1);
+  });
+  it('la base rechaza una segunda asignación activa del mismo bicicletero', async () => {
+    const [primero, segundo] = await Promise.all([
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.GUARDIA)
+    ]);
+    const bicicletero = await rack();
+    const asignacion = (guardiaId: string) => ({
+      guardiaId,
+      bicicleteroId: bicicletero.id,
+      iniciaEn: new Date(),
+      activa: true
+    });
+    await prisma.asignacionGuardia.create({ data: asignacion(primero.id) });
+
+    await expect(
+      prisma.asignacionGuardia.create({ data: asignacion(segundo.id) })
+    ).rejects.toThrow();
+  });
+  it('una solicitud sin guardia llega al guardia que toma el bicicletero y vuelve a pendientes si lo deja', async () => {
+    const [persona, guardia] = await Promise.all([usuario(), usuario(RolUsuario.GUARDIA)]);
+    const bicicletero = await rack();
+    const solicitud = await crearSolicitudGuardia({
+      usuarioId: persona.id,
+      bicicleteroId: bicicletero.id,
+      tipo: TipoSolicitudGuardia.REQUIERE_SERVICIO
+    });
+    const estado = () => prisma.solicitudGuardia.findUnique({ where: { id: solicitud.id } });
+    expect(await estado()).toMatchObject({ estado: 'PENDIENTE', guardiaAsignadoId: null });
+
+    await seleccionarBicicleteroGuardia(guardia.id, bicicletero.id);
+    expect(await estado()).toMatchObject({ estado: 'NOTIFICADA', guardiaAsignadoId: guardia.id });
+    expect(
+      await prisma.entregaPendiente.count({
+        where: { tipo: 'PUSH', datos: { path: ['usuarioId'], equals: guardia.id } }
+      })
+    ).toBe(1);
+
+    await liberarBicicleteroGuardia(guardia.id);
+    expect(await estado()).toMatchObject({ estado: 'PENDIENTE', guardiaAsignadoId: null });
+    expect(
+      await prisma.notificacion.count({
+        where: { usuarioId: persona.id, titulo: 'Solicitud pendiente' }
+      })
+    ).toBe(1);
+  });
+  it('una solicitud en camino sigue con su guardia aunque deje el bicicletero', async () => {
+    const [persona, guardia] = await Promise.all([usuario(), usuario(RolUsuario.GUARDIA)]);
+    const bicicletero = await rack();
+    await seleccionarBicicleteroGuardia(guardia.id, bicicletero.id);
+    const solicitud = await crearSolicitudGuardia({
+      usuarioId: persona.id,
+      bicicleteroId: bicicletero.id,
+      tipo: TipoSolicitudGuardia.REQUIERE_SERVICIO
+    });
+    await actualizarEstadoSolicitudGuardia(
+      guardia.id,
+      RolUsuario.GUARDIA,
+      solicitud.id,
+      'EN_CAMINO'
+    );
+
+    await liberarBicicleteroGuardia(guardia.id);
+
+    expect(await prisma.solicitudGuardia.findUnique({ where: { id: solicitud.id } })).toMatchObject(
+      { estado: 'EN_CAMINO', guardiaAsignadoId: guardia.id }
+    );
+  });
+  it('central libera el bicicletero de un guardia y otro puede tomarlo', async () => {
+    const [guardia, relevo, central] = await Promise.all([
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.ADMIN_CENTRAL)
+    ]);
+    const bicicletero = await rack();
+    await seleccionarBicicleteroGuardia(guardia.id, bicicletero.id);
+
+    await liberarGuardiaDeBicicletero(bicicletero.id, central.id);
+
+    await expect(seleccionarBicicleteroGuardia(relevo.id, bicicletero.id)).resolves.toBeDefined();
+    expect(
+      await prisma.notificacion.count({
+        where: { usuarioId: guardia.id, titulo: 'Bicicletero liberado' }
+      })
+    ).toBe(1);
+  });
+  it('central asigna un guardia y al moverlo sus solicitudes sin responder vuelven a pendientes', async () => {
+    const [persona, guardia, central] = await Promise.all([
+      usuario(),
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.ADMIN_CENTRAL)
+    ]);
+    const [origen, destino] = await Promise.all([rack(), rack()]);
+    const solicitud = await crearSolicitudGuardia({
+      usuarioId: persona.id,
+      bicicleteroId: origen.id,
+      tipo: TipoSolicitudGuardia.REQUIERE_SERVICIO
+    });
+    const estado = () => prisma.solicitudGuardia.findUnique({ where: { id: solicitud.id } });
+
+    await asignarGuardiaABicicletero(origen.id, guardia.id, central.id);
+    expect(await estado()).toMatchObject({ estado: 'NOTIFICADA', guardiaAsignadoId: guardia.id });
+    expect(
+      await prisma.entregaPendiente.count({
+        where: { tipo: 'PUSH', datos: { path: ['usuarioId'], equals: guardia.id } }
+      })
+    ).toBe(1);
+
+    await asignarGuardiaABicicletero(destino.id, guardia.id, central.id);
+    expect(await estado()).toMatchObject({ estado: 'PENDIENTE', guardiaAsignadoId: null });
+    expect(
+      await prisma.asignacionGuardia.count({ where: { guardiaId: guardia.id, activa: true } })
+    ).toBe(1);
+  });
+  it('quien pidió atención la cancela y el guardia en camino recibe el aviso', async () => {
+    const [persona, guardia] = await Promise.all([usuario(), usuario(RolUsuario.GUARDIA)]);
+    const bicicletero = await rack();
+    await seleccionarBicicleteroGuardia(guardia.id, bicicletero.id);
+    const solicitud = await crearSolicitudGuardia({
+      usuarioId: persona.id,
+      bicicleteroId: bicicletero.id,
+      tipo: TipoSolicitudGuardia.REQUIERE_SERVICIO
+    });
+    await actualizarEstadoSolicitudGuardia(
+      guardia.id,
+      RolUsuario.GUARDIA,
+      solicitud.id,
+      'EN_CAMINO'
+    );
+
+    await cancelarSolicitudGuardia(persona.id, solicitud.id, 'Ya lo resolví');
+
+    expect(await prisma.solicitudGuardia.findUnique({ where: { id: solicitud.id } })).toMatchObject(
+      {
+        estado: 'CANCELADA',
+        motivoCierre: 'Ya lo resolví',
+        cerradaPorUsuarioId: persona.id
+      }
+    );
+    expect(
+      await prisma.notificacion.count({
+        where: { usuarioId: guardia.id, titulo: 'Solicitud cancelada' }
+      })
+    ).toBe(1);
+  });
+  it('cerrar sesión libera el bicicletero del guardia', async () => {
+    const guardia = await usuario(RolUsuario.GUARDIA);
+    const bicicletero = await rack();
+    await seleccionarBicicleteroGuardia(guardia.id, bicicletero.id);
+
+    await prisma.dispositivoToken.create({
+      data: { usuarioId: guardia.id, token: `token-${guardia.id}`, plataforma: 'android' }
+    });
+
+    await cerrarSesion(guardia.id, undefined, RolUsuario.GUARDIA);
+
+    expect(
+      await prisma.asignacionGuardia.count({ where: { guardiaId: guardia.id, activa: true } })
+    ).toBe(0);
+    expect(await prisma.dispositivoToken.count({ where: { usuarioId: guardia.id } })).toBe(0);
+  });
+  it('al desactivar a un guardia su bicicletero queda libre para otro', async () => {
+    const [guardia, relevo, administrador] = await Promise.all([
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.GUARDIA),
+      usuario(RolUsuario.ADMINISTRADOR)
+    ]);
+    const bicicletero = await rack();
+    await seleccionarBicicleteroGuardia(guardia.id, bicicletero.id);
+
+    await eliminarUsuarioAdmin(guardia.id, administrador.id);
+
+    await expect(seleccionarBicicleteroGuardia(relevo.id, bicicletero.id)).resolves.toBeDefined();
+    expect(
+      await prisma.asignacionGuardia.count({ where: { guardiaId: guardia.id, activa: true } })
+    ).toBe(0);
   });
   it('revierte también la cola de entregas si falla la transacción', async () => {
     const persona = await usuario();
