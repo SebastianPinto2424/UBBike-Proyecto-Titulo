@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:ubbike/core/servicios/almacen_seguro.dart';
 
-const _storageKeyBorrador = 'ubbike_borrador_bicicleta';
+const _claveBorrador = 'ubbike_borrador_bicicleta';
 
-const _storage = AlmacenSeguro();
+const _almacen = AlmacenSeguro();
 
 class BorradorBicicleta {
   const BorradorBicicleta({
@@ -49,14 +49,14 @@ class BorradorBicicleta {
 }
 
 Future<void> guardarBorradorBicicleta(BorradorBicicleta borrador) async {
-  await _storage.write(
-    key: _storageKeyBorrador,
-    value: jsonEncode(borrador.aJson()),
+  await _almacen.escribir(
+    clave: _claveBorrador,
+    valor: jsonEncode(borrador.aJson()),
   );
 }
 
 Future<BorradorBicicleta?> leerBorradorBicicleta() async {
-  final valor = await _storage.read(key: _storageKeyBorrador);
+  final valor = await _almacen.leer(clave: _claveBorrador);
   if (valor == null) {
     return null;
   }
@@ -71,5 +71,5 @@ Future<BorradorBicicleta?> leerBorradorBicicleta() async {
 }
 
 Future<void> borrarBorradorBicicleta() async {
-  await _storage.delete(key: _storageKeyBorrador);
+  await _almacen.borrar(clave: _claveBorrador);
 }

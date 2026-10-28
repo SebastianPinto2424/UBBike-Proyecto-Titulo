@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/bicicletas/data/bicicleta_repository.dart';
+import 'package:ubbike/features/bicicletas/data/bicicleta_repositorio.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 
@@ -14,10 +14,10 @@ class BicicletasVm {
   }
 
   Future<List<BicicletaApp>> listar() =>
-      _ref.read(bicicletaRepositoryProvider).listar();
+      _ref.read(bicicletaRepositorioProvider).listar();
 
   Future<BicicletaApp?> obtenerActiva() =>
-      _ref.read(bicicletaRepositoryProvider).obtenerActiva();
+      _ref.read(bicicletaRepositorioProvider).obtenerActiva();
 
   Future<void> crear({
     required String descripcion,
@@ -29,7 +29,7 @@ class BicicletasVm {
     String? fotoUrl,
     bool activar = false,
   }) async {
-    await _ref.read(bicicletaRepositoryProvider).crear(
+    await _ref.read(bicicletaRepositorioProvider).crear(
           descripcion: descripcion,
           marca: marca,
           modelo: modelo,
@@ -53,7 +53,7 @@ class BicicletasVm {
     String? fotoUrl,
     bool actualizarFoto = false,
   }) async {
-    await _ref.read(bicicletaRepositoryProvider).actualizar(
+    await _ref.read(bicicletaRepositorioProvider).actualizar(
           bicicletaId: bicicletaId,
           descripcion: descripcion,
           marca: marca,
@@ -68,17 +68,17 @@ class BicicletasVm {
   }
 
   Future<void> eliminar(String bicicletaId) async {
-    await _ref.read(bicicletaRepositoryProvider).eliminar(bicicletaId);
+    await _ref.read(bicicletaRepositorioProvider).eliminar(bicicletaId);
     _notificarCambio();
   }
 
   Future<void> activar(String bicicletaId) async {
-    await _ref.read(bicicletaRepositoryProvider).activar(bicicletaId);
+    await _ref.read(bicicletaRepositorioProvider).activar(bicicletaId);
     _notificarCambio();
   }
 
   Future<void> desactivar(String bicicletaId) async {
-    await _ref.read(bicicletaRepositoryProvider).desactivar(bicicletaId);
+    await _ref.read(bicicletaRepositorioProvider).desactivar(bicicletaId);
     _notificarCambio();
   }
 }

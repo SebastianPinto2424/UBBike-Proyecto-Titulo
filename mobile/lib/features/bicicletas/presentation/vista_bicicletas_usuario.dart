@@ -7,11 +7,11 @@ import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
-import 'package:ubbike/shared/utils/auto_refresco.dart';
+import 'package:ubbike/shared/utilidades/auto_refresco.dart';
 import 'package:ubbike/shared/widgets/dialogo_eliminar.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
-import 'package:ubbike/shared/widgets/vista_con_tabs.dart';
+import 'package:ubbike/shared/widgets/vista_con_pestanas.dart';
 import 'package:ubbike/features/bicicletas/presentation/bicicletas_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/features/bicicletas/presentation/formulario_bicicleta_usuario.dart';
@@ -65,11 +65,11 @@ class _VistaBicicletasState extends ConsumerState<VistaBicicletas>
       if (mounted) _recargar();
     });
 
-    return VistaConTabs(
+    return VistaConPestanas(
       initialIndex: widget.initialIndex,
-      tabs: [
-        tabCompacto(Icons.pedal_bike_outlined, 'Bicicletas'),
-        tabCompacto(Icons.manage_search_outlined, 'Movimientos'),
+      pestanas: [
+        pestanaCompacta(Icons.pedal_bike_outlined, 'Bicicletas'),
+        pestanaCompacta(Icons.manage_search_outlined, 'Movimientos'),
       ],
       vistas: [
         _vistaMisBicicletas(),
@@ -187,7 +187,7 @@ class _VistaBicicletasState extends ConsumerState<VistaBicicletas>
       isScrollControlled: true,
       useRootNavigator: true,
       useSafeArea: true,
-      builder: (_) => FormularioBicicletaSheet(
+      builder: (_) => HojaFormularioBicicleta(
         bicicleta: bicicleta,
       ),
     );
@@ -267,7 +267,7 @@ class _ContenidoBicicletas extends StatelessWidget {
           TarjetaAccion(
             icono: Icons.cloud_off_outlined,
             titulo: 'No se pudieron cargar bicicletas',
-            detalle: 'Revisa que el backend esté activo.',
+            detalle: 'Revisa tu conexión y toca para reintentar.',
             color: ColoresUbb.rojoInstitucional,
             onTap: onReintentar,
           ),

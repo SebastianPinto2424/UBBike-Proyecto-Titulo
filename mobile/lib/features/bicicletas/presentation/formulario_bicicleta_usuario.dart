@@ -6,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/servicios/captura_fotos.dart';
-import 'package:ubbike/shared/utils/limites_foto.dart';
-import 'package:ubbike/shared/utils/opciones_bicicleta.dart';
+import 'package:ubbike/shared/utilidades/limites_foto.dart';
+import 'package:ubbike/shared/utilidades/opciones_bicicleta.dart';
 import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/dialogo_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
@@ -15,9 +15,10 @@ import 'package:ubbike/shared/widgets/selector_foto.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 import 'package:ubbike/shared/widgets/campo_color_bicicleta.dart';
 import 'package:ubbike/features/bicicletas/application/bicicletas_vm.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
-class FormularioBicicletaSheet extends ConsumerStatefulWidget {
-  const FormularioBicicletaSheet({
+class HojaFormularioBicicleta extends ConsumerStatefulWidget {
+  const HojaFormularioBicicleta({
     super.key,
     required this.bicicleta,
   });
@@ -25,12 +26,12 @@ class FormularioBicicletaSheet extends ConsumerStatefulWidget {
   final BicicletaApp? bicicleta;
 
   @override
-  ConsumerState<FormularioBicicletaSheet> createState() =>
-      _FormularioBicicletaSheetState();
+  ConsumerState<HojaFormularioBicicleta> createState() =>
+      _HojaFormularioBicicletaState();
 }
 
-class _FormularioBicicletaSheetState
-    extends ConsumerState<FormularioBicicletaSheet> {
+class _HojaFormularioBicicletaState
+    extends ConsumerState<HojaFormularioBicicleta> {
   BicicletasVm get vm => ref.read(bicicletasVmProvider);
   final capturaFotos = CapturaFotos();
   final formKeyBicicleta = GlobalKey<FormState>();
@@ -301,6 +302,8 @@ class _FormularioBicicletaSheetState
               const SizedBox(height: 14),
               TextFormField(
                 controller: descripcionController,
+                spellCheckConfiguration: revisionOrtografica(),
+                textCapitalization: TextCapitalization.sentences,
                 focusNode: descripcionFocusNode,
                 decoration: decoracionCampoFormularioBicicleta(
                   labelText: 'Descripción',
