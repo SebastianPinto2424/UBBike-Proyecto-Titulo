@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_bicicleteros.dart';
 import 'package:ubbike/features/admin/presentation/vista_gestion_usuarios.dart';
 import 'package:ubbike/features/historial/presentation/vista_movimientos_central.dart';
-import 'package:ubbike/app/shell/vista_soporte.dart';
+import 'package:ubbike/app/principal/vista_soporte.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
 
@@ -70,9 +70,20 @@ class VistaMenuGestionAdmin extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         TarjetaAccion(
+          icono: Icons.shield_outlined,
+          titulo: 'Guardias',
+          detalle: 'Guardias en turno por bicicletero y sus operaciones.',
+          onTap: () => abrirSeccionGestion(
+            context,
+            titulo: 'Guardias',
+            pantalla: const VistaGuardias(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TarjetaAccion(
           icono: Icons.support_agent_outlined,
           titulo: 'Atención',
-          detalle: 'Guardias, solicitudes de apoyo e incidencias.',
+          detalle: 'Solicitudes de apoyo e incidencias.',
           onTap: () => abrirSeccionGestion(
             context,
             titulo: 'Atención',
