@@ -5,6 +5,7 @@ import { rutasSolicitudesGuardia } from './acceso/solicitudes/solicitud-guardia.
 import { rutasAutenticacion } from './autenticacion/autenticacion.rutas';
 import { rutasBicicletas } from './bicicletas/bicicleta.rutas';
 import { rutasBicicleteros } from './bicicleteros/bicicletero.rutas';
+import { rutasEnlaces } from './enlaces/enlace.rutas';
 import { rutasHistorial } from './historial/historial.rutas';
 import { rutasIncidencias } from './incidencias/incidencia.rutas';
 import { rutasNotificaciones } from './notificaciones/notificacion.rutas';
@@ -24,4 +25,5 @@ export const registrarRutasModulos = (aplicacion: Express): void => {
   aplicacion.use('/solicitudes-guardia', rutasSolicitudesGuardia);
   aplicacion.use('/incidencias', rutasIncidencias);
   aplicacion.use('/usuarios', rutasUsuarios);
+  aplicacion.use('/enlaces', rutasEnlaces);
 };
