@@ -6,8 +6,8 @@ import 'package:ubbike/shared/modelos/historial_modelos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class HistorialRepository {
-  const HistorialRepository(this._api);
+class HistorialRepositorio {
+  const HistorialRepositorio(this._api);
 
   final HistorialApi _api;
 
@@ -110,7 +110,7 @@ class HistorialRepository {
       );
 }
 
-final historialRepositoryProvider = Provider<HistorialRepository>((ref) {
+final historialRepositorioProvider = Provider<HistorialRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return HistorialRepository(HistorialApi(cliente: cliente));
+  return HistorialRepositorio(HistorialApi(cliente: cliente));
 });

@@ -3,12 +3,12 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/historial/data/historial_repository.dart';
-import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/features/historial/data/historial_repositorio.dart';
+import 'package:ubbike/shared/data/bicicleteros_repositorio.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/modelos/historial_modelos.dart';
 import 'package:ubbike/shared/modelos/movimiento_app.dart';
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class FiltrosMovimientosUsuario {
@@ -85,7 +85,7 @@ class MovimientosUsuarioVm
     final paginas = _pagina;
     final datos = <MovimientoApp>[];
     for (var numero = 1; numero <= paginas; numero++) {
-      final pagina = await ref.read(historialRepositoryProvider).listarPagina(
+      final pagina = await ref.read(historialRepositorioProvider).listarPagina(
           filtro: filtros.busqueda,
           periodo: filtros.periodo,
           tipo: filtros.tipo,
@@ -110,7 +110,7 @@ class MovimientosUsuarioVm
     cargandoMas = true;
     state = AsyncData([...?state.valueOrNull]);
     try {
-      final pagina = await ref.read(historialRepositoryProvider).listarPagina(
+      final pagina = await ref.read(historialRepositorioProvider).listarPagina(
           filtro: filtros.busqueda,
           periodo: filtros.periodo,
           tipo: filtros.tipo,
@@ -209,7 +209,7 @@ class MovimientosCentralVm {
     String? origen,
     int? limite,
   }) =>
-      _ref.read(historialRepositoryProvider).listar(
+      _ref.read(historialRepositorioProvider).listar(
             filtro: filtro,
             periodo: periodo,
             desde: desde,
@@ -235,7 +235,7 @@ class MovimientosCentralVm {
     int? limite,
     int pagina = 1,
   }) =>
-      _ref.read(historialRepositoryProvider).listarPagina(
+      _ref.read(historialRepositorioProvider).listarPagina(
             filtro: filtro,
             periodo: periodo,
             desde: desde,
@@ -250,10 +250,10 @@ class MovimientosCentralVm {
           );
 
   Future<OpcionesHistorialApp> opciones() =>
-      _ref.read(historialRepositoryProvider).opciones();
+      _ref.read(historialRepositorioProvider).opciones();
 
   Future<List<BicicleteroApp>> listarBicicleteros() =>
-      _ref.read(bicicleterosRepositoryProvider).listar();
+      _ref.read(bicicleterosRepositorioProvider).listar();
 
   Future<Uint8List> exportarExcel({
     String? filtro,
@@ -266,7 +266,7 @@ class MovimientosCentralVm {
     String? guardiaId,
     String? origen,
   }) =>
-      _ref.read(historialRepositoryProvider).exportarExcel(
+      _ref.read(historialRepositorioProvider).exportarExcel(
             filtro: filtro,
             periodo: periodo,
             desde: desde,
