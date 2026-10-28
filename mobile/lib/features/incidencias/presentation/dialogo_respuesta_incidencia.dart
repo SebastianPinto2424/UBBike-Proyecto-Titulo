@@ -4,6 +4,7 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/dialogo_accion.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 class DialogoRespuestaGestion extends StatefulWidget {
   const DialogoRespuestaGestion({
@@ -67,6 +68,8 @@ class _DialogoRespuestaGestionState extends State<DialogoRespuestaGestion> {
           children: [
             TextFormField(
               controller: controller,
+              spellCheckConfiguration: revisionOrtografica(),
+              textCapitalization: TextCapitalization.sentences,
               minLines: 3,
               maxLines: 5,
               maxLength: 1000,

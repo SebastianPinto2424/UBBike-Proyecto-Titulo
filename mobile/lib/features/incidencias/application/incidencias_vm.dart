@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ubbike/features/bicicletas/data/bicicleta_repository.dart';
-import 'package:ubbike/features/acceso/data/solicitud_guardia_repository.dart';
-import 'package:ubbike/features/incidencias/data/incidencia_repository.dart';
+import 'package:ubbike/features/bicicletas/data/bicicleta_repositorio.dart';
+import 'package:ubbike/features/acceso/data/solicitud_guardia_repositorio.dart';
+import 'package:ubbike/features/incidencias/data/incidencia_repositorio.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
-import 'package:ubbike/shared/utils/refresco_coalescido.dart';
-import 'package:ubbike/shared/data/bicicleteros_repository.dart';
+import 'package:ubbike/shared/utilidades/refresco_coalescido.dart';
+import 'package:ubbike/shared/data/bicicleteros_repositorio.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 
 class FiltrosIncidencias {
@@ -71,7 +71,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
   Future<List<IncidenciaApp>> _cargar(FiltrosIncidencias filtros,
       {int conservar = 0}) async {
     final revision = _revision;
-    var pagina = await ref.read(incidenciaRepositoryProvider).listarPagina(
+    var pagina = await ref.read(incidenciaRepositorioProvider).listarPagina(
           estado: filtros.estado,
           tipo: filtros.tipo,
           q: filtros.busqueda,
@@ -80,7 +80,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     while (datos.length < conservar &&
         pagina.cursor != null &&
         revision == _revision) {
-      pagina = await ref.read(incidenciaRepositoryProvider).listarPagina(
+      pagina = await ref.read(incidenciaRepositorioProvider).listarPagina(
           estado: filtros.estado,
           tipo: filtros.tipo,
           q: filtros.busqueda,
@@ -122,7 +122,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     cargandoMas = true;
     state = AsyncData([...?state.valueOrNull]);
     try {
-      final pagina = await ref.read(incidenciaRepositoryProvider).listarPagina(
+      final pagina = await ref.read(incidenciaRepositorioProvider).listarPagina(
             estado: filtros.estado,
             tipo: filtros.tipo,
             q: filtros.busqueda,
@@ -183,7 +183,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     String? bicicletaId,
     List<String> fotos = const <String>[],
   }) async {
-    await ref.read(incidenciaRepositoryProvider).crear(
+    await ref.read(incidenciaRepositorioProvider).crear(
           bicicleteroId: bicicleteroId,
           tipo: tipo,
           descripcion: descripcion,
@@ -198,7 +198,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     required String estado,
     String? respuesta,
   }) async {
-    await ref.read(incidenciaRepositoryProvider).actualizarEstado(
+    await ref.read(incidenciaRepositorioProvider).actualizarEstado(
           incidenciaId: incidenciaId,
           estado: estado,
           respuesta: respuesta,
@@ -208,7 +208,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
 
   Future<void> recordar({required String incidenciaId}) async {
     await ref
-        .read(incidenciaRepositoryProvider)
+        .read(incidenciaRepositorioProvider)
         .recordar(incidenciaId: incidenciaId);
     recargar();
   }
@@ -233,16 +233,16 @@ final datosFormularioIncidenciaProvider = FutureProvider.autoDispose.family<
     DatosFormularioIncidencia,
     ({bool gestionGuardia, bool permitirBicicletaPropia})>(
   (ref, args) async {
-    final solicitudGuardiaRepository =
-        ref.read(solicitudGuardiaRepositoryProvider);
+    final solicitudGuardiaRepositorio =
+        ref.read(solicitudGuardiaRepositorioProvider);
     final datosBicicletero = args.gestionGuardia
-        ? await solicitudGuardiaRepository.obtenerBicicleteroGestionado()
+        ? await solicitudGuardiaRepositorio.obtenerBicicleteroGestionado()
         : null;
     final bicicleteros = args.gestionGuardia
         ? [if (datosBicicletero != null) datosBicicletero]
-        : await ref.read(bicicleterosRepositoryProvider).listar();
+        : await ref.read(bicicleterosRepositorioProvider).listar();
     final bicicletas = args.permitirBicicletaPropia
-        ? await ref.read(bicicletaRepositoryProvider).listar()
+        ? await ref.read(bicicletaRepositorioProvider).listar()
         : <BicicletaApp>[];
 
     return DatosFormularioIncidencia(

@@ -9,10 +9,10 @@ import 'package:ubbike/features/incidencias/presentation/formulario_incidencia.d
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/servicios/captura_fotos.dart';
-import 'package:ubbike/shared/utils/limites_foto.dart';
+import 'package:ubbike/shared/utilidades/limites_foto.dart';
 
-class SheetRegistrarIncidencia extends StatefulWidget {
-  const SheetRegistrarIncidencia({
+class HojaRegistrarIncidencia extends StatefulWidget {
+  const HojaRegistrarIncidencia({
     super.key,
     required this.bicicleteros,
     required this.bicicletas,
@@ -35,11 +35,11 @@ class SheetRegistrarIncidencia extends StatefulWidget {
   }) onEnviar;
 
   @override
-  State<SheetRegistrarIncidencia> createState() =>
-      _SheetRegistrarIncidenciaState();
+  State<HojaRegistrarIncidencia> createState() =>
+      _HojaRegistrarIncidenciaState();
 }
 
-class _SheetRegistrarIncidenciaState extends State<SheetRegistrarIncidencia> {
+class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
   final formKeyIncidencia = GlobalKey<FormState>();
   final descripcionController = TextEditingController();
   final capturaFotos = CapturaFotos();

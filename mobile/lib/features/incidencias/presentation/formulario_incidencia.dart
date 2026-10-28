@@ -6,6 +6,7 @@ import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/selector_fotos_multiples.dart';
+import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
 
 const int maximoFotosIncidencia = 3;
 
@@ -188,6 +189,8 @@ class FormularioIncidencia extends StatelessWidget {
           const SizedBox(height: 12),
           TextFormField(
             controller: descripcionController,
+            spellCheckConfiguration: revisionOrtografica(),
+            textCapitalization: TextCapitalization.sentences,
             minLines: 3,
             maxLines: 5,
             decoration: const InputDecoration(

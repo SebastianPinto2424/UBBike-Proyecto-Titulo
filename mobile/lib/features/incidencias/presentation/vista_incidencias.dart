@@ -11,7 +11,7 @@ import 'package:ubbike/features/incidencias/data/borrador_incidencia.dart';
 import 'package:ubbike/features/incidencias/presentation/dialogo_respuesta_incidencia.dart';
 import 'package:ubbike/features/incidencias/presentation/etiquetas_incidencia.dart';
 import 'package:ubbike/features/incidencias/presentation/filtros_incidencias.dart';
-import 'package:ubbike/features/incidencias/presentation/sheet_registrar_incidencia.dart';
+import 'package:ubbike/features/incidencias/presentation/hoja_registrar_incidencia.dart';
 import 'package:ubbike/features/incidencias/presentation/tarjeta_incidencia.dart';
 import 'package:ubbike/shared/modelos/incidencia_modelos.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
@@ -115,7 +115,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
     } on ExcepcionApi catch (error) {
       return error.mensaje;
     } catch (_) {
-      return 'No se pudo conectar con el servidor.';
+      return mensajeSinConexion;
     }
   }
 
@@ -138,7 +138,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
       isScrollControlled: true,
       showDragHandle: true,
       useSafeArea: true,
-      builder: (_) => SheetRegistrarIncidencia(
+      builder: (_) => HojaRegistrarIncidencia(
         bicicleteros: datosFormulario.bicicleteros,
         bicicletas: datosFormulario.bicicletas,
         permitirBicicletaPropia: widget.permitirBicicletaPropia,
@@ -176,7 +176,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }
@@ -194,7 +194,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
       }
     } catch (_) {
       if (mounted) {
-        context.mostrarError('No se pudo conectar con el backend');
+        context.mostrarError(mensajeSinConexion);
       }
     }
   }

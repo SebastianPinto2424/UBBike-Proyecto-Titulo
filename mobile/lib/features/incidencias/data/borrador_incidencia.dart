@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:ubbike/core/servicios/almacen_seguro.dart';
 
-const _storageKeyBorrador = 'ubbike_borrador_incidencia';
+const _claveBorrador = 'ubbike_borrador_incidencia';
 
-const _storage = AlmacenSeguro();
+const _almacen = AlmacenSeguro();
 
 class BorradorIncidencia {
   const BorradorIncidencia({
@@ -44,16 +44,16 @@ class BorradorIncidencia {
 
 Future<void> guardarBorradorIncidencia(BorradorIncidencia borrador) async {
   try {
-    await _storage.write(
-      key: _storageKeyBorrador,
-      value: jsonEncode(borrador.aJson()),
+    await _almacen.escribir(
+      clave: _claveBorrador,
+      valor: jsonEncode(borrador.aJson()),
     );
   } catch (_) {}
 }
 
 Future<bool> existeBorradorIncidencia() async {
   try {
-    return await _storage.read(key: _storageKeyBorrador) != null;
+    return await _almacen.leer(clave: _claveBorrador) != null;
   } catch (_) {
     return false;
   }
@@ -61,11 +61,11 @@ Future<bool> existeBorradorIncidencia() async {
 
 Future<BorradorIncidencia?> tomarBorradorIncidencia() async {
   try {
-    final valor = await _storage.read(key: _storageKeyBorrador);
+    final valor = await _almacen.leer(clave: _claveBorrador);
     if (valor == null) {
       return null;
     }
-    await _storage.delete(key: _storageKeyBorrador);
+    await _almacen.borrar(clave: _claveBorrador);
     return BorradorIncidencia.desdeJson(
       jsonDecode(valor) as Map<String, dynamic>,
     );
@@ -76,6 +76,6 @@ Future<BorradorIncidencia?> tomarBorradorIncidencia() async {
 
 Future<void> borrarBorradorIncidencia() async {
   try {
-    await _storage.delete(key: _storageKeyBorrador);
+    await _almacen.borrar(clave: _claveBorrador);
   } catch (_) {}
 }

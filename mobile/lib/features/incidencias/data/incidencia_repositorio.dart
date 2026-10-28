@@ -4,8 +4,8 @@ import 'package:ubbike/shared/modelos/pagina_cursor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ubbike/core/providers/cliente_api_provider.dart';
 
-class IncidenciaRepository {
-  const IncidenciaRepository(this._api);
+class IncidenciaRepositorio {
+  const IncidenciaRepositorio(this._api);
 
   final IncidenciaApi _api;
 
@@ -58,7 +58,7 @@ class IncidenciaRepository {
       _api.recordar(incidenciaId: incidenciaId);
 }
 
-final incidenciaRepositoryProvider = Provider<IncidenciaRepository>((ref) {
+final incidenciaRepositorioProvider = Provider<IncidenciaRepositorio>((ref) {
   final cliente = ref.watch(clienteApiProvider);
-  return IncidenciaRepository(IncidenciaApi(cliente: cliente));
+  return IncidenciaRepositorio(IncidenciaApi(cliente: cliente));
 });
