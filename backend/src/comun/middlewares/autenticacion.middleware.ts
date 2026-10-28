@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { entorno } from '../../configuracion/entorno';
-import { prisma } from '../../configuracion/prisma';
+import { buscarPorId } from '../../modulos/autenticacion/autenticacion.repositorio';
 
 export type CargaToken = {
   usuarioId: string;
@@ -49,11 +49,7 @@ const crearMiddlewareAutenticacion = ({
         issuer: entorno.jwt.emisor
       }) as CargaToken;
 
-      const usuario = await prisma.usuario.findUnique({
-        where: {
-          id: carga.usuarioId
-        }
-      });
+      const usuario = await buscarPorId(carga.usuarioId);
 
       if (!usuario || !usuario.cuentaActiva || !usuario.correoVerificado) {
         return res.status(401).json({

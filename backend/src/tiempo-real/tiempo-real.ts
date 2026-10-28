@@ -2,7 +2,7 @@ import type { Server as ServidorHttp } from 'http';
 import jwt from 'jsonwebtoken';
 import { Server, type Socket } from 'socket.io';
 import { entorno } from '../configuracion/entorno';
-import { prisma } from '../configuracion/prisma';
+import { buscarPorId } from '../modulos/autenticacion/autenticacion.repositorio';
 
 type CargaToken = {
   usuarioId: string;
@@ -14,7 +14,7 @@ type CargaToken = {
 const INTERVALO_REVALIDACION_MS = 5 * 60 * 1000;
 
 const sesionSigueValida = async (usuarioId: string, versionSesion: number): Promise<boolean> => {
-  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  const usuario = await buscarPorId(usuarioId);
 
   return Boolean(
     usuario &&
