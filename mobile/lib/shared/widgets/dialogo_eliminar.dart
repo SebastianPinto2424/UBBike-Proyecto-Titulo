@@ -10,6 +10,7 @@ Future<bool> confirmarEliminacion(
   required String nombre,
   required String consecuencia,
   String etiquetaConfirmar = 'Eliminar',
+  IconData icono = Icons.delete_forever_outlined,
 }) async {
   final confirmado = await showDialog<bool>(
     context: context,
@@ -17,7 +18,7 @@ Future<bool> confirmarEliminacion(
       final tema = Theme.of(context);
 
       return DialogoAccion(
-        icono: Icons.delete_forever_outlined,
+        icono: icono,
         colorIcono: ColoresUbb.rojoInstitucional,
         titulo: titulo,
         contenido: Column(

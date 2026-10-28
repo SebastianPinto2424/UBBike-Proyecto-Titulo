@@ -30,7 +30,6 @@ class BotonesAccion extends StatelessWidget {
     super.key,
     required this.secundaria,
     required this.principal,
-    this.principalALaIzquierda = false,
   });
 
   BotonesAccion.confirmacion({
@@ -61,30 +60,24 @@ class BotonesAccion extends StatelessWidget {
           icono: iconoConfirmar,
           clave: claveConfirmar,
           cargando: cargando,
-        ),
-        principalALaIzquierda = false;
+        );
 
   final AccionBoton secundaria;
   final AccionBoton principal;
-  final bool principalALaIzquierda;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final botonSecundario = _BotonAccion(accion: secundaria);
-        final botonPrincipal = _BotonAccion(accion: principal);
+        final botonSecundario = BotonAccion(accion: secundaria);
+        final botonPrincipal = BotonAccion(accion: principal);
 
         if (_cabenEnFila(context, constraints.maxWidth)) {
-          final izquierda =
-              principalALaIzquierda ? botonPrincipal : botonSecundario;
-          final derecha =
-              principalALaIzquierda ? botonSecundario : botonPrincipal;
           return Row(
             children: [
-              Expanded(child: izquierda),
+              Expanded(child: botonSecundario),
               const SizedBox(width: _separacion),
-              Expanded(child: derecha),
+              Expanded(child: botonPrincipal),
             ],
           );
         }
@@ -134,8 +127,8 @@ class BotonesAccion extends StatelessWidget {
   }
 }
 
-class _BotonAccion extends StatelessWidget {
-  const _BotonAccion({required this.accion});
+class BotonAccion extends StatelessWidget {
+  const BotonAccion({super.key, required this.accion});
 
   final AccionBoton accion;
 
