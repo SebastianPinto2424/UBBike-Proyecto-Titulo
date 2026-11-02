@@ -27,12 +27,12 @@ services:
     container_name: ubbike_taller_redis
     restart: unless-stopped
     user: "999:1000"
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    command: ["redis-server", "--save", "", "--appendonly", "yes", "--appendfsync", "everysec"]
     read_only: true
     ports:
       - "127.0.0.1:${REDIS_PORT:-6380}:6379"
-    tmpfs:
-      - /data:uid=999,gid=1000,mode=700
+    volumes:
+      - redis_data:/data
     cap_drop:
       - ALL
     security_opt:
@@ -71,6 +71,7 @@ services:
       REDIS_URL: redis://redis:6379
       REQUIRE_REDIS_RATE_LIMIT: "true"
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       RATE_LIMIT_FACTOR: ${RATE_LIMIT_FACTOR:-1}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -78,6 +79,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-UBBike <no-reply@ubbike.local>}
+      CORREO_SOPORTE: ${CORREO_SOPORTE:-}
       FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
       FIREBASE_CREDENTIALS_BASE64: ${FIREBASE_CREDENTIALS_BASE64:-}
       ENLACES_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:3001}
@@ -116,9 +118,30 @@ services:
     networks:
       - backend_network
 
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
+    container_name: ubbike_taller_cloudflared
+    profiles: ["cloudflare"]
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - backend_network
+
 volumes:
   postgres_data:
     name: ubbike_taller_postgres_data
+  redis_data:
+    name: ubbike_taller_redis_data
   uploads_data:
     name: ubbike_taller_uploads_data
 
