@@ -334,7 +334,7 @@ class _VistaQrUsuarioState extends ConsumerState<VistaQrUsuario> {
                     ? Padding(
                         key: const ValueKey('banner-sugerencia'),
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: BannerSugerenciaBicicletero(
+                        child: AvisoBicicleteroCercano(
                           sugerencia: sugerenciaCercania!,
                           onAceptar: _aceptarSugerencia,
                           onDescartar: _descartarSugerencia,
