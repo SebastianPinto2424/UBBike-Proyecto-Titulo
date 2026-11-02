@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
-import 'package:ubbike/features/autenticacion/presentation/dialogo_confirmar_correo.dart';
 import 'package:ubbike/shared/utilidades/identidad.dart';
 import 'package:ubbike/shared/widgets/contenedor_responsivo.dart';
 import 'package:ubbike/shared/widgets/marca_ubbike.dart';
@@ -248,17 +247,20 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     }
 
     setState(() => cargando = true);
-    final correo = correoController.text.trim().toLowerCase();
-    var registrado = false;
 
     try {
-      await ref.read(autenticacionVmProvider).registrar(
+      final correo = correoController.text.trim();
+
+      final mensaje = await ref.read(autenticacionVmProvider).registrar(
             nombre: nombreController.text.trim(),
             rut: rutController.text.trim(),
             correo: correo,
             contrasena: contrasenaController.text,
           );
-      registrado = true;
+
+      if (mounted) {
+        _mostrarConfirmacion(context, mensaje);
+      }
     } on ExcepcionApi catch (error) {
       if (mounted) {
         context.mostrarError(error.mensaje);
@@ -272,25 +274,71 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
         setState(() => cargando = false);
       }
     }
-
-    if (registrado && mounted) {
-      await _mostrarConfirmacion(correo);
-    }
   }
 
-  Future<void> _mostrarConfirmacion(String correo) async {
-    await showDialog<void>(
+  void _mostrarConfirmacion(BuildContext context, String mensaje) {
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => DialogoConfirmarCorreo.registro(
-        correo: correo,
-        onReenviar: () =>
-            ref.read(autenticacionVmProvider).reenviarVerificacion(correo),
-      ),
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: ColoresUbb.fondo,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: ColoresUbb.exito.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.mark_email_read_outlined,
+                  color: ColoresUbb.exito,
+                  size: 38,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Correo enviado',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: ColoresUbb.textoPrincipal,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                mensaje,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: ColoresUbb.textoSecundario,
+                      height: 1.35,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: estiloBotonAutenticacion(),
+                  onPressed: () {
+                    Navigator.of(context)
+                      ..pop()
+                      ..pop();
+                  },
+                  child: const Text('Volver al ingreso'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
   }
 }
 
