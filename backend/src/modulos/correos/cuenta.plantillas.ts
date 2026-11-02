@@ -6,11 +6,12 @@ import {
   etiquetaRol,
   capitalizar,
   boton,
-  enlaceRespaldo,
   pieHtml,
   pieTexto,
+  propositoCuenta,
   saludoHtml,
-  saludoTexto
+  saludoTexto,
+  usaBicicleta
 } from './correo.formato';
 
 type DatosConfirmacionCorreo = {
@@ -20,6 +21,7 @@ type DatosConfirmacionCorreo = {
   venceEn: Date;
   asunto: string;
   motivo: string;
+  despues: string;
   aviso: string;
   vistaPrevia: string;
 };
@@ -33,7 +35,7 @@ const crearCorreoConfirmacion = (datos: DatosConfirmacionCorreo) => {
 ${datos.motivo}, confirma que ${datos.correo} es tu correo abriendo este enlace:
 ${datos.enlace}
 
-El enlace sirve una sola vez y vence el ${vence}. Después podrás iniciar sesión en la app.
+El enlace es de un solo uso y vence el ${vence}. ${datos.despues}
 ${datos.aviso}
 ${pieTexto()}`,
     html: envolverHtml(
@@ -42,8 +44,7 @@ ${pieTexto()}`,
     ${saludoHtml(datos.nombre)}
     <p>${escaparHtml(datos.motivo)}, confirma que <strong>${escaparHtml(datos.correo)}</strong> es tu correo.</p>
     ${boton(datos.enlace, 'Confirmar mi correo')}
-    <p>El enlace sirve <strong>una sola vez</strong> y vence el <strong>${escaparHtml(vence)}</strong>. Después podrás iniciar sesión en la app.</p>
-    ${enlaceRespaldo(datos.enlace)}
+    <p>El enlace es de <strong>un solo uso</strong> y vence el <strong>${escaparHtml(vence)}</strong>. ${escaparHtml(datos.despues)}</p>
     <p>${escaparHtml(datos.aviso)}</p>
     ${pieHtml()}
   `,
@@ -63,10 +64,12 @@ export const crearCorreoVerificacion = (
     correo,
     enlace,
     venceEn,
-    asunto: 'Confirma tu correo para activar UBBike',
+    asunto: 'Confirma tu correo para activar tu cuenta UBBike',
     motivo: 'Gracias por registrarte en UBBike. Para activar tu cuenta',
-    aviso: 'Si no creaste esta cuenta, ignora este correo: sin este paso no se activa.',
-    vistaPrevia: 'Un paso más para usar UBBike: confirma tu correo para activar tu cuenta.'
+    despues: 'Después podrás iniciar sesión en la app.',
+    aviso:
+      'Si no creaste esta cuenta, puedes ignorar este correo; sin esta confirmación la cuenta no se activa.',
+    vistaPrevia: 'Un último paso para activar tu cuenta UBBike: confirma tu correo.'
   });
 
 export const crearCorreoNuevoCorreo = (
@@ -82,6 +85,7 @@ export const crearCorreoNuevoCorreo = (
     venceEn,
     asunto: 'Confirma tu nuevo correo en UBBike',
     motivo: 'Administración actualizó el correo de tu cuenta UBBike. Para seguir usándola',
+    despues: 'Después podrás seguir ingresando a la app con este correo.',
     aviso: `Si no reconoces este cambio, escríbenos a ${CORREO_SOPORTE}.`,
     vistaPrevia: 'Confirma tu nuevo correo para seguir usando UBBike.'
   });
@@ -104,37 +108,51 @@ ${pieTexto()}`,
     <p>Actívala para ver tu historial y generar tus códigos QR.</p>
     ${boton(enlace, 'Activar mi cuenta')}
     <p>El enlace vence en <strong>24 horas</strong>. Si no reconoces este movimiento, contáctanos.</p>
-    ${enlaceRespaldo(enlace)}
     ${pieHtml()}
   `,
     'Un guardia registró tu bicicleta. Activa tu cuenta para ver tu historial.'
   )
 });
 
-export const crearCorreoCuentaVerificada = (nombre: string) => {
+export const crearCorreoCuentaVerificada = (nombre: string, rol?: string) => {
   const fecha = fechaLegible();
+  const conBicicleta = usaBicicleta(rol);
+  const correoConfirmado = conBicicleta ? 'tu correo institucional' : 'tu correo';
+  const proposito = propositoCuenta(rol);
+  const ingresar = 'Inicia sesión en la app con tu correo y tu contraseña.';
   return {
-    asunto: 'Tu cuenta UBBike ya está activa',
+    asunto: 'Tu cuenta UBBike está activa',
     texto: `${saludoTexto(nombre)}
 
-Confirmamos tu correo y activamos tu cuenta el ${fecha}. Así empiezas:
-1. Inicia sesión en la app con tu correo y tu contraseña.
-2. En Bicicletas, revisa o registra tu bicicleta.
-3. En QR, toca Generar QR y muéstraselo al guardia al dejar o retirar tu bicicleta.
+Confirmamos ${correoConfirmado} y tu cuenta quedó activa el ${fecha}. Desde ahora puedes usar UBBike para ${proposito}.
+
+${
+  conBicicleta
+    ? `Para comenzar:
+1. ${ingresar}
+2. En la sección Bicicletas, registra tu bicicleta o revisa sus datos.
+3. Al llegar al bicicletero, abre la sección QR, toca Generar QR y muéstraselo al guardia para registrar el ingreso o el retiro.`
+    : ingresar
+}
 ${pieTexto()}`,
     html: envolverHtml(
       `
-    <h2 style="color: #014898;">¡Tu cuenta está activa!</h2>
+    <h2 style="color: #014898;">Tu cuenta está activa</h2>
     ${saludoHtml(nombre)}
-    <p>Confirmamos tu correo y activamos tu cuenta el <strong>${escaparHtml(fecha)}</strong>. Así empiezas:</p>
+    <p>Confirmamos ${correoConfirmado} y tu cuenta quedó activa el <strong>${escaparHtml(fecha)}</strong>. Desde ahora puedes usar UBBike para ${proposito}.</p>
+    ${
+      conBicicleta
+        ? `<p>Para comenzar:</p>
     <ol style="padding-left:20px;">
-      <li>Inicia sesión en la app con tu correo y tu contraseña.</li>
-      <li>En <strong>Bicicletas</strong>, revisa o registra tu bicicleta.</li>
-      <li>En <strong>QR</strong>, toca <strong>Generar QR</strong> y muéstraselo al guardia al dejar o retirar tu bicicleta.</li>
-    </ol>
+      <li>${ingresar}</li>
+      <li>En la sección <strong>Bicicletas</strong>, registra tu bicicleta o revisa sus datos.</li>
+      <li>Al llegar al bicicletero, abre la sección <strong>QR</strong>, toca <strong>Generar QR</strong> y muéstraselo al guardia para registrar el ingreso o el retiro.</li>
+    </ol>`
+        : `<p>${ingresar}</p>`
+    }
     ${pieHtml()}
   `,
-      'Ya puedes iniciar sesión y registrar tu bicicleta.'
+      `Ya puedes ${proposito}.`
     )
   };
 };
@@ -151,21 +169,20 @@ export const crearCorreoCuentaAdministrativa = (
     asunto: `Activa tu cuenta de ${rolTexto} en UBBike`,
     texto: `${saludoTexto(nombre)}
 
-La administración de UBBike creó tu cuenta de ${rolTexto} el ${fecha}.
+La administración de UBBike creó tu cuenta de ${rolTexto} el ${fecha}. Con ella podrás ${propositoCuenta(rol)}.
 Para activarla, crea la contraseña con la que ingresarás a la app:
 ${enlace}
 
-El enlace es de un solo uso y vence en ${horasExpiracion} horas. Si vence, abre la app y en el inicio de sesión toca "¿Has olvidado tu contraseña?" para recibir uno nuevo.
+El enlace es de un solo uso y vence en ${horasExpiracion} horas. Si vence, abre la app y, en el inicio de sesión, toca "¿Has olvidado tu contraseña?" para recibir uno nuevo.
 ${pieTexto({ antiPhishing: true })}`,
     html: envolverHtml(
       `
     <h2 style="color: #014898;">Te damos la bienvenida a UBBike</h2>
     ${saludoHtml(nombre)}
-    <p>La administración de UBBike creó tu cuenta de <strong>${escaparHtml(rolTexto)}</strong> el ${escaparHtml(fecha)}.</p>
+    <p>La administración de UBBike creó tu cuenta de <strong>${escaparHtml(rolTexto)}</strong> el ${escaparHtml(fecha)}. Con ella podrás ${propositoCuenta(rol)}.</p>
     <p>Para activarla, crea la contraseña con la que ingresarás a la app.</p>
     ${boton(enlace, 'Crear mi contraseña')}
-    <p>El enlace es de <strong>un solo uso</strong> y vence en ${horasExpiracion} horas. Si vence, abre la app y en el inicio de sesión toca <strong>¿Has olvidado tu contraseña?</strong> para recibir uno nuevo.</p>
-    ${enlaceRespaldo(enlace)}
+    <p>El enlace es de <strong>un solo uso</strong> y vence en ${horasExpiracion} horas. Si vence, abre la app y, en el inicio de sesión, toca <strong>¿Has olvidado tu contraseña?</strong> para recibir uno nuevo.</p>
     ${pieHtml({ antiPhishing: true })}
   `,
       `Crea tu contraseña para activar tu cuenta de ${rolTexto}.`
@@ -261,7 +278,6 @@ ${pieTexto({ antiPhishing: true })}`,
     <p>Recibimos una solicitud para restablecer la contraseña de esta cuenta el <strong>${escaparHtml(fecha)}</strong>.</p>
     ${boton(enlace, 'Restablecer contraseña')}
     <p>El enlace es de <strong>un solo uso</strong> y vence en <strong>30 minutos</strong>. Reemplaza cualquier enlace de restablecimiento enviado antes, así que usa siempre el correo más reciente.</p>
-    ${enlaceRespaldo(enlace)}
     <p>Si no lo solicitaste, ignora este correo: <strong>tu contraseña no ha cambiado</strong>.</p>
     ${pieHtml({ antiPhishing: true })}
   `,
@@ -284,7 +300,7 @@ ${pieTexto({ antiPhishing: true })}`,
     ${saludoHtml(nombre)}
     <p>Tu contraseña UBBike se cambió correctamente el <strong>${escaparHtml(fecha)}</strong>.</p>
     <p><strong>¿No fuiste tú?</strong> Tu cuenta podría estar en riesgo. Restablece tu contraseña de inmediato y escríbenos a
-       <a href="mailto:${CORREO_SOPORTE}" style="color:#014898;">${CORREO_SOPORTE}</a>.</p>
+       <a href="mailto:${escaparHtml(CORREO_SOPORTE)}" style="color:#014898;">${escaparHtml(CORREO_SOPORTE)}</a>.</p>
     ${pieHtml({ antiPhishing: true })}
   `)
   };
@@ -302,12 +318,12 @@ Ya puedes iniciar sesión en la app UBBike con este correo y la contraseña que 
 Si no fuiste tú quien activó esta cuenta, escríbenos a ${CORREO_SOPORTE}.
 ${pieTexto({ antiPhishing: true })}`,
     html: envolverHtml(`
-    <h2 style="color: #014898;">¡Cuenta activada!</h2>
+    <h2 style="color: #014898;">Tu cuenta está activa</h2>
     ${saludoHtml(nombre)}
     <p>Creaste tu contraseña y tu cuenta de <strong>${escaparHtml(rolTexto)}</strong> quedó activa el <strong>${escaparHtml(fecha)}</strong>.</p>
     <p>Ya puedes iniciar sesión en la app UBBike con este correo y la contraseña que creaste.</p>
     <p>Si no fuiste tú quien activó esta cuenta, escríbenos a
-       <a href="mailto:${CORREO_SOPORTE}" style="color:#014898;">${CORREO_SOPORTE}</a>.</p>
+       <a href="mailto:${escaparHtml(CORREO_SOPORTE)}" style="color:#014898;">${escaparHtml(CORREO_SOPORTE)}</a>.</p>
     ${pieHtml({ antiPhishing: true })}
   `)
   };
