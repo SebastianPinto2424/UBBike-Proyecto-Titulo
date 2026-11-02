@@ -18,6 +18,8 @@ const iniciarServidor = async (): Promise<void> => {
     const servidor = aplicacion.listen(entorno.puerto, () => {
       console.log(`UBBike backend escuchando en puerto ${entorno.puerto}`);
     });
+    servidor.keepAliveTimeout = 95000;
+    servidor.headersTimeout = 96000;
 
     const tiempoReal = inicializarTiempoReal(servidor);
     const detenerEntregas = iniciarEntregas();
