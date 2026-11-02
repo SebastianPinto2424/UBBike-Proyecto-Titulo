@@ -1,7 +1,7 @@
 import {
   esquemaCambioContrasena,
   esquemaCompletarRegistro,
-  esquemaLogin,
+  esquemaInicioSesion,
   esquemaRefreshToken,
   esquemaRegistro,
   esquemaSolicitudCambioContrasena,
@@ -156,14 +156,16 @@ describe('esquemaRegistro · política de contraseña', () => {
   });
 });
 
-describe('esquemaLogin', () => {
+describe('esquemaInicioSesion', () => {
   it('acepta correo válido + contraseña (sin exigir complejidad)', () => {
-    expect(esValido(esquemaLogin, { correo: 'a@x.cl', contrasena: 'lo-que-sea' })).toBe(true);
+    expect(esValido(esquemaInicioSesion, { correo: 'a@x.cl', contrasena: 'lo-que-sea' })).toBe(
+      true
+    );
   });
 
   it('rechaza correo inválido o campos faltantes', () => {
-    expect(esValido(esquemaLogin, { correo: 'roto', contrasena: 'x' })).toBe(false);
-    expect(esValido(esquemaLogin, { correo: 'a@x.cl' })).toBe(false);
+    expect(esValido(esquemaInicioSesion, { correo: 'roto', contrasena: 'x' })).toBe(false);
+    expect(esValido(esquemaInicioSesion, { correo: 'a@x.cl' })).toBe(false);
   });
 });
 
@@ -372,9 +374,18 @@ describe('esquemaCrearUsuario admin', () => {
     expect(value.rol).toBe(RolUsuario.GUARDIA);
   });
 
-  it('rechaza rol invalido y contrasena debil', () => {
+  it('rechaza un rol inválido', () => {
     expect(esValido(esquemaCrearUsuario, { ...base, rol: 'SUPERADMIN' })).toBe(false);
-    expect(esValido(esquemaCrearUsuario, { ...base, contrasena: 'debil' })).toBe(false);
+  });
+
+  it('administración no puede definir la contraseña: el campo se descarta y se envía la invitación', () => {
+    const { error, value } = esquemaCrearUsuario.validate(
+      { ...base, contrasena: 'Bicicleta#2026ubb' },
+      { stripUnknown: true }
+    );
+
+    expect(error).toBeUndefined();
+    expect(value).not.toHaveProperty('contrasena');
   });
 });
 
@@ -570,9 +581,9 @@ describe('validaciones alineadas con los formularios de la app', () => {
 
   it('acota tokens y contraseñas de entrada', () => {
     expect(esValido(esquemaValidarQr, { token: 'x'.repeat(161) })).toBe(false);
-    expect(esValido(esquemaLogin, { correo: 'ana@ubiobio.cl', contrasena: 'x'.repeat(73) })).toBe(
-      false
-    );
+    expect(
+      esValido(esquemaInicioSesion, { correo: 'ana@ubiobio.cl', contrasena: 'x'.repeat(73) })
+    ).toBe(false);
   });
 
   it('los filtros del historial solo aceptan valores conocidos', () => {
