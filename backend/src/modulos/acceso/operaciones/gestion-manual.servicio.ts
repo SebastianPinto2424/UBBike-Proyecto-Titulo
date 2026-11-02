@@ -17,7 +17,11 @@ import {
 import { guardarFotoBicicleta } from '../../bicicletas/foto-bicicleta.servicio';
 import { mapearMovimiento } from './acceso.mapeador';
 import * as accesoRepositorio from './acceso.repositorio';
-import { validarBicicleteroDelRetiro, validarReglaMovimiento } from './acceso.reglas';
+import {
+  impedirAutovalidacion,
+  validarBicicleteroDelRetiro,
+  validarReglaMovimiento
+} from './acceso.reglas';
 import {
   obtenerBicicleteroOperacion,
   registrarMovimiento,
@@ -47,6 +51,7 @@ type DatosGestionManual = {
 };
 
 type DatosBuscarGestionManual = {
+  guardiaId: string;
   correo?: string;
   rut?: string;
 };
@@ -196,6 +201,8 @@ export const buscarCoincidenciaGestionManual = async (datos: DatosBuscarGestionM
     return null;
   }
 
+  impedirAutovalidacion(usuario.id, datos.guardiaId);
+
   return {
     usuario: {
       id: usuario.id,
@@ -223,6 +230,10 @@ export const registrarGestionManual = async (datos: DatosGestionManual) => {
     }
 
     let usuario = await accesoRepositorio.buscarUsuarioPorCriterios(criteriosUsuario, db);
+
+    if (usuario) {
+      impedirAutovalidacion(usuario.id, datos.guardiaId);
+    }
 
     if (!usuario) {
       if (!datos.correo || !datos.rut) {
