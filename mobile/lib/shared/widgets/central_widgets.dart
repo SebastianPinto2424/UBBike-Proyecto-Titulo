@@ -82,8 +82,8 @@ class IndicadorCentral extends StatelessWidget {
   }
 }
 
-class BannerTasaExito extends StatelessWidget {
-  const BannerTasaExito({
+class TarjetaTasaExito extends StatelessWidget {
+  const TarjetaTasaExito({
     super.key,
     required this.confirmados,
     required this.denegados,
