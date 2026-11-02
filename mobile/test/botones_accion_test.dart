@@ -4,6 +4,9 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/features/acceso/presentation/botones_decision_movimiento.dart';
 import 'package:ubbike/features/acceso/presentation/dialogo_nota_cierre.dart';
+import 'package:ubbike/features/qr/presentation/seleccion_bicicletero_qr.dart';
+import 'package:ubbike/shared/modelos/bicicletero_app.dart';
+import 'package:ubbike/shared/utilidades/cercania_bicicletero.dart';
 import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/dialogo_eliminar.dart';
 
@@ -247,5 +250,42 @@ void main() {
       find.widgetWithText(OutlinedButton, 'Escanear nuevamente'),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+      'la sugerencia de bicicletero cercano usa botones del mismo tamaño',
+      (tester) async {
+    final elecciones = <String>[];
+    await _montar(
+      tester,
+      360,
+      AvisoBicicleteroCercano(
+        sugerencia: const SugerenciaBicicletero(
+          bicicletero: BicicleteroApp(
+            id: 'face',
+            nombre: 'Bicicletero cercano a la FACE',
+            ubicacion: 'Sector FACE',
+            capacidad: 120,
+            ocupados: 0,
+            cuposDisponibles: 120,
+            porcentajeUso: 0,
+          ),
+          distanciaMetros: 40,
+        ),
+        onAceptar: () => elecciones.add('aceptar'),
+        onDescartar: () => elecciones.add('ahora no'),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.widgetWithText(ElevatedButton, 'Ahora no')),
+      tester.getSize(find.widgetWithText(ElevatedButton, 'Aceptar')),
+    );
+    expect(_fondo(tester, 'Ahora no'), ColoresUbb.rojoInstitucional);
+    expect(_fondo(tester, 'Aceptar'), ColoresUbb.azulApp);
+
+    await tester.tap(find.text('Ahora no'));
+    await tester.tap(find.text('Aceptar'));
+    expect(elecciones, ['ahora no', 'aceptar']);
   });
 }
