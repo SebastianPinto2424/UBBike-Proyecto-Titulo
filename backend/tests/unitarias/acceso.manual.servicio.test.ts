@@ -48,4 +48,25 @@ describe('registrarGestionManual', () => {
 
     expect(prismaSimulado.movimiento.create).not.toHaveBeenCalled();
   });
+
+  it('nadie registra a mano un movimiento de su propia bicicleta, ni siendo administrador', async () => {
+    prismaSimulado.usuario.findFirst.mockResolvedValue({
+      id: 'admin-uuid-1',
+      correo: 'admin@ubiobio.cl',
+      rut: '22.222.222-2',
+      registroParcial: false
+    } as never);
+
+    await expect(
+      registrarGestionManual({
+        guardiaId: 'admin-uuid-1',
+        rol: RolUsuario.ADMINISTRADOR,
+        rut: '22.222.222-2',
+        bicicletaId: 'bici-uuid-1',
+        tipo: TipoMovimiento.INGRESO
+      })
+    ).rejects.toMatchObject({ statusCode: 403 });
+
+    expect(prismaSimulado.movimiento.create).not.toHaveBeenCalled();
+  });
 });
