@@ -16,7 +16,7 @@ import {
 } from './autenticacion.tokens';
 import * as autenticacionRepositorio from './autenticacion.repositorio';
 
-type DatosLogin = {
+type DatosInicioSesion = {
   correo: string;
   contrasena: string;
 };
@@ -31,7 +31,7 @@ const cerrarOtrasSesiones = async (usuarioId: string) => {
   return actualizado.versionSesion;
 };
 
-export const iniciarSesion = async (datos: DatosLogin) => {
+export const iniciarSesion = async (datos: DatosInicioSesion) => {
   const usuario = await autenticacionRepositorio.buscarPorCorreo(datos.correo.toLowerCase());
 
   if (!usuario) {
