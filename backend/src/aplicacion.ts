@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { middlewareErrores } from './comun/middlewares/errores.middleware';
+import { restringirOrigen } from './comun/middlewares/origen.middleware';
+import { origenesNavegadorPermitidos } from './comun/utilidades/origenes';
 import { entorno } from './configuracion/entorno';
 import { prisma } from './configuracion/prisma';
 import { obtenerClienteRedis } from './configuracion/redis';
@@ -14,17 +16,8 @@ const aplicacion = express();
 
 aplicacion.set('trust proxy', entorno.servidor.trustProxy);
 aplicacion.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-aplicacion.use(
-  cors({
-    origin: (origen, callback) => {
-      if (!origen || entorno.cors.origenes.includes(origen)) {
-        return callback(null, true);
-      }
-
-      return callback(null, false);
-    }
-  })
-);
+aplicacion.use(restringirOrigen);
+aplicacion.use(cors({ origin: origenesNavegadorPermitidos() }));
 aplicacion.use(express.json({ limit: '8mb' }));
 aplicacion.use(
   entorno.archivos.rutaPublicaUploads,
