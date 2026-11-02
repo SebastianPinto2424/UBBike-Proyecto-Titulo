@@ -11,6 +11,7 @@ import {
   crearCorreoNuevoCorreo
 } from '../correos/cuenta.plantillas';
 import { enviarCorreo } from '../correos/correo.servicio';
+import { etiquetaRol } from '../correos/correo.formato';
 import { crearNotificacion } from '../notificaciones/notificacion.servicio';
 import { TipoNotificacion } from '../notificaciones/tipo-notificacion';
 import { mapearUsuarioPublico } from './usuario.mapeador';
@@ -235,7 +236,7 @@ export const actualizarPermisosUsuario = async (
   await crearNotificacion({
     usuarioId: usuarioGuardado.id,
     titulo: 'Cuenta actualizada',
-    mensaje: `Administración actualizó tu cuenta. Rol actual: ${usuarioGuardado.rol}.`,
+    mensaje: `Administración actualizó tu cuenta. Tu rol actual es ${etiquetaRol(usuarioGuardado.rol)}.`,
     tipo: TipoNotificacion.CUENTA,
     datos: {
       rol: usuarioGuardado.rol,
