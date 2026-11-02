@@ -1,18 +1,31 @@
 import { escaparHtml } from '../../comun/utilidades/html';
+import { entorno } from '../../configuracion/entorno';
 
-export const CORREO_SOPORTE = 'soporte@ubbike.cl';
+export const CORREO_SOPORTE = entorno.correo.soporte;
 
 const vistaPreviaHtml = (texto: string): string =>
   `<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${escaparHtml(texto)}</div>`;
 
 export const envolverHtml = (cuerpo: string, vistaPrevia?: string): string => `<!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; color: #172033; margin: 0; padding: 0;">
-${vistaPrevia ? vistaPreviaHtml(vistaPrevia) : ''}<div style="max-width:560px;margin:0 auto;padding:20px 16px;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+</head>
+<body style="margin:0;padding:0;background:#ffffff;">
+${vistaPrevia ? vistaPreviaHtml(vistaPrevia) : ''}<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+<tr>
+<td align="center" style="padding:20px 16px;">
+<!--[if mso]><table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->
+<div style="max-width:600px;margin:0 auto;text-align:left;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#172033;">
 <p style="margin:0 0 4px;font-size:22px;font-weight:900;color:#014898;">UBBike</p>
 ${cuerpo}
 </div>
+<!--[if mso]></td></tr></table><![endif]-->
+</td>
+</tr>
+</table>
 </body>
 </html>`;
 
@@ -24,9 +37,6 @@ export const saludoTexto = (nombre?: string): string => {
 };
 
 export const saludoHtml = (nombre?: string): string => `<p>${escaparHtml(saludoTexto(nombre))}</p>`;
-
-export const enlaceRespaldo = (enlace: string): string =>
-  `<p style="color:#6b7280;font-size:13px;margin:12px 0;">¿El botón no funciona? Copia y pega este enlace en el navegador:<br><a href="${escaparHtml(enlace)}" style="color:#014898;word-break:break-all;">${escaparHtml(enlace)}</a></p>`;
 
 export const fechaLegible = (fecha: Date = new Date()): string =>
   fecha.toLocaleString('es-CL', {
@@ -56,40 +66,48 @@ export const etiquetaRol = (rol?: string): string => {
 export const capitalizar = (valor: string): string =>
   valor.length === 0 ? valor : valor.charAt(0).toUpperCase() + valor.slice(1);
 
-export const boton = (enlace: string, texto: string): string =>
-  `<p style="margin:18px 0;"><a href="${escaparHtml(enlace)}" style="display:inline-block;background:#014898;color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:bold;">${escaparHtml(texto)}</a></p>`;
+export const usaBicicleta = (rol?: string): boolean =>
+  !rol || rol === 'ESTUDIANTE' || rol === 'FUNCIONARIO';
 
-const referenciaCorreo = (): string => {
-  const fecha = new Date().toLocaleString('es-CL', {
-    dateStyle: 'short',
-    timeStyle: 'medium',
-    hourCycle: 'h23',
-    timeZone: 'America/Santiago'
-  });
-  const codigo = Math.random().toString(36).slice(2, 8);
-  return `Correo enviado el ${fecha} · Ref ${codigo}`;
+export const propositoCuenta = (rol?: string): string => {
+  switch (rol) {
+    case 'GUARDIA':
+      return 'validar los códigos QR y registrar los ingresos y retiros de bicicletas';
+    case 'ADMIN_CENTRAL':
+      return 'supervisar los bicicleteros y atender las solicitudes y las incidencias';
+    case 'ADMINISTRADOR':
+      return 'administrar las cuentas, los bicicleteros y la operación de UBBike';
+    default:
+      return 'dejar y retirar tu bicicleta en los bicicleteros de la universidad';
+  }
 };
 
+export const boton = (enlace: string, texto: string): string =>
+  `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;"><tr><td bgcolor="#014898" style="border-radius:8px;"><a href="${escaparHtml(enlace)}" style="display:inline-block;padding:12px 24px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:8px;">${escaparHtml(texto)}</a></td></tr></table>`;
+
+const avisoSeguridad = 'Por seguridad, UBBike nunca te pedirá tu contraseña ni códigos por correo.';
+
+const motivoCorreo =
+  'Recibiste este correo porque esta dirección está asociada a una cuenta de UBBike.';
+
 export const pieHtml = (opciones: { antiPhishing?: boolean } = {}): string => `
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0;" />
+    <p style="margin:22px 0 0;">Saludos cordiales,<br /><strong>Equipo UBBike</strong></p>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:22px 0 14px;" />
     ${
       opciones.antiPhishing
-        ? `<p style="color:#6b7280;font-size:13px;margin:4px 0;">Por seguridad, UBBike nunca te pedirá tu contraseña ni códigos por correo.</p>`
+        ? `<p style="color:#6b7280;font-size:13px;margin:4px 0;">${avisoSeguridad}</p>`
         : ''
     }
-    <p style="color:#6b7280;font-size:13px;margin:4px 0;">¿Necesitas ayuda o no reconoces esta actividad? Escríbenos a <a href="mailto:${CORREO_SOPORTE}" style="color:#014898;">${CORREO_SOPORTE}</a>.</p>
-    <p style="color:#172033;font-weight:bold;margin-top:10px;">Equipo UBBike</p>
-    <p style="color:#9ca3af;font-size:11px;margin-top:8px;">${referenciaCorreo()}</p>`;
+    <p style="color:#6b7280;font-size:13px;margin:4px 0;">¿Necesitas ayuda o no reconoces esta actividad? Escríbenos a <a href="mailto:${escaparHtml(CORREO_SOPORTE)}" style="color:#014898;">${escaparHtml(CORREO_SOPORTE)}</a>.</p>
+    <p style="color:#6b7280;font-size:13px;margin:4px 0;">${motivoCorreo}</p>`;
 
 export const pieTexto = (opciones: { antiPhishing?: boolean } = {}): string =>
   [
     '',
-    opciones.antiPhishing
-      ? 'Por seguridad, UBBike nunca te pedirá tu contraseña ni códigos por correo.'
-      : '',
-    `¿Necesitas ayuda o no reconoces esta actividad? Escríbenos a ${CORREO_SOPORTE}.`,
+    'Saludos cordiales,',
     'Equipo UBBike',
-    referenciaCorreo()
-  ]
-    .filter((linea, indice) => linea !== '' || indice === 0)
-    .join('\n');
+    '',
+    ...(opciones.antiPhishing ? [avisoSeguridad] : []),
+    `¿Necesitas ayuda o no reconoces esta actividad? Escríbenos a ${CORREO_SOPORTE}.`,
+    motivoCorreo
+  ].join('\n');
