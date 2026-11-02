@@ -1,9 +1,26 @@
 import '../apoyo/configurar-entorno';
 import {
+  impedirAutovalidacion,
   validarBicicleteroDelRetiro,
   validarReglaMovimiento
 } from '../../src/modulos/acceso/operaciones/acceso.reglas';
 import { TipoMovimiento } from '../../src/modulos/historial/tipo-movimiento';
+
+describe('impedirAutovalidacion', () => {
+  it('nadie registra ni valida movimientos de su propia bicicleta', () => {
+    expect(() => impedirAutovalidacion('admin-1', 'admin-1')).toThrow(
+      expect.objectContaining({
+        statusCode: 403,
+        message:
+          'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.'
+      })
+    );
+  });
+
+  it('otra persona sí puede validar la bicicleta', () => {
+    expect(() => impedirAutovalidacion('estudiante-1', 'guardia-1')).not.toThrow();
+  });
+});
 
 describe('validarReglaMovimiento', () => {
   it('lanza 409 si intenta INGRESO y bicicleta ya esta dentro', () => {
