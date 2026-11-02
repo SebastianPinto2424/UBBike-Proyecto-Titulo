@@ -84,7 +84,7 @@ export const esquemaRegistro = Joi.object({
 
 const esquemaTokenEnlace = Joi.string().trim().max(255);
 
-export const esquemaLogin = Joi.object({
+export const esquemaInicioSesion = Joi.object({
   correo: Joi.string().trim().lowercase().email().max(160).required(),
   contrasena: Joi.string().max(reglasContrasena.maximo).required()
 });
