@@ -184,7 +184,7 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
   void _mostrarCorreoPendiente(String correo) {
     showDialog<void>(
       context: context,
-      builder: (_) => DialogoConfirmarCorreo.pendiente(
+      builder: (_) => DialogoConfirmarCorreo(
         correo: correo,
         onReenviar: () =>
             ref.read(autenticacionVmProvider).reenviarVerificacion(correo),
