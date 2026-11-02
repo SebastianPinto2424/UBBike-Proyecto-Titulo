@@ -194,9 +194,9 @@ class TarjetaSolicitudGuardia extends StatelessWidget {
             ],
             if (!cerrada && onActualizar != null) ...[
               const SizedBox(height: 14),
-              Wrap(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 10,
-                runSpacing: 10,
                 children: [
                   if (permitirNotificarUsuario && onNotificarGuardia != null)
                     _BotonRecordarSolicitud(
