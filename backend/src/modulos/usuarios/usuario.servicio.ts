@@ -25,7 +25,6 @@ type DatosCrearUsuario = {
   correo: string;
   rut?: string | null;
   rol: RolUsuario;
-  contrasena?: string | null;
 };
 
 type FiltrosListarUsuarios = {
@@ -157,7 +156,7 @@ export const crearUsuarioAdmin = async (datos: DatosCrearUsuario, actorUsuarioId
   await crearNotificacion({
     usuarioId: usuarioGuardado.id,
     titulo: 'Cuenta creada',
-    mensaje: 'Administracion creo tu cuenta UBBike. Revisa tu correo para definir la contrasena.',
+    mensaje: 'Administración creó tu cuenta UBBike. Revisa tu correo para crear tu contraseña.',
     tipo: TipoNotificacion.CUENTA,
     datos: {
       rol: usuarioGuardado.rol,
