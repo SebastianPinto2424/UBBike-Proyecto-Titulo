@@ -113,6 +113,22 @@ void main() {
     expect(find.text('Solicitud Guardia en camino'), findsOneWidget);
   });
 
+  testWidgets('las acciones del guardia tienen el mismo tamaño',
+      (tester) async {
+    await _montar(tester, _solicitud());
+
+    final enCamino = tester.getSize(find.ancestor(
+      of: find.text('Voy en camino'),
+      matching: find.byType(OutlinedButton),
+    ));
+    final resuelta = tester.getSize(find.ancestor(
+      of: find.text('Marcar resuelta'),
+      matching: find.byType(ElevatedButton),
+    ));
+
+    expect(enCamino, resuelta);
+  });
+
   testWidgets('en camino ya no se puede volver a confirmar', (tester) async {
     final acciones = await _montar(
       tester,
