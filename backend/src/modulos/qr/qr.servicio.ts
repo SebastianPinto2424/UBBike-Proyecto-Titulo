@@ -11,6 +11,7 @@ import type {
 } from '../../generated/prisma/client';
 import { EventosTiempoReal, emitirTiempoReal, salaUsuario } from '../../tiempo-real/tiempo-real';
 import { TipoMovimiento } from '../historial/tipo-movimiento';
+import { impedirAutovalidacion } from '../acceso/operaciones/acceso.reglas';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import { EstadoQr } from './estado-qr';
 import * as qrRepositorio from './qr.repositorio';
@@ -172,6 +173,9 @@ const validarBicicleteroGuardia = async (
 
 export const validarQrTemporal = async (token: string, contexto?: ContextoValidacionQr) => {
   const codigo = await obtenerCodigoQrValido(token);
+  if (contexto) {
+    impedirAutovalidacion(codigo.usuario.id, contexto.validadorUsuarioId);
+  }
   await validarBicicleteroGuardia(codigo, contexto);
 
   if (contexto) {
@@ -310,6 +314,7 @@ export const obtenerCodigoQrEscaneadoParaMovimiento = async (
     throw new ErrorHttp(409, 'Otro guardia ya está revisando este QR');
   }
 
+  impedirAutovalidacion(codigo.usuario.id, contexto.validadorUsuarioId);
   await validarBicicleteroGuardia(codigo, contexto);
 
   return codigo;
