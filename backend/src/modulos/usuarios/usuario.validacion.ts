@@ -2,7 +2,7 @@ import Joi from 'joi';
 import { RolUsuario } from './rol-usuario';
 import { validarRutChileno } from '../../comun/utilidades/rut';
 import { esquemaTextoBusqueda } from '../../comun/utilidades/esquemas-comunes';
-import { esquemaContrasena, esquemaNombre } from '../autenticacion/autenticacion.validacion';
+import { esquemaNombre } from '../autenticacion/autenticacion.validacion';
 
 const esquemaNombreUsuario = esquemaNombre.messages({
   'string.empty': 'El nombre es obligatorio',
@@ -32,8 +32,7 @@ export const esquemaCrearUsuario = Joi.object({
   nombre: esquemaNombreUsuario.required(),
   correo: esquemaCorreoUsuario.required(),
   rut: esquemaRutUsuario.required(),
-  rol: esquemaRol.required(),
-  contrasena: esquemaContrasena.optional()
+  rol: esquemaRol.required()
 });
 
 export const esquemaActualizarPermisosUsuario = Joi.object({
