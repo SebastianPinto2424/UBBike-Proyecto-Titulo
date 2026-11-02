@@ -112,9 +112,9 @@ class TarjetaIncidencia extends StatelessWidget {
             ],
             if ((puedeGestionar || mostrarRecordar) && !cerrada) ...[
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 10,
                 children: [
                   if (puedeGestionar) ...[
                     OutlinedButton.icon(
