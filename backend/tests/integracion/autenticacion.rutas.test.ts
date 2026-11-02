@@ -110,3 +110,24 @@ describe('GET /health', () => {
     expect(res.body.status).toBe('ok');
   });
 });
+
+describe('origen de las peticiones', () => {
+  it('rechaza con 403 a un sitio web ajeno, tambien en la API', async () => {
+    const salud = await request(aplicacion).get('/health').set('Origin', 'https://sitio-ajeno.com');
+    const login = await request(aplicacion)
+      .post('/autenticacion/login')
+      .set('Origin', 'https://sitio-ajeno.com')
+      .send({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'cualquier' });
+
+    expect(salud.status).toBe(403);
+    expect(login.status).toBe(403);
+    expect(salud.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('al propio dominio del backend le responde con cabeceras CORS', async () => {
+    const res = await request(aplicacion).get('/health').set('Origin', 'http://localhost:3000');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+  });
+});
