@@ -22,7 +22,7 @@ import {
   esquemaCambioContrasena,
   esquemaCambioContrasenaSesion,
   esquemaCompletarRegistro,
-  esquemaLogin,
+  esquemaInicioSesion,
   esquemaRefreshToken,
   esquemaReenviarVerificacion,
   esquemaRegistro,
@@ -55,7 +55,7 @@ rutasAutenticacion.post(
         .trim()
         .toLowerCase()}`
   }),
-  validarCuerpo(esquemaLogin),
+  validarCuerpo(esquemaInicioSesion),
   iniciarSesion
 );
 
