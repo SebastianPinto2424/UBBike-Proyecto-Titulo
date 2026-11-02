@@ -58,6 +58,7 @@ import {
   crearCorreoVerificacion
 } from '../../src/modulos/correos/cuenta.plantillas';
 import { enviarCorreo } from '../../src/modulos/correos/correo.servicio';
+import { crearNotificacion } from '../../src/modulos/notificaciones/notificacion.servicio';
 import { liberarBicicleteroGuardia } from '../../src/modulos/acceso/asignaciones/asignacion-guardia.servicio';
 
 const usuarioBase = {
@@ -120,6 +121,11 @@ describe('crearUsuarioAdmin', () => {
       expect.objectContaining({
         para: usuarioBase.correo,
         asunto: 'Cuenta UBBike'
+      })
+    );
+    expect(crearNotificacion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mensaje: 'Administración creó tu cuenta UBBike. Revisa tu correo para crear tu contraseña.'
       })
     );
   });
@@ -298,7 +304,7 @@ describe('reenviarVerificacionCorreoAdmin', () => {
     );
   });
 
-  it('bloquea si el correo ya esta verificado', async () => {
+  it('bloquea si el correo ya está verificado', async () => {
     prismaSimulado.usuario.findUnique.mockResolvedValue(usuarioBase as any);
 
     await expect(reenviarVerificacionCorreoAdmin(usuarioBase.id, 'admin-1')).rejects.toMatchObject({
@@ -528,6 +534,11 @@ describe('actualizarPermisosUsuario', () => {
       expect.objectContaining({
         para: 'guardia@ubiobio.cl',
         asunto: 'Rol actualizado'
+      })
+    );
+    expect(crearNotificacion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mensaje: 'Administración actualizó tu cuenta. Tu rol actual es administrador central.'
       })
     );
   });
