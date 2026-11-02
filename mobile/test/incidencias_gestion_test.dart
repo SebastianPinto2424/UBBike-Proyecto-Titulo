@@ -122,6 +122,25 @@ void main() {
       expect(estados, ['EN_REVISION', 'RESUELTA', 'DESCARTADA']);
     });
 
+    testWidgets('las acciones de gestión tienen el mismo tamaño',
+        (tester) async {
+      await _montarTarjeta(
+        tester,
+        _incidencia(),
+        puedeGestionar: true,
+        onActualizarEstado: (_) {},
+      );
+
+      final tamanos = ['En revisión', 'Resolver', 'Descartar']
+          .map((texto) => tester.getSize(find.ancestor(
+                of: find.text(texto),
+                matching: find.byType(OutlinedButton),
+              )))
+          .toSet();
+
+      expect(tamanos, hasLength(1));
+    });
+
     testWidgets('en revisión no se puede volver a marcar en revisión',
         (tester) async {
       final estados = <String>[];
