@@ -1,6 +1,7 @@
 import type { Server as ServidorHttp } from 'http';
 import jwt from 'jsonwebtoken';
 import { Server, type Socket } from 'socket.io';
+import { origenesNavegadorPermitidos, origenPermitido } from '../comun/utilidades/origenes';
 import { entorno } from '../configuracion/entorno';
 import { buscarPorId } from '../modulos/autenticacion/autenticacion.repositorio';
 
@@ -43,9 +44,11 @@ let io: Server | null = null;
 export const inicializarTiempoReal = (servidor: ServidorHttp): Server => {
   io = new Server(servidor, {
     cors: {
-      origin: entorno.cors.origenes,
+      origin: origenesNavegadorPermitidos(),
       credentials: false
-    }
+    },
+    allowRequest: (solicitud, callback) =>
+      callback(null, origenPermitido(solicitud.headers.origin, solicitud.headers.host))
   });
 
   io.use(async (socket, next) => {
