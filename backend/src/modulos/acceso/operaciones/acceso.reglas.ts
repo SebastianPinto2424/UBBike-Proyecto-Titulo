@@ -6,6 +6,15 @@ type BicicletaConEstado = {
   bicicleteroActualId?: string | null;
 };
 
+export const impedirAutovalidacion = (propietarioId: string, validadorId: string) => {
+  if (propietarioId === validadorId) {
+    throw new ErrorHttp(
+      403,
+      'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.'
+    );
+  }
+};
+
 export const validarReglaMovimiento = (bicicleta: BicicletaConEstado, tipo: TipoMovimiento) => {
   if (tipo === TipoMovimiento.INGRESO && bicicleta.dentroBicicletero) {
     throw new ErrorHttp(409, 'La bicicleta ya registra ingreso activo');
