@@ -81,6 +81,7 @@ export const entregarCorreo = async (datos: CorreoEncolado, entregaId: string): 
   await transporte.sendMail({
     messageId: `<${entregaId}@ubbike.local>`,
     from: entorno.correo.remitente,
+    replyTo: entorno.correo.soporte,
     to: datos.para,
     subject: datos.asunto,
     text: datos.texto,
