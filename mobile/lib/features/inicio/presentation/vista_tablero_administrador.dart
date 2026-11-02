@@ -124,7 +124,7 @@ class VistaTableroAdministrador extends ConsumerWidget {
                         const SizedBox(height: 12),
                         MetricasTableroOperativo(datos: central),
                         const SizedBox(height: 10),
-                        BannerTasaExito(
+                        TarjetaTasaExito(
                           confirmados: central.resumen.confirmados,
                           denegados: central.resumen.denegados,
                           total: central.resumen.totalMovimientos,
