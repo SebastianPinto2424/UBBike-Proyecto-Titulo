@@ -11,7 +11,9 @@ const repo = accesoRepositorio as jest.Mocked<typeof accesoRepositorio>;
 
 describe('buscarCoincidenciaGestionManual', () => {
   it('exige correo o RUT', async () => {
-    await expect(buscarCoincidenciaGestionManual({ correo: ' ', rut: '' })).rejects.toMatchObject({
+    await expect(
+      buscarCoincidenciaGestionManual({ guardiaId: 'guardia-1', correo: ' ', rut: '' })
+    ).rejects.toMatchObject({
       statusCode: 400
     });
     expect(repo.buscarUsuarioGestionManual).not.toHaveBeenCalled();
@@ -21,7 +23,11 @@ describe('buscarCoincidenciaGestionManual', () => {
     repo.buscarUsuarioGestionManual.mockResolvedValue(null);
 
     await expect(
-      buscarCoincidenciaGestionManual({ correo: ' Ana@Alumnos.UBiobio.cl ', rut: '11111111-1' })
+      buscarCoincidenciaGestionManual({
+        guardiaId: 'guardia-1',
+        correo: ' Ana@Alumnos.UBiobio.cl ',
+        rut: '11111111-1'
+      })
     ).resolves.toBeNull();
 
     const criterios = repo.buscarUsuarioGestionManual.mock.calls[0][0] as Record<string, string>[];
@@ -58,7 +64,10 @@ describe('buscarCoincidenciaGestionManual', () => {
       ]
     } as never);
 
-    const resultado = await buscarCoincidenciaGestionManual({ correo: 'ana@alumnos.ubiobio.cl' });
+    const resultado = await buscarCoincidenciaGestionManual({
+      guardiaId: 'guardia-1',
+      correo: 'ana@alumnos.ubiobio.cl'
+    });
 
     expect(resultado?.usuario).not.toHaveProperty('contrasenaHash');
     expect(resultado?.usuario.nombre).toBe('Ana Rojas');
@@ -67,5 +76,18 @@ describe('buscarCoincidenciaGestionManual', () => {
       dentroBicicletero: true,
       bicicleteroActual: { id: 'r1', nombre: 'Biblioteca Central' }
     });
+  });
+
+  it('quien opera no puede buscarse a sí mismo para registrar su propia bicicleta', async () => {
+    repo.buscarUsuarioGestionManual.mockResolvedValue({
+      id: 'admin-1',
+      nombre: 'Administración UBBike',
+      correo: 'admin@ubiobio.cl',
+      bicicletas: []
+    } as never);
+
+    await expect(
+      buscarCoincidenciaGestionManual({ guardiaId: 'admin-1', correo: 'admin@ubiobio.cl' })
+    ).rejects.toMatchObject({ statusCode: 403 });
   });
 });
