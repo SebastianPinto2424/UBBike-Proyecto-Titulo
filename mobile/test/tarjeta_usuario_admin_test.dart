@@ -90,6 +90,8 @@ void main() {
     expect(find.text('11.111.111-1'), findsOneWidget);
     expect(find.text('Acceso habilitado'), findsOneWidget);
     expect(find.text('Reenviar verificación'), findsNothing);
+    expect(find.text('Rol'), findsOneWidget);
+    expect(find.text('Rol principal'), findsNothing);
 
     await tester.ensureVisible(find.text('Editar datos'));
     await tester.tap(find.text('Editar datos'));
