@@ -53,3 +53,7 @@ backend/uploads/
 
 .DS_Store
 Thumbs.db
+
+*.apk
+*.aab
+apks/
