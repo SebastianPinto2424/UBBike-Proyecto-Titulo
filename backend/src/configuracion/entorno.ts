@@ -110,6 +110,11 @@ if (correoAdministradorInicial && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoAdmin
   throw new Error('ADMIN_INICIAL_CORREO debe ser un correo valido');
 }
 
+const comoCorreo = (valor: string | undefined): string | undefined => {
+  const correo = valor?.trim();
+  return correo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ? correo : undefined;
+};
+
 const construirUrlBaseDatos = () => {
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
@@ -152,14 +157,7 @@ export const entorno = {
     habilitado: convertirBooleano(process.env.SWAGGER_ENABLED, ambiente !== 'production')
   },
   cors: {
-    origenes: separarLista(process.env.CORS_ORIGINS, [
-      'http://localhost:8080',
-      'http://localhost:8081',
-      'http://localhost:8083',
-      'http://127.0.0.1:8080',
-      'http://127.0.0.1:8081',
-      'http://127.0.0.1:8083'
-    ])
+    origenes: separarLista(process.env.CORS_ORIGINS, [])
   },
   servidor: {
     trustProxy: convertirTrustProxy(process.env.TRUST_PROXY)
@@ -174,7 +172,11 @@ export const entorno = {
     seguro: convertirBooleano(process.env.SMTP_SECURE, false),
     usuario: process.env.SMTP_USER,
     contrasena: process.env.SMTP_PASSWORD,
-    remitente: process.env.MAIL_FROM ?? 'UBBike <no-reply@ubbike.local>'
+    remitente: process.env.MAIL_FROM ?? 'UBBike <no-reply@ubbike.local>',
+    soporte:
+      comoCorreo(process.env.CORREO_SOPORTE) ??
+      comoCorreo(process.env.SMTP_USER) ??
+      'soporte@ubbike.cl'
   },
   app: {
     urlEnlaces: process.env.ENLACES_BASE_URL ?? 'http://localhost:3000'
