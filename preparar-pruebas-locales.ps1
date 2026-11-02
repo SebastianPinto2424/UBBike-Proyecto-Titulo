@@ -75,7 +75,7 @@ function Probar-Admin {
 function Asegurar-ReglaFirewall {
     param([int]$Puerto)
 
-    $nombre = "UBBike demo backend TCP $Puerto"
+    $nombre = "UBBike backend pruebas locales TCP $Puerto"
     if (-not (Probar-Admin)) {
         Write-Host "Aviso: PowerShell no esta como administrador; no pude crear regla de firewall para TCP $Puerto." -ForegroundColor Yellow
         Write-Host "Si el celular no abre la URL de salud, ejecuta este script una vez como administrador o habilita ese puerto en Firewall de Windows." -ForegroundColor Yellow
@@ -136,7 +136,7 @@ if ($BackendPort -le 0) {
 $apiBaseUrl = "http://${ip}:${BackendPort}"
 
 Write-Host "IP LAN detectada: $ip" -ForegroundColor Cyan
-Write-Host "Backend demo: $apiBaseUrl" -ForegroundColor Cyan
+Write-Host "Backend en pruebas locales: $apiBaseUrl" -ForegroundColor Cyan
 
 $contenido = Set-Env -Contenido $contenido -Clave 'BACKEND_PORT' -Valor $BackendPort
 $contenido = Set-Env -Contenido $contenido -Clave 'BACKEND_BIND_ADDRESS' -Valor '0.0.0.0'
