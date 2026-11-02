@@ -64,3 +64,25 @@ it('deduplica salas al emitir', () => {
   emitirTiempoReal(['u', 'u'], 'incidencia');
   expect(mockIo.to).toHaveBeenCalledWith(['u']);
 });
+
+it('el tiempo real rechaza conexiones de navegadores de otros sitios', () => {
+  const { Server: ServidorSocket } = jest.requireMock('socket.io') as { Server: jest.Mock };
+  inicializarTiempoReal({} as Server);
+  const opciones = ServidorSocket.mock.calls.at(-1)![1] as {
+    allowRequest: (
+      solicitud: { headers: Record<string, string | undefined> },
+      callback: (error: string | null, permitido: boolean) => void
+    ) => void;
+  };
+  const respuesta = (origen?: string) => {
+    let permitido = false;
+    opciones.allowRequest({ headers: { origin: origen, host: 'ubbike.ejemplo.cl' } }, (_e, ok) => {
+      permitido = ok;
+    });
+    return permitido;
+  };
+
+  expect(respuesta(undefined)).toBe(true);
+  expect(respuesta('https://ubbike.ejemplo.cl')).toBe(true);
+  expect(respuesta('https://sitio-ajeno.com')).toBe(false);
+});
