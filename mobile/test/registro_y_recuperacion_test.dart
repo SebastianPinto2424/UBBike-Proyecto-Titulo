@@ -95,41 +95,14 @@ void main() {
       expect(cuerpo['rut'], '11.111.111-1');
       expect(cuerpo['correo'], 'ana.rojas@alumnos.ubiobio.cl');
       expect(cuerpo['contrasena'], _clave);
-      expect(find.text('Revisa tu correo'), findsOneWidget);
-      expect(_enDialogo('ana.rojas@alumnos.ubiobio.cl'), findsOneWidget);
-      expect(_enDialogo('Ábrelo antes de 24 horas'), findsOneWidget);
-      expect(find.textContaining('Revisa la carpeta de spam'), findsOneWidget);
-      expect(find.textContaining('Reenviar correo ('), findsOneWidget);
+      expect(find.text('Correo enviado'), findsOneWidget);
+      expect(find.text('Te enviamos un correo para verificar tu cuenta.'),
+          findsOneWidget);
 
-      await tocarTexto(tester, 'Volver al inicio de sesión');
+      await tocarTexto(tester, 'Volver al ingreso');
 
       expect(find.byType(PantallaRegistro), findsNothing);
       expect(find.byType(PantallaInicioSesion), findsOneWidget);
-    });
-
-    testWidgets('tras la espera puede reenviar el correo de confirmación',
-        (tester) async {
-      final api = await _montarInicioSesion(tester, {
-        'POST /autenticacion/registro': {'message': 'ok'},
-        'POST /autenticacion/reenviar-verificacion': {'message': 'ok'},
-      });
-      await tocar(tester, _enlace('Registrarse'));
-      await _llenarRegistro(tester, correo: 'Ana.Rojas@alumnos.ubiobio.cl');
-      await tocarTexto(tester, 'Registrar');
-
-      final reenviar = find.byKey(const Key('reenviar-correo'));
-      expect(tester.widget<TextButton>(reenviar).onPressed, isNull);
-
-      await tester.pump(const Duration(seconds: 61));
-      expect(find.text('Reenviar correo'), findsOneWidget);
-      await tocar(tester, reenviar);
-
-      expect(api.cuerpoDe('POST /autenticacion/reenviar-verificacion'),
-          {'correo': 'ana.rojas@alumnos.ubiobio.cl'});
-      expect(find.text('Te enviamos un enlace nuevo.'), findsOneWidget);
-      expect(tester.widget<TextButton>(reenviar).onPressed, isNull);
-
-      await tocarTexto(tester, 'Volver al inicio de sesión');
     });
 
     testWidgets('si el correo ya existe muestra el motivo', (tester) async {
@@ -145,7 +118,7 @@ void main() {
       await tocarTexto(tester, 'Registrar');
 
       expect(find.text('El correo ya está registrado'), findsOneWidget);
-      expect(find.text('Revisa tu correo'), findsNothing);
+      expect(find.text('Correo enviado'), findsNothing);
     });
   });
 
