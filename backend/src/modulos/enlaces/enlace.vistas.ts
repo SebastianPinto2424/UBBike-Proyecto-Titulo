@@ -1,4 +1,5 @@
 import { escaparHtml } from '../../comun/utilidades/html';
+import { entorno } from '../../configuracion/entorno';
 import { scriptFormulario } from './enlace.recursos';
 import type { AccionEnlace, ResultadoEnlace } from './enlace.servicio';
 import { reglaConfirmacion, reglasFormulario, type ReglaCampo } from './enlace.validacion';
@@ -43,7 +44,7 @@ const estilos = `
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;min-height:100vh;background:#F3F7FB;color:#0B2F4A;font-family:Roboto,"Segoe UI",system-ui,-apple-system,sans-serif;-webkit-text-size-adjust:100%}
-main{max-width:460px;margin:0 auto;padding:32px 20px 24px}
+main{max-width:460px;margin:0 auto;padding:32px 20px 24px;overflow-wrap:anywhere}
 .marca{text-align:center;margin-bottom:22px}
 .marca img{display:block;height:68px;width:auto;margin:0 auto}
 .tarjeta{background:#FFFFFF;border:1px solid #D7E4EF;border-radius:8px;box-shadow:0 1px 3px rgba(11,47,74,.08);padding:28px 22px}
@@ -88,6 +89,8 @@ strong{color:#0B2F4A}
 footer{margin-top:20px;text-align:center;font-size:12px;color:#35506A}
 `;
 
+const correoPartible = (correo: string) => escaparHtml(correo).replace('@', '@<wbr>');
+
 const icono = (nombre: Icono) =>
   `<div class="icono ${tonoIcono[nombre]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${trazosIcono[nombre]}"/></svg></div>`;
 
@@ -111,7 +114,7 @@ const pagina = (
 <section class="tarjeta">
 ${contenido}
 </section>
-<footer>¿Necesitas ayuda? Escríbenos a soporte@ubbike.cl</footer>
+<footer>¿Necesitas ayuda? Escríbenos a ${correoPartible(entorno.correo.soporte)}</footer>
 </main>
 </body>
 </html>`;
@@ -220,7 +223,7 @@ export const paginaFormulario = (
       'Confirma tu correo',
       `${icono('correo')}
 <h1>Confirma tu correo</h1>
-<p>Toca el botón para confirmar que <strong>${escaparHtml(enlace.correo)}</strong> es tu correo y activar tu cuenta UBBike.</p>
+<p>Toca el botón para confirmar que <strong>${correoPartible(enlace.correo)}</strong> es tu correo y activar tu cuenta UBBike.</p>
 ${formulario(accion, token, '', 'Confirmar mi correo')}`,
       true
     );
@@ -247,7 +250,7 @@ ${formulario(accion, token, campos, 'Activar mi cuenta')}`,
   const presentacion = enlace.activacion
     ? 'Te damos la bienvenida a UBBike. Crea la contraseña con la que vas a ingresar a la app.'
     : 'Crea una nueva contraseña para tu cuenta UBBike.';
-  const boton = enlace.activacion ? 'Crear contraseña y activar' : 'Guardar nueva contraseña';
+  const boton = enlace.activacion ? 'Activar mi cuenta' : 'Guardar nueva contraseña';
   const campos = [
     usuarioOculto(enlace.correo),
     camposContrasena(enlace.activacion ? 'Contraseña' : 'Nueva contraseña', errores)
@@ -268,7 +271,7 @@ const resultados: Record<
   { titulo: string; mensaje: string; icono?: Icono; abrirApp?: false }
 > = {
   'correo-verificado': {
-    titulo: '¡Correo confirmado!',
+    titulo: 'Correo confirmado',
     mensaje:
       'Tu cuenta UBBike ya está activa. Abre la app e inicia sesión con tu correo y tu contraseña.'
   },
@@ -307,7 +310,7 @@ export const paginaResultado = (resultado: ResultadoEnlace): string => {
     conBoton === false
       ? ''
       : `
-<a class="boton" href="${abrirApp}">Abrir UBBike</a>
+<a class="boton" href="${abrirApp}">Ingresar a UBBike</a>
 <p class="nota">¿Estás en el computador? Abre la app UBBike en tu celular.</p>`;
   return pagina(
     titulo,
