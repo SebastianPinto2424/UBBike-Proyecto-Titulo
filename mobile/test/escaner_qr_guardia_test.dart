@@ -132,6 +132,20 @@ void main() {
     expect(find.text('Autorizar ingreso'), findsNothing);
   });
 
+  testWidgets('un QR de la propia bicicleta muestra el aviso del servidor',
+      (tester) async {
+    const aviso =
+        'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.';
+    await _montar(tester, rutas: {
+      'POST /qr/validar': const RespuestaFalsa(403, {'message': aviso}),
+    });
+
+    await _leerQr(tester, 'qr-propio');
+
+    expect(find.text(aviso), findsOneWidget);
+    expect(find.text('Autorizar ingreso'), findsNothing);
+  });
+
   testWidgets('confirmar el ingreso registra el movimiento', (tester) async {
     final api = await _montar(tester, rutas: {
       'POST /accesos/qr/confirmar': _movimiento('INGRESO', 'CONFIRMADO'),
