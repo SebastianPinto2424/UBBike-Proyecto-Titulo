@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/utilidades/cercania_bicicletero.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 
-class BannerSugerenciaBicicletero extends StatelessWidget {
-  const BannerSugerenciaBicicletero({
+class AvisoBicicleteroCercano extends StatelessWidget {
+  const AvisoBicicleteroCercano({
     super.key,
     required this.sugerencia,
     required this.onAceptar,
@@ -58,31 +59,11 @@ class BannerSugerenciaBicicletero extends StatelessWidget {
                       ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: ColoresUbb.rojoInstitucional,
-                      ),
-                      onPressed: onDescartar,
-                      child: const Text('Ahora no'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColoresUbb.azulApp,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        minimumSize: Size.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: onAceptar,
-                      child: const Text('Aceptar'),
-                    ),
-                  ],
+                BotonesAccion.confirmacion(
+                  textoCancelar: 'Ahora no',
+                  textoConfirmar: 'Aceptar',
+                  onCancelar: onDescartar,
+                  onConfirmar: onAceptar,
                 ),
               ],
             ),
