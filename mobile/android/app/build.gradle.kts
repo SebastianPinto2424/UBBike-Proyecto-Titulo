@@ -1,8 +1,18 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
+}
+
+val archivoFirma = rootProject.file("key.properties")
+val propiedadesFirma = Properties().apply {
+    if (archivoFirma.exists()) {
+        FileInputStream(archivoFirma).use { load(it) }
+    }
 }
 
 android {
@@ -28,9 +38,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (archivoFirma.exists()) {
+            create("release") {
+                keyAlias = propiedadesFirma.getProperty("keyAlias")
+                keyPassword = propiedadesFirma.getProperty("keyPassword")
+                storeFile = file(propiedadesFirma.getProperty("storeFile"))
+                storePassword = propiedadesFirma.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (archivoFirma.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
