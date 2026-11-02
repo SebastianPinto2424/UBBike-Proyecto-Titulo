@@ -322,7 +322,7 @@ class _PanelGestionUsuario extends StatelessWidget {
                 ),
               ],
               const Divider(height: 28),
-              const _EtiquetaSeccion('Rol principal'),
+              const _EtiquetaSeccion('Rol'),
               const SizedBox(height: 8),
               DropdownAdmin<RolUsuario>(
                 key: ValueKey('rol-${usuario.id}-${usuario.rol.name}'),
