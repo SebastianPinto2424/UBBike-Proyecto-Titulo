@@ -77,7 +77,7 @@ describe('páginas de los enlaces', () => {
     const res = await request(aplicacion).get(`/enlaces/cambiar-contrasena?token=${token}`);
 
     expect(res.text).toContain('Crea tu contraseña');
-    expect(res.text).toContain('Crear contraseña y activar');
+    expect(res.text).toContain('Activar mi cuenta');
     expect(res.text).toContain(
       '<input type="email" autocomplete="username" value="pedro.soto@ubiobio.cl" hidden>'
     );
@@ -91,7 +91,7 @@ describe('páginas de los enlaces', () => {
     const res = await request(aplicacion).get(`/enlaces/verificar-correo?token=${token}`);
 
     expect(res.text).not.toContain('a"<b>');
-    expect(res.text).toContain('a&quot;&lt;b&gt;@ubiobio.cl');
+    expect(res.text).toContain('a&quot;&lt;b&gt;@<wbr>ubiobio.cl');
   });
 
   it('un enlace vencido muestra el motivo sin formulario', async () => {
@@ -121,6 +121,17 @@ describe('páginas de los enlaces', () => {
     expect(res.status).toBe(400);
     expect(res.text).toContain('<form method="post" action="/enlaces/reenviar-verificacion"');
     expect(res.text).toContain(`<input type="hidden" name="token" value="${token}">`);
+  });
+
+  it('el boton funciona aunque el navegador envie Origin null por su politica de privacidad', async () => {
+    const res = await request(aplicacion)
+      .post('/enlaces/verificar-correo')
+      .set('Origin', 'null')
+      .type('form')
+      .send({ token });
+
+    expect(res.status).toBe(303);
+    expect(res.headers.location).toBe('/enlaces/resultado/correo-verificado');
   });
 
   it('al pedir otro enlace lo envía y lleva a revisar el correo', async () => {
@@ -264,7 +275,7 @@ describe('resultados', () => {
     expect(res.status).toBe(200);
     expect(res.text).toContain(titulo);
     expect(res.text).toContain('href="ubbike://abrir"');
-    expect(res.text).toContain('Abrir UBBike');
+    expect(res.text).toContain('Ingresar a UBBike');
     expect(res.text).not.toContain('<script');
   });
 
