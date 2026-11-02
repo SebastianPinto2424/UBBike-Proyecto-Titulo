@@ -38,13 +38,13 @@ export const reenviarVerificacionCorreoAdmin = async (
     throw new ErrorHttp(404, 'Usuario no encontrado');
   }
   if (usuario.eliminadoEn) {
-    throw new ErrorHttp(409, 'No puedes reenviar verificacion a una cuenta eliminada');
+    throw new ErrorHttp(409, 'No puedes reenviar la verificación a una cuenta eliminada');
   }
   if (usuario.correoVerificado) {
-    throw new ErrorHttp(409, 'El correo ya esta verificado');
+    throw new ErrorHttp(409, 'El correo ya está verificado');
   }
   if (usuario.debeCambiarContrasena) {
-    throw new ErrorHttp(409, 'Reenvia el correo de acceso para esta cuenta');
+    throw new ErrorHttp(409, 'Esta cuenta aún no crea su contraseña; reenvía el correo de acceso');
   }
 
   const tokenVerificacion = crearTokenSeguro();
@@ -82,7 +82,7 @@ export const reenviarVerificacionCorreoAdmin = async (
     }
   });
 
-  return { message: 'Correo de verificacion reenviado' };
+  return { message: 'Correo de verificación reenviado' };
 };
 
 export const reenviarCorreoAccesoAdmin = async (usuarioId: string, actorUsuarioId?: string) => {
@@ -98,7 +98,7 @@ export const reenviarCorreoAccesoAdmin = async (usuarioId: string, actorUsuarioI
     throw new ErrorHttp(409, 'Reactiva el acceso antes de reenviar el correo');
   }
   if (!usuario.debeCambiarContrasena) {
-    throw new ErrorHttp(409, 'La cuenta ya tiene su contrasena configurada');
+    throw new ErrorHttp(409, 'La cuenta ya tiene su contraseña configurada');
   }
 
   const { tokenCambioContrasenaHash, tokenCambioContrasenaExpiraEn, enlaceDefinirContrasena } =
