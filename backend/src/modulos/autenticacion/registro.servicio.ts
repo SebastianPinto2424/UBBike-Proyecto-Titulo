@@ -4,6 +4,7 @@ import { crearEnlaceCorreo } from '../enlaces/enlace.servicio';
 import { registrarAuditoria } from '../auditoria/auditoria.servicio';
 import { crearCorreoCuentaVerificada, crearCorreoVerificacion } from '../correos/cuenta.plantillas';
 import { enviarCorreo } from '../correos/correo.servicio';
+import { etiquetaRol } from '../correos/correo.formato';
 import {
   crearNotificacion,
   notificarUsuariosPorRol
@@ -112,7 +113,7 @@ export const registrarUsuario = async (datos: DatosRegistro) => {
   await notificarUsuariosPorRol({
     roles: [RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR],
     titulo: 'Nuevo registro pendiente',
-    mensaje: `${usuarioGuardado.nombre} solicitó una cuenta ${usuarioGuardado.rol}. Revisa la solicitud para gestionar el acceso.`,
+    mensaje: `${usuarioGuardado.nombre} solicitó una cuenta de ${etiquetaRol(usuarioGuardado.rol)}. Revisa la solicitud para gestionar el acceso.`,
     tipo: TipoNotificacion.CUENTA,
     datos: { usuarioId: usuarioGuardado.id, rol: usuarioGuardado.rol }
   });
@@ -244,7 +245,10 @@ export const verificarCorreo = async (token: string) => {
     tipo: TipoNotificacion.CUENTA
   });
 
-  const correoCuentaVerificada = crearCorreoCuentaVerificada(usuarioGuardado.nombre);
+  const correoCuentaVerificada = crearCorreoCuentaVerificada(
+    usuarioGuardado.nombre,
+    usuarioGuardado.rol
+  );
   await enviarCorreo({
     para: usuarioGuardado.correo,
     asunto: correoCuentaVerificada.asunto,
@@ -294,7 +298,10 @@ export const completarRegistro = async (datos: DatosCompletarRegistro) => {
     tipo: TipoNotificacion.CUENTA
   });
 
-  const correoCuentaVerificada = crearCorreoCuentaVerificada(usuarioGuardado.nombre);
+  const correoCuentaVerificada = crearCorreoCuentaVerificada(
+    usuarioGuardado.nombre,
+    usuarioGuardado.rol
+  );
   await enviarCorreo({
     para: usuarioGuardado.correo,
     asunto: correoCuentaVerificada.asunto,
