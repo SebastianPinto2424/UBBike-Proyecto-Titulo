@@ -60,15 +60,13 @@ describe('plantillas de correo', () => {
       'cuenta creada por administración',
       () => crearCorreoCuentaAdministrativa(nombreMalicioso, enlace, 24, 'GUARDIA')
     ]
-  ])('el correo de %s lleva el enlace en texto, en botón y de respaldo', (_caso, crear) => {
+  ])('el correo de %s lleva el enlace solo en el botón y en el texto plano', (_caso, crear) => {
     const correo = crear();
 
     esCorreoCompleto(correo);
     expect(correo.texto).toContain(enlace);
-    expect(correo.html.split(enlace.replace(/&/g, '&amp;')).length - 1).toBe(3);
-    expect(correo.html).toContain(
-      '¿El botón no funciona? Copia y pega este enlace en el navegador'
-    );
+    expect(correo.html.split(enlace.replace(/&/g, '&amp;')).length - 1).toBe(1);
+    expect(correo.html).not.toContain('¿El botón no funciona?');
     expect(correo.html).toContain('display:none');
   });
 
@@ -102,13 +100,57 @@ describe('plantillas de correo', () => {
   it('la confirmación del registro muestra el correo, cuándo vence y qué sigue', () => {
     const correo = crearCorreoVerificacion('Ana Rojas', correoAna, enlace, fecha);
 
-    expect(correo.asunto).toBe('Confirma tu correo para activar UBBike');
+    expect(correo.asunto).toBe('Confirma tu correo para activar tu cuenta UBBike');
     expect(correo.html).toContain(`<strong>${correoAna}</strong>`);
     expect(correo.html).toContain('20 de octubre de 2026');
-    expect(correo.texto).toContain('Gracias por registrarte en UBBike');
-    expect(correo.texto).toContain('Después podrás iniciar sesión en la app');
-    expect(correo.texto).toContain('Si no creaste esta cuenta, ignora este correo');
-    expect(correo.html).toContain('Un paso más para usar UBBike');
+    expect(correo.texto).toContain(
+      'Gracias por registrarte en UBBike. Para activar tu cuenta, confirma que'
+    );
+    expect(correo.texto).toContain('El enlace es de un solo uso y vence el');
+    expect(correo.texto).toContain('Después podrás iniciar sesión en la app.');
+    expect(correo.texto).toContain(
+      'Si no creaste esta cuenta, puedes ignorar este correo; sin esta confirmación la cuenta no se activa.'
+    );
+    expect(correo.html).toContain(
+      'Un último paso para activar tu cuenta UBBike: confirma tu correo.'
+    );
+  });
+
+  it('todos los correos cierran con una despedida antes del pie', () => {
+    const correo = crearCorreoCuentaVerificada('Ana');
+
+    expect(correo.texto).toContain('Saludos cordiales,\nEquipo UBBike');
+    expect(correo.html.indexOf('Saludos cordiales,')).toBeLessThan(correo.html.indexOf('<hr'));
+  });
+
+  it('el diseño es una columna centrada de 600 px que también respeta Outlook', () => {
+    const { html } = crearCorreoVerificacion('Ana', correoAna, enlace, fecha);
+
+    expect(html).toContain('role="presentation"');
+    expect(html).toContain('max-width:600px');
+    expect(html).toContain('<!--[if mso]><table role="presentation" width="600"');
+    expect(html).toContain('text-align:left');
+    expect(html).toContain('bgcolor="#014898"');
+  });
+
+  it('todos los correos siguen el pie estandar: soporte real, motivo y sin codigo de referencia', () => {
+    const correos = [
+      crearCorreoVerificacion('Ana', correoAna, enlace, fecha),
+      crearCorreoCuentaAdministrativa('Ana', enlace, 24, 'GUARDIA'),
+      crearCorreoCambioContrasena('Ana', enlace),
+      crearCorreoCuentaVerificada('Ana')
+    ];
+
+    for (const correo of correos) {
+      expect(correo.texto).toContain(
+        '¿Necesitas ayuda o no reconoces esta actividad? Escríbenos a'
+      );
+      expect(correo.texto).toContain(
+        'Recibiste este correo porque esta dirección está asociada a una cuenta de UBBike.'
+      );
+      expect(correo.texto).not.toMatch(/Ref [a-z0-9]{6}/);
+      expect(correo.html).toContain('href="mailto:');
+    }
   });
 
   it('el cambio de correo no agradece un registro', () => {
@@ -119,13 +161,41 @@ describe('plantillas de correo', () => {
     expect(correo.texto).toContain('Si no reconoces este cambio');
   });
 
-  it('la bienvenida explica los primeros pasos en la app', () => {
-    const correo = crearCorreoCuentaVerificada('Ana Rojas');
+  it('la bienvenida explica para qué sirve UBBike y los primeros pasos', () => {
+    const correo = crearCorreoCuentaVerificada('Ana Rojas', 'ESTUDIANTE');
 
+    expect(correo.asunto).toBe('Tu cuenta UBBike está activa');
+    expect(correo.html).toContain('>Tu cuenta está activa</h2>');
+    expect(correo.texto).toContain('Confirmamos tu correo institucional');
+    expect(correo.texto).toContain(
+      'Desde ahora puedes usar UBBike para dejar y retirar tu bicicleta en los bicicleteros de la universidad.'
+    );
     expect(correo.html).toContain('<ol');
     expect(correo.html).toContain('<strong>Bicicletas</strong>');
     expect(correo.html).toContain('<strong>Generar QR</strong>');
-    expect(correo.texto).toContain('3. En QR, toca Generar QR');
+    expect(correo.texto).toContain(
+      '3. Al llegar al bicicletero, abre la sección QR, toca Generar QR y muéstraselo al guardia'
+    );
+    expect(`${correo.asunto}${correo.html}`).not.toContain('¡');
+  });
+
+  it('la bienvenida de un guardia no le pide registrar una bicicleta', () => {
+    const correo = crearCorreoCuentaVerificada('Pedro Soto', 'GUARDIA');
+
+    expect(correo.texto).toContain('validar los códigos QR');
+    expect(correo.texto).toContain('Inicia sesión en la app con tu correo y tu contraseña.');
+    expect(correo.texto).not.toContain('Bicicletas');
+    expect(correo.texto).not.toContain('institucional');
+    expect(correo.html).not.toContain('<ol');
+  });
+
+  it('la cuenta creada por administración explica para qué sirve según el rol', () => {
+    expect(crearCorreoCuentaAdministrativa('Pedro', enlace, 24, 'GUARDIA').texto).toContain(
+      'Con ella podrás validar los códigos QR y registrar los ingresos y retiros de bicicletas.'
+    );
+    expect(crearCorreoCuentaAdministrativa('Ana', enlace, 24, 'ADMIN_CENTRAL').texto).toContain(
+      'Con ella podrás supervisar los bicicleteros'
+    );
   });
 
   it('la cuenta activada de un guardia no exige correo institucional', () => {
@@ -265,6 +335,7 @@ describe('envío de correos', () => {
       expect.objectContaining({
         messageId: '<e1@ubbike.local>',
         from: entorno.correo.remitente,
+        replyTo: entorno.correo.soporte,
         to: 'ana@alumnos.ubiobio.cl',
         subject: 'Asunto',
         headers: { 'X-Entity-Ref-ID': 'r1' }
