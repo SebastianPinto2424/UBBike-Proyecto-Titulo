@@ -31,7 +31,7 @@ class PanelQrUsuario extends StatelessWidget {
 
   Widget _contenido(QrTemporalApp? qrActual) {
     if (qrActual == null) {
-      return _QrPlaceholder(mostrarAyudaBicicletero: mostrarAyudaBicicletero);
+      return _QrSinGenerar(mostrarAyudaBicicletero: mostrarAyudaBicicletero);
     }
 
     final estadoActual = estado;
@@ -92,15 +92,15 @@ class PanelQrUsuario extends StatelessWidget {
   }
 }
 
-class _QrPlaceholder extends StatelessWidget {
-  const _QrPlaceholder({required this.mostrarAyudaBicicletero});
+class _QrSinGenerar extends StatelessWidget {
+  const _QrSinGenerar({required this.mostrarAyudaBicicletero});
 
   final bool mostrarAyudaBicicletero;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      key: const ValueKey('qr-placeholder'),
+      key: const ValueKey('qr-sin-generar'),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
