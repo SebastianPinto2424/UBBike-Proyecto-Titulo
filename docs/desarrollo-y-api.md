@@ -20,6 +20,8 @@ src/
 
 Las rutas definen los middlewares de cada endpoint, los controladores traducen la peticion HTTP, los servicios contienen la logica de negocio y los repositorios el acceso a datos. Las validaciones usan esquemas Joi sobre el cuerpo, los parametros de ruta y los filtros de consulta (`validarCuerpo`, `validarParametros` y `validarConsulta`): todo `:id` debe ser un UUID y cada filtro solo acepta los valores que conoce, asi un dato mal formado responde 400 antes de llegar a la base de datos. Los enumerados de cada modulo viven en archivos propios (`estado-*.ts`, `tipo-*.ts`), las reglas de negocio puras en `*.reglas.ts`, las conversiones a respuesta en `*.mapeador.ts` y las paginas HTML del modulo `enlaces` en `enlace.vistas.ts`, con su logo y su script en `publico/` (el script se sirve con version por contenido desde `enlace.recursos.ts` para que el navegador no use una copia vieja). `comun/` reune middlewares, errores y utilidades compartidas; `configuracion/` el entorno, Prisma, Redis, Firebase y los datos iniciales; `tiempo-real/` el servidor Socket.IO, y `scripts/` los comandos de mantenimiento como `quitar-demo`.
 
+Antes de las rutas, `restringirOrigen` (`comun/middlewares/origen.middleware.ts`) rechaza con 403 las peticiones de navegador cuyo `Origin` no sea el dominio publico del backend (`ENLACES_BASE_URL`), el mismo host de la peticion o uno de `CORS_ORIGINS`, que por defecto esta vacio. Las paginas de `/enlaces/` quedan exentas, porque el navegador envia su formulario con `Origin: null` (`Referrer-Policy: no-referrer`); las protege el token del correo. El servidor Socket.IO aplica la misma regla con `allowRequest`. Las apps no envian `Origin`, asi que no se ven afectadas; la proteccion de los datos sigue siendo el token JWT de cada ruta.
+
 La regla principal es que los servicios contienen la logica de negocio y delegan el acceso a datos en repositorios. Los repositorios son la capa que conoce Prisma, incluidas las transacciones. Fuera de ellos solo usan Prisma el punto de entrada (conectar y desconectar), el chequeo de salud y la carga de datos iniciales. Esta es una version ligera de Clean Architecture: separa HTTP, negocio y persistencia sin introducir una estructura DDD mas pesada que la escala actual del proyecto.
 
 Cuando una feature crece, su logica se reparte en servicios por tema dentro del mismo modulo, sin crear modulos nuevos:
@@ -86,6 +88,7 @@ Convenciones de interfaz:
 13. Guardia y central reciben alertas y notificaciones dentro de la aplicacion.
 14. Central y administrador revisan historial, tablero, solicitudes y operaciones por guardia.
 15. Administrador puede gestionar usuarios, roles, estado de cuenta y verificacion de correo.
+16. Separacion de funciones: nadie valida, rechaza ni registra a mano movimientos de su propia bicicleta, ni siquiera el administrador. El servidor lo controla con `impedirAutovalidacion` (`acceso.reglas.ts`) al escanear el QR, al confirmarlo o denegarlo y en la busqueda y el registro manual, y responde 403.
 
 ## Endpoints principales
 
@@ -451,7 +454,9 @@ TEST_REDIS_URL='redis://127.0.0.1:56389' ALLOW_TEST_DATABASE_RESET=1 npm run tes
 
 Verifican lo que las pruebas con mocks no pueden garantizar: que una transaccion
 fallida no deje escrituras a medias, que las restricciones de unicidad se
-apliquen de verdad y que la ocupacion se calcule sobre las filas reales.
+apliquen de verdad, que la ocupacion se calcule sobre las filas reales y que
+los botones de los enlaces de correo funcionen de punta a punta tal como los
+envia el navegador del celular.
 
 App movil:
 
