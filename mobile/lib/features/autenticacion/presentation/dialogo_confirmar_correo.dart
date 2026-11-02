@@ -9,33 +9,14 @@ import 'package:ubbike/shared/widgets/estilos_formulario_autenticacion.dart';
 const _esperaEntreReenvios = Duration(seconds: 60);
 
 class DialogoConfirmarCorreo extends StatefulWidget {
-  const DialogoConfirmarCorreo.registro({
+  const DialogoConfirmarCorreo({
     super.key,
     required this.correo,
     required this.onReenviar,
-  })  : titulo = 'Revisa tu correo',
-        antesDelCorreo = 'Te enviamos un enlace a ',
-        despuesDelCorreo = '. Ábrelo antes de 24 horas para activar tu cuenta.',
-        textoBoton = 'Volver al inicio de sesión',
-        esperaInicial = _esperaEntreReenvios;
-
-  const DialogoConfirmarCorreo.pendiente({
-    super.key,
-    required this.correo,
-    required this.onReenviar,
-  })  : titulo = 'Confirma tu correo',
-        antesDelCorreo = 'Aún no confirmas ',
-        despuesDelCorreo = '. Abre el enlace que te enviamos o pide uno nuevo.',
-        textoBoton = 'Entendido',
-        esperaInicial = Duration.zero;
+  });
 
   final String correo;
   final Future<void> Function() onReenviar;
-  final String titulo;
-  final String antesDelCorreo;
-  final String despuesDelCorreo;
-  final String textoBoton;
-  final Duration esperaInicial;
 
   @override
   State<DialogoConfirmarCorreo> createState() => _DialogoConfirmarCorreoState();
@@ -49,23 +30,14 @@ class _DialogoConfirmarCorreoState extends State<DialogoConfirmarCorreo> {
   bool avisoEsError = false;
 
   @override
-  void initState() {
-    super.initState();
-    _esperar(widget.esperaInicial);
-  }
-
-  @override
   void dispose() {
     temporizador?.cancel();
     super.dispose();
   }
 
-  void _esperar(Duration espera) {
+  void _iniciarEspera() {
     temporizador?.cancel();
-    segundosRestantes = espera.inSeconds;
-    if (segundosRestantes == 0) {
-      return;
-    }
+    segundosRestantes = _esperaEntreReenvios.inSeconds;
     temporizador = Timer.periodic(const Duration(seconds: 1), (reloj) {
       if (!mounted) {
         reloj.cancel();
@@ -89,7 +61,7 @@ class _DialogoConfirmarCorreoState extends State<DialogoConfirmarCorreo> {
         setState(() {
           aviso = 'Te enviamos un enlace nuevo.';
           avisoEsError = false;
-          _esperar(_esperaEntreReenvios);
+          _iniciarEspera();
         });
       }
     } on ExcepcionApi catch (error) {
@@ -150,7 +122,7 @@ class _DialogoConfirmarCorreoState extends State<DialogoConfirmarCorreo> {
           ),
           const SizedBox(height: 18),
           Text(
-            widget.titulo,
+            'Confirma tu correo',
             textAlign: TextAlign.center,
             style: tema.textTheme.titleLarge?.copyWith(
               color: ColoresUbb.textoPrincipal,
@@ -161,7 +133,7 @@ class _DialogoConfirmarCorreoState extends State<DialogoConfirmarCorreo> {
           Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: widget.antesDelCorreo),
+                const TextSpan(text: 'Aún no confirmas '),
                 TextSpan(
                   text: widget.correo,
                   style: const TextStyle(
@@ -169,7 +141,9 @@ class _DialogoConfirmarCorreoState extends State<DialogoConfirmarCorreo> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                TextSpan(text: widget.despuesDelCorreo),
+                const TextSpan(
+                  text: '. Abre el enlace que te enviamos o pide uno nuevo.',
+                ),
               ],
             ),
             textAlign: TextAlign.center,
@@ -206,7 +180,7 @@ class _DialogoConfirmarCorreoState extends State<DialogoConfirmarCorreo> {
             child: ElevatedButton(
               style: estiloBotonAutenticacion(),
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(widget.textoBoton),
+              child: const Text('Entendido'),
             ),
           ),
           const SizedBox(height: 4),
