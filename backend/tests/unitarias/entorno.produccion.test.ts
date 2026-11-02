@@ -101,3 +101,20 @@ describe('proxy de confianza', () => {
     expect(entorno.servidor.trustProxy).toBe(esperado);
   });
 });
+
+describe('correo de soporte', () => {
+  afterEach(() => {
+    process.env = { ...entornoOriginal };
+  });
+
+  it.each<[string | undefined, string | undefined, string]>([
+    ['ayuda@ubiobio.cl', 'envios@gmail.com', 'ayuda@ubiobio.cl'],
+    [undefined, 'envios@gmail.com', 'envios@gmail.com'],
+    [undefined, 'apikey', 'soporte@ubbike.cl'],
+    ['no-es-correo', undefined, 'soporte@ubbike.cl']
+  ])('CORREO_SOPORTE=%s y SMTP_USER=%s usan %s', (soporte, usuarioSmtp, esperado) => {
+    const entorno = cargarEntorno({ CORREO_SOPORTE: soporte, SMTP_USER: usuarioSmtp });
+
+    expect(entorno.correo.soporte).toBe(esperado);
+  });
+});
