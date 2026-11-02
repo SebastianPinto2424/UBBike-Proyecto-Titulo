@@ -15,6 +15,7 @@ import {
   consultarEstadoQr,
   generarQrTemporal,
   liberarQrTemporal,
+  obtenerCodigoQrEscaneadoParaMovimiento,
   validarQrTemporal
 } from '../../src/modulos/qr/qr.servicio';
 import { emitirTiempoReal } from '../../src/tiempo-real/tiempo-real';
@@ -245,6 +246,33 @@ describe('validarQrTemporal', () => {
       })
     ).rejects.toMatchObject({ statusCode: 409 });
     expect(emitirMock).not.toHaveBeenCalled();
+  });
+
+  it('nadie puede validar el QR de su propia bicicleta, ni siendo administrador', async () => {
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
+
+    await expect(
+      validarQrTemporal('UBBIKE-tokenValido', {
+        validadorUsuarioId: 'user-uuid-1',
+        rol: 'ADMINISTRADOR'
+      })
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(prismaSimulado.codigoQrTemporal.updateMany).not.toHaveBeenCalled();
+    expect(emitirMock).not.toHaveBeenCalled();
+  });
+
+  it('tampoco deja confirmar un QR propio que haya quedado escaneado', async () => {
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
+      ...codigoQrBase,
+      escaneadoPorGuardiaId: 'user-uuid-1'
+    } as any);
+
+    await expect(
+      obtenerCodigoQrEscaneadoParaMovimiento('UBBIKE-tokenValido', {
+        validadorUsuarioId: 'user-uuid-1',
+        rol: 'ADMINISTRADOR'
+      })
+    ).rejects.toMatchObject({ statusCode: 403 });
   });
 
   it('no avisa cuando se consulta sin validador', async () => {
