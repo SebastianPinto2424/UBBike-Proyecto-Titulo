@@ -170,6 +170,7 @@ describe('formularios de los enlaces', () => {
 
     expect(html).toContain('<label for="campo-contrasena">Contraseña</label>');
     expect(html).toContain('<label for="campo-confirmacion">Confirmar contraseña</label>');
+    expect(html).toContain('<span class="texto">Activar mi cuenta</span>');
   });
 
   it('sin errores deja el mensaje de error oculto', () => {
@@ -197,7 +198,7 @@ describe('formularios de los enlaces', () => {
   it('el resultado abre la app sin avisos ni scripts', () => {
     const html = paginaResultado('contrasena-actualizada');
 
-    expect(html).toContain('<a class="boton" href="ubbike://abrir">Abrir UBBike</a>');
+    expect(html).toContain('<a class="boton" href="ubbike://abrir">Ingresar a UBBike</a>');
     expect(html).not.toContain('<script');
   });
 });
@@ -207,17 +208,28 @@ describe('confirmación del correo', () => {
     const html = paginaFormulario('verificar-correo', token, enlace(false));
 
     expect(html).toContain(
-      'Toca el botón para confirmar que <strong>ana@alumnos.ubiobio.cl</strong> es tu correo'
+      'Toca el botón para confirmar que <strong>ana@<wbr>alumnos.ubiobio.cl</strong> es tu correo'
     );
     expect(html).toContain('Confirmar mi correo');
+  });
+
+  it('un correo largo se parte tras la arroba y no se sale de la tarjeta en el celular', () => {
+    const html = paginaFormulario('verificar-correo', token, {
+      ...enlace(false),
+      correo: 'catalina.fernandez2024@alumnos.ubiobio.cl'
+    });
+
+    expect(html).toContain('<strong>catalina.fernandez2024@<wbr>alumnos.ubiobio.cl</strong>');
+    expect(html).toMatch(/main\{[^}]*overflow-wrap:anywhere/);
+    expect(html).toMatch(/<footer>¿Necesitas ayuda\? Escríbenos a [^<]*@<wbr>/);
   });
 
   it('al confirmar indica el siguiente paso y ofrece abrir la app', () => {
     const html = paginaResultado('correo-verificado');
 
-    expect(html).toContain('<h1>¡Correo confirmado!</h1>');
+    expect(html).toContain('<h1>Correo confirmado</h1>');
     expect(html).toContain('Abre la app e inicia sesión');
-    expect(html).toContain('Abrir UBBike');
+    expect(html).toContain('Ingresar a UBBike');
     expect(html).toContain('¿Estás en el computador?');
   });
 
@@ -245,6 +257,6 @@ describe('confirmación del correo', () => {
     expect(html).toContain('<h1>Revisa tu correo</h1>');
     expect(html).toContain('revisa la carpeta de spam');
     expect(html).toContain('class="icono info"');
-    expect(html).not.toContain('Abrir UBBike');
+    expect(html).not.toContain('Ingresar a UBBike');
   });
 });
