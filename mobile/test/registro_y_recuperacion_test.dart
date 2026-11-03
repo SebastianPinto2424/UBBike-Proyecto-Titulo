@@ -96,6 +96,8 @@ void main() {
       expect(cuerpo['correo'], 'ana.rojas@alumnos.ubiobio.cl');
       expect(cuerpo['contrasena'], _clave);
       expect(find.text('Correo enviado'), findsOneWidget);
+      expect(_enDialogo('Enviamos un enlace a ana.rojas@alumnos.ubiobio.cl.'),
+          findsOneWidget);
       expect(find.text('Te enviamos un correo para verificar tu cuenta.'),
           findsOneWidget);
 
