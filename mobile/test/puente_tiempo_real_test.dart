@@ -6,20 +6,25 @@ import 'package:ubbike/core/servicios/tiempo_real_servicio.dart';
 
 class _ServicioFalso extends TiempoRealServicio {
   final avisos = StreamController<void>.broadcast();
+  final cierres = StreamController<String?>.broadcast();
 
   @override
   Stream<void> get rechazos => avisos.stream;
+
+  @override
+  Stream<String?> get sesionCerrada => cierres.stream;
 }
 
 PuenteTiempoReal _puente(
   _ServicioFalso servicio,
-  Future<void> Function() alRenovarSesion,
-) =>
+  Future<void> Function() alRenovarSesion, {
+  void Function(String? motivo)? alCerrarSesionRemota,
+}) =>
     PuenteTiempoReal(
       alCambiarConexion: (_) {},
       alCambiarVersion: (_) {},
       alEventoQr: (_) {},
-      alCerrarSesionRemota: () {},
+      alCerrarSesionRemota: alCerrarSesionRemota ?? (_) {},
       alRenovarSesion: alRenovarSesion,
       servicio: servicio,
     );
@@ -39,6 +44,31 @@ void main() {
     expect(esCierreDelServidor('io server disconnect'), isTrue);
     expect(esCierreDelServidor('transport close'), isFalse);
     expect(esCierreDelServidor('io client disconnect'), isFalse);
+  });
+
+  test('lee el motivo del aviso de cierre de sesión', () {
+    expect(
+        motivoCierreSesion({'motivo': 'CUENTA_ELIMINADA'}), 'CUENTA_ELIMINADA');
+    expect(motivoCierreSesion({'motivo': 3}), isNull);
+    expect(motivoCierreSesion(null), isNull);
+  });
+
+  test('al cerrar la sesión desde el servidor entrega el motivo', () async {
+    final servicio = _ServicioFalso();
+    final motivos = <String?>[];
+    final puente = _puente(
+      servicio,
+      () async {},
+      alCerrarSesionRemota: motivos.add,
+    );
+
+    servicio.cierres
+      ..add('CUENTA_ELIMINADA')
+      ..add(null);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(motivos, ['CUENTA_ELIMINADA', null]);
+    puente.dispose();
   });
 
   test('si el servidor rechaza el socket renueva la sesión una sola vez',
