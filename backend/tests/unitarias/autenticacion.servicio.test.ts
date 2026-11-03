@@ -96,6 +96,7 @@ describe('registrarUsuario', () => {
     });
 
     expect(resultado.message).toContain('Registro recibido');
+    expect(resultado.message).toContain('revisa la carpeta de spam');
     expect(prismaSimulado.usuario.create).toHaveBeenCalled();
   });
 
