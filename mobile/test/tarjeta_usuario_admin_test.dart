@@ -163,22 +163,27 @@ void main() {
   });
 
   testWidgets(
-      'en un telefono angosto editar y eliminar quedan en la misma fila',
-      (tester) async {
+      'en un telefono angosto editar y eliminar tienen el mismo tamaño y '
+      'la misma letra', (tester) async {
     final registro = await _montar(tester, _usuario);
     tester.view.devicePixelRatio = 3.0;
     await tester.pump();
     await _abrir(tester);
 
-    final editar = tester.getRect(find.byKey(const Key('editar-usuario-u1')));
-    final eliminar =
-        tester.getRect(find.byKey(const Key('eliminar-usuario-u1')));
-    expect(editar.top, eliminar.top);
-    expect(editar.width, eliminar.width);
-    expect(editar.right, lessThan(eliminar.left));
+    final botonEditar = find.byKey(const Key('editar-usuario-u1'));
+    final botonEliminar = find.byKey(const Key('eliminar-usuario-u1'));
+    final editar = tester.getRect(botonEditar);
+    final eliminar = tester.getRect(botonEliminar);
+    expect(editar.size, eliminar.size);
+    expect(editar.overlaps(eliminar), isFalse);
 
-    await tester.ensureVisible(find.byKey(const Key('eliminar-usuario-u1')));
-    await tester.tap(find.byKey(const Key('eliminar-usuario-u1')));
+    double altoTexto(Finder boton) => tester
+        .getRect(find.descendant(of: boton, matching: find.byType(RichText)))
+        .height;
+    expect(altoTexto(botonEditar), altoTexto(botonEliminar));
+
+    await tester.ensureVisible(botonEliminar);
+    await tester.tap(botonEliminar);
     expect(registro.eliminaciones, ['u1']);
   });
 }
