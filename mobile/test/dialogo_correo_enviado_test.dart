@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubbike/features/autenticacion/presentation/dialogo_correo_enviado.dart';
+import 'package:ubbike/shared/widgets/dialogo_correo_enviado.dart';
 
-const _mensaje =
-    'Registro recibido. Revisa tu correo para activar la cuenta. Si no lo ves en unos minutos, revisa la carpeta de spam.';
+const _nota = 'Al cambiarla, cerraremos tu sesión en todos tus equipos.';
 
-Future<void> _abrirAviso(WidgetTester tester, String correo) async {
+Future<void> _abrirAviso(
+  WidgetTester tester, {
+  String proposito = 'activar tu cuenta',
+  String? correo = 'ana.rojas@alumnos.ubiobio.cl',
+  String? nota,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Builder(
@@ -14,8 +18,11 @@ Future<void> _abrirAviso(WidgetTester tester, String correo) async {
             child: TextButton(
               onPressed: () => showDialog<void>(
                 context: context,
-                builder: (_) =>
-                    DialogoCorreoEnviado(correo: correo, mensaje: _mensaje),
+                builder: (_) => DialogoCorreoEnviado(
+                  proposito: proposito,
+                  correo: correo,
+                  nota: nota,
+                ),
               ),
               child: const Text('Abrir'),
             ),
@@ -28,18 +35,45 @@ Future<void> _abrirAviso(WidgetTester tester, String correo) async {
   await tester.pumpAndSettle();
 }
 
-void main() {
-  testWidgets('muestra a qué correo se envió el enlace y el aviso de spam',
-      (tester) async {
-    await _abrirAviso(tester, 'ana.rojas@alumnos.ubiobio.cl');
+InlineSpan _envio(WidgetTester tester) =>
+    tester.widget<Text>(find.byKey(const Key('texto-envio'))).textSpan!;
 
-    expect(find.text('Correo enviado'), findsOneWidget);
+String _textoEnvio(WidgetTester tester) =>
+    _envio(tester).toPlainText(includeSemanticsLabels: false);
+
+void main() {
+  testWidgets('al registrarse indica dentro de la frase a qué correo se envió',
+      (tester) async {
+    await _abrirAviso(tester);
+
+    expect(find.text('Revisa tu correo'), findsOneWidget);
     expect(
-      find.textContaining('Enviamos un enlace a ana.rojas@alumnos.ubiobio.cl.',
-          findRichText: true),
-      findsOneWidget,
+      _textoEnvio(tester),
+      'Enviamos un enlace para activar tu cuenta a '
+      'ana.rojas@\u200Balumnos.ubiobio.cl.',
     );
-    expect(find.text(_mensaje), findsOneWidget);
+    expect(
+      _envio(tester).toPlainText(),
+      'Enviamos un enlace para activar tu cuenta a '
+      'ana.rojas@alumnos.ubiobio.cl.',
+    );
+    expect(find.text('¿No lo ves? Revisa la carpeta de spam.'), findsOneWidget);
+  });
+
+  testWidgets('sin correo no lo repite', (tester) async {
+    await _abrirAviso(tester,
+        proposito: 'cambiar tu contraseña', correo: null, nota: _nota);
+
+    expect(_textoEnvio(tester),
+        'Te enviamos un enlace para cambiar tu contraseña.');
+    expect(find.textContaining('@'), findsNothing);
+    expect(find.text(_nota), findsOneWidget);
+  });
+
+  testWidgets('la nota aparece solo cuando se entrega', (tester) async {
+    await _abrirAviso(tester);
+
+    expect(find.text(_nota), findsNothing);
   });
 
   testWidgets('un correo largo no se sale del aviso en un celular angosto',
@@ -48,16 +82,17 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    await _abrirAviso(tester, 'catalina.fernandez2024@alumnos.ubiobio.cl');
+    await _abrirAviso(tester,
+        correo: 'catalina.fernandez2024@alumnos.ubiobio.cl', nota: _nota);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Volver al ingreso'), findsOneWidget);
+    expect(find.text('Entendido'), findsOneWidget);
   });
 
-  testWidgets('volver al ingreso cierra solo el aviso', (tester) async {
-    await _abrirAviso(tester, 'ana.rojas@alumnos.ubiobio.cl');
+  testWidgets('el botón cierra solo el aviso', (tester) async {
+    await _abrirAviso(tester);
 
-    await tester.tap(find.text('Volver al ingreso'));
+    await tester.tap(find.text('Entendido'));
     await tester.pumpAndSettle();
 
     expect(find.byType(DialogoCorreoEnviado), findsNothing);
