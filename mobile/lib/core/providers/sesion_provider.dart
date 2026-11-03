@@ -42,6 +42,22 @@ const mensajeSesionEnOtroDispositivo =
     'Iniciaste sesión con esta cuenta en otro dispositivo, por eso se '
     'cerró aquí.';
 
+const mensajeCuentaEliminada =
+    'Administración eliminó tu cuenta, por eso se cerró la sesión.';
+
+const mensajeCuentaDesactivada =
+    'Administración desactivó tu cuenta, por eso se cerró la sesión.';
+
+const mensajeCuentaActualizada =
+    'Administración actualizó tu cuenta. Ingresa nuevamente para continuar.';
+
+String mensajeCierreRemoto(String? motivo) => switch (motivo) {
+      'CUENTA_ELIMINADA' => mensajeCuentaEliminada,
+      'CUENTA_DESACTIVADA' => mensajeCuentaDesactivada,
+      'CUENTA_ACTUALIZADA' => mensajeCuentaActualizada,
+      _ => mensajeSesionEnOtroDispositivo,
+    };
+
 const _claveToken = 'ubbike_jwt';
 const _claveRefreshToken = 'ubbike_refresh';
 const _claveUsuarioId = 'ubbike_usuario_id';
@@ -187,8 +203,8 @@ class SesionNotifier extends AsyncNotifier<EstadoSesion> {
     } catch (_) {}
   }
 
-  Future<void> cerrarPorOtroDispositivo() =>
-      olvidar(motivo: mensajeSesionEnOtroDispositivo);
+  Future<void> cerrarPorAvisoDelServidor(String? motivo) =>
+      olvidar(motivo: mensajeCierreRemoto(motivo));
 
   Future<void> olvidar({String? motivo}) async {
     _epoca++;
