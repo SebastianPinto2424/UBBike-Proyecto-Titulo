@@ -17,6 +17,7 @@ import {
 } from './autenticacion.tokens';
 import * as autenticacionRepositorio from './autenticacion.repositorio';
 import { emitirCambioUsuarios } from '../usuarios/usuario.eventos';
+import { cerrarSesionesTiempoReal } from '../../tiempo-real/tiempo-real';
 
 export const solicitarCambioContrasena = async (correo: string) => {
   const usuario = await autenticacionRepositorio.buscarPorCorreo(correo.toLowerCase());
@@ -83,6 +84,7 @@ export const cambiarContrasena = async (token: string, contrasena: string) => {
     await bcrypt.hash(contrasena, 12)
   );
   await revocarTodosLosRefreshTokens(usuario.id);
+  cerrarSesionesTiempoReal(usuario.id, 'CONTRASENA_ACTUALIZADA');
   if (esPrimeraActivacion) {
     emitirCambioUsuarios();
   }
