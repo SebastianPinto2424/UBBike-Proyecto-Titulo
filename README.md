@@ -174,6 +174,14 @@ Si la base de datos ya se habia creado con la clave de ejemplo, primero hay que 
 - No publicar `.env`, llaves de firma, APKs ni credenciales de Firebase (`google-services.json`, `GoogleService-Info.plist`, cuenta de servicio).
 - Usar HTTPS para la API, el WebSocket, los enlaces de correo y la APK.
 
+## Corrector ortografico
+
+Los campos de texto libre de la app (incidencias, motivos y notas) marcan las palabras mal escritas y, al tocarlas, ofrecen sugerencias.
+- Si el telefono tiene un corrector compatible (Gboard con el corrector del sistema activado, o iPhone), se usa ese.
+- Si no, la app usa su propio diccionario de espanol en `mobile/assets/ortografia/`.
+
+La lista `palabras_es.txt` se deriva de [FrequencyWords](https://github.com/hermitdave/FrequencyWords), de Hermit Dave, generada a partir de OpenSubtitles 2018, y se distribuye bajo [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Se dejaron solo palabras y se quitaron abreviaturas y formas sin tilde que casi siempre son errores. La app registra esta licencia junto a las demas licencias de terceros. `palabras_ubbike.txt` agrega palabras propias de UBBike.
+
 ## Documentacion adicional
 
 - `docs/despliegue.md`
