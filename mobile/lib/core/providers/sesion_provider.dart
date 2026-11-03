@@ -51,10 +51,14 @@ const mensajeCuentaDesactivada =
 const mensajeCuentaActualizada =
     'Administración actualizó tu cuenta. Ingresa nuevamente para continuar.';
 
+const mensajeContrasenaActualizada =
+    'Cambiaste tu contraseña. Ingresa con la nueva.';
+
 String mensajeCierreRemoto(String? motivo) => switch (motivo) {
       'CUENTA_ELIMINADA' => mensajeCuentaEliminada,
       'CUENTA_DESACTIVADA' => mensajeCuentaDesactivada,
       'CUENTA_ACTUALIZADA' => mensajeCuentaActualizada,
+      'CONTRASENA_ACTUALIZADA' => mensajeContrasenaActualizada,
       _ => mensajeSesionEnOtroDispositivo,
     };
 
