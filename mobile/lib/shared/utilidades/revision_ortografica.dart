@@ -1,7 +1,13 @@
 import 'package:flutter/widgets.dart';
 
-SpellCheckConfiguration? revisionOrtografica() {
-  final disponible =
+import 'package:ubbike/core/servicios/corrector_ortografico_servicio.dart';
+
+SpellCheckConfiguration revisionOrtografica() {
+  final correctorDelTelefono =
       WidgetsBinding.instance.platformDispatcher.nativeSpellCheckServiceDefined;
-  return disponible ? const SpellCheckConfiguration() : null;
+  return correctorDelTelefono
+      ? const SpellCheckConfiguration()
+      : SpellCheckConfiguration(
+          spellCheckService: CorrectorOrtograficoServicio.instancia,
+        );
 }
