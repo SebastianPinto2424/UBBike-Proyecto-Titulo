@@ -11,7 +11,6 @@ class FormularioIngreso extends StatelessWidget {
     required this.contrasenaController,
     required this.cargando,
     required this.mostrarContrasena,
-    required this.mensajeInicial,
     required this.onAlternarContrasena,
     required this.onIngresar,
     required this.onRegistro,
@@ -22,7 +21,6 @@ class FormularioIngreso extends StatelessWidget {
   final TextEditingController contrasenaController;
   final bool cargando;
   final bool mostrarContrasena;
-  final String? mensajeInicial;
   final VoidCallback onAlternarContrasena;
   final VoidCallback onIngresar;
   final VoidCallback onRegistro;
@@ -49,10 +47,6 @@ class FormularioIngreso extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
         ),
-        if (mensajeInicial?.trim().isNotEmpty == true) ...[
-          const SizedBox(height: 14),
-          _AvisoIngreso(mensaje: mensajeInicial!.trim()),
-        ],
         const SizedBox(height: 22),
         TextFormField(
           controller: correoController,
@@ -144,46 +138,6 @@ class FormularioIngreso extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AvisoIngreso extends StatelessWidget {
-  const _AvisoIngreso({required this.mensaje});
-
-  final String mensaje;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: ColoresUbb.exito.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColoresUbb.exito.withValues(alpha: 0.22)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(
-              Icons.check_circle_outline,
-              color: ColoresUbb.exito,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                mensaje,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: ColoresUbb.textoPrincipal,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
