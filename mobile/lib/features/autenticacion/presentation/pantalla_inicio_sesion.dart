@@ -33,6 +33,33 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
   bool mostrarContrasena = false;
 
   @override
+  void initState() {
+    super.initState();
+    _avisarMensajeInicial();
+  }
+
+  @override
+  void didUpdateWidget(covariant PantallaInicioSesion anterior) {
+    super.didUpdateWidget(anterior);
+    if (widget.mensajeInicial != anterior.mensajeInicial) {
+      _avisarMensajeInicial();
+    }
+  }
+
+  void _avisarMensajeInicial() {
+    final mensaje = widget.mensajeInicial?.trim() ?? '';
+    if (mensaje.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.mostrarInfo(
+        mensaje,
+        duracion: const Duration(seconds: 6),
+        cerrable: true,
+      );
+    });
+  }
+
+  @override
   void dispose() {
     correoController.dispose();
     contrasenaController.dispose();
@@ -93,7 +120,6 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
                                     contrasenaController: contrasenaController,
                                     cargando: cargando,
                                     mostrarContrasena: mostrarContrasena,
-                                    mensajeInicial: widget.mensajeInicial,
                                     onAlternarContrasena: () {
                                       setState(
                                         () => mostrarContrasena =
