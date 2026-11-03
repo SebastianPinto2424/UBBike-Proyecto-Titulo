@@ -54,6 +54,7 @@ class _PanelUbicacionBicicleteroState
   bool _buscandoGps = false;
   int _revision = 0;
   String? _aviso;
+  StreamSubscription<Position>? _afinado;
 
   PuntoGeografico? get _punto =>
       PuntoGeografico.desdeTexto(widget.latitud.text, widget.longitud.text);
@@ -68,6 +69,7 @@ class _PanelUbicacionBicicleteroState
   @override
   void dispose() {
     _esperaBusqueda?.cancel();
+    _afinado?.cancel();
     _busqueda.dispose();
     _mapa.dispose();
     super.dispose();
@@ -80,8 +82,13 @@ class _PanelUbicacionBicicleteroState
     WidgetsBinding.instance.scheduleFrame();
   }
 
-  void _fijarPunto(PuntoGeografico punto, {bool centrar = false}) {
+  void _fijarPunto(
+    PuntoGeografico punto, {
+    bool centrar = false,
+    bool desdeGps = false,
+  }) {
     if (!punto.esValido) return;
+    if (!desdeGps) _detenerGps();
     _revision++;
     widget.latitud.text = punto.latitud.toStringAsFixed(6);
     widget.longitud.text = punto.longitud.toStringAsFixed(6);
@@ -92,7 +99,21 @@ class _PanelUbicacionBicicleteroState
     widget.alCambiar?.call();
   }
 
+  void _detenerGps() {
+    final afinado = _afinado;
+    if (afinado == null) return;
+    _afinado = null;
+    unawaited(afinado.cancel());
+    if (mounted) {
+      setState(() {
+        _buscandoGps = false;
+        _aviso = null;
+      });
+    }
+  }
+
   void _quitarPunto() {
+    _detenerGps();
     _revision++;
     widget.latitud.clear();
     widget.longitud.clear();
@@ -148,51 +169,50 @@ class _PanelUbicacionBicicleteroState
     });
   }
 
-  Future<void> _usarMiUbicacion() async {
+  void _usarMiUbicacion() {
     if (_buscandoGps) return;
     FocusScope.of(context).unfocus();
-    final revision = ++_revision;
+    var revision = ++_revision;
+    Position? ultima;
     setState(() {
       _buscandoGps = true;
       _aviso = null;
     });
 
-    try {
-      final posicion = await ref
-          .read(ubicacionServicioProvider)
-          .obtenerPosicionActual(
-              precision: LocationAccuracy.high,
-              limite: const Duration(seconds: 20));
-      if (!mounted || revision != _revision) return;
-
-      if (posicion == null) {
-        setState(() => _aviso =
-            'No se obtuvo tu ubicación. Revisa que la localización esté activada y que la app tenga permiso de ubicación precisa, o marca el punto en el mapa.');
-        return;
-      }
-
-      final punto = PuntoGeografico(posicion.latitude, posicion.longitude);
-      if (!punto.esValido) {
-        setState(() => _aviso =
-            'El GPS no entregó una posición válida. Marca el punto en el mapa.');
-        return;
-      }
-
-      _fijarPunto(punto, centrar: true);
+    void terminar() {
+      _afinado = null;
+      if (!mounted) return;
       setState(() {
-        _mapaExpandido = true;
-        _aviso = posicion.accuracy.isFinite
-            ? 'Precisión aproximada: ${posicion.accuracy.round()} m. Ajusta el pin sobre el acceso.'
-            : 'Ajusta el pin sobre el acceso.';
+        _buscandoGps = false;
+        if (revision != _revision) return;
+        final lectura = ultima;
+        _aviso = lectura == null
+            ? 'No se obtuvo tu ubicación. Revisa que la localización esté activada y que la app tenga permiso de ubicación precisa, o marca el punto en el mapa.'
+            : lectura.accuracy.isFinite
+                ? 'Precisión aproximada: ${lectura.accuracy.round()} m. Ajusta el pin sobre el acceso.'
+                : 'Ajusta el pin sobre el acceso.';
       });
-    } catch (_) {
-      if (mounted && revision == _revision) {
-        context.mostrarError(
-            'No se pudo obtener el GPS. Marca el punto en el mapa.');
-      }
-    } finally {
-      if (mounted) setState(() => _buscandoGps = false);
     }
+
+    _afinado = ref.read(ubicacionServicioProvider).afinarPosicion().listen(
+      (posicion) {
+        if (!mounted || revision != _revision) return;
+        final punto = PuntoGeografico(posicion.latitude, posicion.longitude);
+        if (!punto.esValido) return;
+        _fijarPunto(punto, centrar: true, desdeGps: true);
+        revision = _revision;
+        ultima = posicion;
+        setState(() {
+          _mapaExpandido = true;
+          _aviso = posicion.accuracy.isFinite
+              ? 'Precisión actual: ${posicion.accuracy.round()} m. Afinando…'
+              : 'Afinando ubicación…';
+        });
+      },
+      onDone: terminar,
+      onError: (Object _) => terminar(),
+      cancelOnError: true,
+    );
   }
 
   Widget _cabecera(ThemeData tema) {
