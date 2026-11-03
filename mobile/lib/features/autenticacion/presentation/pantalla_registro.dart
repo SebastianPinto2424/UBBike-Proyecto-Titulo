@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ubbike/features/autenticacion/application/autenticacion_vm.dart';
+import 'package:ubbike/features/autenticacion/presentation/dialogo_correo_enviado.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/servicios/excepcion_api.dart';
@@ -259,7 +262,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
           );
 
       if (mounted) {
-        _mostrarConfirmacion(context, mensaje);
+        unawaited(_mostrarCorreoEnviado(correo, mensaje));
       }
     } on ExcepcionApi catch (error) {
       if (mounted) {
@@ -276,69 +279,15 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     }
   }
 
-  void _mostrarConfirmacion(BuildContext context, String mensaje) {
-    showDialog<void>(
+  Future<void> _mostrarCorreoEnviado(String correo, String mensaje) async {
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: ColoresUbb.fondo,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: ColoresUbb.exito.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.mark_email_read_outlined,
-                  color: ColoresUbb.exito,
-                  size: 38,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Correo enviado',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: ColoresUbb.textoPrincipal,
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                mensaje,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: ColoresUbb.textoSecundario,
-                      height: 1.35,
-                    ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: estiloBotonAutenticacion(),
-                  onPressed: () {
-                    Navigator.of(context)
-                      ..pop()
-                      ..pop();
-                  },
-                  child: const Text('Volver al ingreso'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => DialogoCorreoEnviado(correo: correo, mensaje: mensaje),
     );
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }
 
