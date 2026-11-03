@@ -95,11 +95,15 @@ void main() {
       expect(cuerpo['rut'], '11.111.111-1');
       expect(cuerpo['correo'], 'ana.rojas@alumnos.ubiobio.cl');
       expect(cuerpo['contrasena'], _clave);
-      expect(find.text('Correo enviado'), findsOneWidget);
-      expect(_enDialogo('Enviamos un enlace a ana.rojas@alumnos.ubiobio.cl.'),
-          findsOneWidget);
-      expect(find.text('Te enviamos un correo para verificar tu cuenta.'),
-          findsOneWidget);
+      expect(find.text('Revisa tu correo'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const Key('texto-envio')))
+            .textSpan!
+            .toPlainText(includeSemanticsLabels: false),
+        'Enviamos un enlace para activar tu cuenta a '
+        'ana.rojas@\u200Balumnos.ubiobio.cl.',
+      );
 
       await tocarTexto(tester, 'Volver al ingreso');
 
@@ -120,7 +124,7 @@ void main() {
       await tocarTexto(tester, 'Registrar');
 
       expect(find.text('El correo ya está registrado'), findsOneWidget);
-      expect(find.text('Correo enviado'), findsNothing);
+      expect(find.text('Revisa tu correo'), findsNothing);
     });
   });
 
