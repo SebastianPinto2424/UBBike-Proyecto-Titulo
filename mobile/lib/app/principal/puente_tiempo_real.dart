@@ -11,7 +11,7 @@ class PuenteTiempoReal {
     required void Function(EstadoConexion estado) alCambiarConexion,
     required void Function(StateProvider<int> version) alCambiarVersion,
     required void Function(Map<String, dynamic> datos) alEventoQr,
-    required void Function() alCerrarSesionRemota,
+    required void Function(String? motivo) alCerrarSesionRemota,
     required this.alRenovarSesion,
     TiempoRealServicio? servicio,
   }) : servicio = servicio ??
@@ -28,7 +28,7 @@ class PuenteTiempoReal {
       origen.bicicleteros
           .listen((_) => alCambiarVersion(bicicleterosVersionProvider)),
       origen.qr.listen(alEventoQr),
-      origen.sesionCerrada.listen((_) => alCerrarSesionRemota()),
+      origen.sesionCerrada.listen(alCerrarSesionRemota),
       origen.rechazos.listen((_) => _renovarSesion()),
     ];
   }
