@@ -98,11 +98,40 @@ void main() {
     addTearDown(c.dispose);
     expect(await c.read(sesionProvider.future), isA<SesionActiva>());
 
-    await c.read(sesionProvider.notifier).cerrarPorOtroDispositivo();
+    await c
+        .read(sesionProvider.notifier)
+        .cerrarPorAvisoDelServidor('OTRO_DISPOSITIVO');
 
     final sesion = c.read(sesionProvider).value;
     expect(sesion, isA<SesionVacia>());
     expect((sesion as SesionVacia).motivo, mensajeSesionEnOtroDispositivo);
     expect(await const FlutterSecureStorage().read(key: 'ubbike_jwt'), isNull);
+  });
+
+  test('si administración elimina la cuenta se cierra con ese motivo',
+      () async {
+    final c = ProviderContainer(overrides: [
+      sesionHttpProvider.overrideWithValue(MockClient((r) async =>
+          http.Response(jsonEncode({'usuario': usuarioJson}), 200))),
+    ]);
+    addTearDown(c.dispose);
+    expect(await c.read(sesionProvider.future), isA<SesionActiva>());
+
+    await c
+        .read(sesionProvider.notifier)
+        .cerrarPorAvisoDelServidor('CUENTA_ELIMINADA');
+
+    final sesion = c.read(sesionProvider).value;
+    expect((sesion as SesionVacia).motivo, mensajeCuentaEliminada);
+    expect(await const FlutterSecureStorage().read(key: 'ubbike_jwt'), isNull);
+  });
+
+  test('cada motivo del servidor tiene su mensaje', () {
+    expect(mensajeCierreRemoto('CUENTA_ELIMINADA'), mensajeCuentaEliminada);
+    expect(mensajeCierreRemoto('CUENTA_DESACTIVADA'), mensajeCuentaDesactivada);
+    expect(mensajeCierreRemoto('CUENTA_ACTUALIZADA'), mensajeCuentaActualizada);
+    expect(mensajeCierreRemoto('OTRO_DISPOSITIVO'),
+        mensajeSesionEnOtroDispositivo);
+    expect(mensajeCierreRemoto(null), mensajeSesionEnOtroDispositivo);
   });
 }
