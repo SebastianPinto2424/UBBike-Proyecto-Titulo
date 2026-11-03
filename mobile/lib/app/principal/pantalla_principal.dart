@@ -92,8 +92,8 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       alEventoQr: (datos) {
         if (mounted) ref.read(eventoQrProvider.notifier).recibir(datos);
       },
-      alCerrarSesionRemota: () =>
-          ref.read(sesionProvider.notifier).cerrarPorOtroDispositivo(),
+      alCerrarSesionRemota: (motivo) =>
+          ref.read(sesionProvider.notifier).cerrarPorAvisoDelServidor(motivo),
       alRenovarSesion: () => ref.read(sesionProvider.notifier).renovarSesion(),
     );
     controladorNotificaciones =
