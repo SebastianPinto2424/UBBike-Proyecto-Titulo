@@ -39,6 +39,11 @@ jest.mock('../../src/modulos/acceso/asignaciones/asignacion-guardia.servicio', (
   liberarBicicleteroGuardia: jest.fn().mockResolvedValue({ message: 'ok' })
 }));
 
+jest.mock('../../src/modulos/usuarios/usuario.eventos', () => ({
+  emitirCambioUsuarios: jest.fn(),
+  cerrarSesionesUsuario: jest.fn()
+}));
+
 import { actualizarPermisosUsuario } from '../../src/modulos/usuarios/permisos.servicio';
 import {
   crearUsuarioAdmin,
@@ -60,6 +65,7 @@ import {
 import { enviarCorreo } from '../../src/modulos/correos/correo.servicio';
 import { crearNotificacion } from '../../src/modulos/notificaciones/notificacion.servicio';
 import { liberarBicicleteroGuardia } from '../../src/modulos/acceso/asignaciones/asignacion-guardia.servicio';
+import { cerrarSesionesUsuario } from '../../src/modulos/usuarios/usuario.eventos';
 
 const usuarioBase = {
   id: 'usuario-1',
@@ -237,6 +243,7 @@ describe('eliminarUsuarioAdmin', () => {
         versionSesion: { increment: 1 }
       })
     });
+    expect(cerrarSesionesUsuario).toHaveBeenCalledWith(usuarioBase.id, 'CUENTA_ELIMINADA');
     expect(crearCorreoCuentaDesactivada).toHaveBeenCalledWith(usuarioBase.nombre);
     expect(enviarCorreo).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -477,6 +484,7 @@ describe('actualizarPermisosUsuario', () => {
 
     await actualizarPermisosUsuario(usuarioBase.id, { cuentaActiva: false }, 'admin-1');
 
+    expect(cerrarSesionesUsuario).toHaveBeenCalledWith(usuarioBase.id, 'CUENTA_DESACTIVADA');
     expect(liberarBicicleteroGuardia).toHaveBeenCalledWith(usuarioBase.id, 'admin-1');
     expect(crearCorreoCuentaDesactivada).toHaveBeenCalledWith(usuarioBase.nombre);
     expect(enviarCorreo).toHaveBeenCalledWith(
@@ -523,6 +531,7 @@ describe('actualizarPermisosUsuario', () => {
 
     await actualizarPermisosUsuario(usuarioBase.id, { rol: RolUsuario.ADMIN_CENTRAL }, 'admin-1');
 
+    expect(cerrarSesionesUsuario).toHaveBeenCalledWith(usuarioBase.id, 'CUENTA_ACTUALIZADA');
     expect(liberarBicicleteroGuardia).toHaveBeenCalledWith(usuarioBase.id, 'admin-1');
 
     expect(crearCorreoRolActualizado).toHaveBeenCalledWith(
@@ -566,6 +575,18 @@ describe('actualizarPermisosUsuario', () => {
       actualizarPermisosUsuario(usuarioBase.id, { correo: 'ana@gmail.com' }, 'admin-1')
     ).rejects.toMatchObject({ statusCode: 400 });
     expect(prismaSimulado.usuario.update).not.toHaveBeenCalled();
+  });
+
+  it('cambiar solo el nombre no cierra la sesión del usuario', async () => {
+    prismaSimulado.usuario.findUnique.mockResolvedValue(usuarioBase as any);
+    prismaSimulado.usuario.update.mockResolvedValue({
+      ...usuarioBase,
+      nombre: 'Guardia Renombrado'
+    } as any);
+
+    await actualizarPermisosUsuario(usuarioBase.id, { nombre: 'Guardia Renombrado' }, 'admin-1');
+
+    expect(cerrarSesionesUsuario).not.toHaveBeenCalled();
   });
 
   it('permite otros cambios en cuentas antiguas aunque su correo no cumpla la regla', async () => {
