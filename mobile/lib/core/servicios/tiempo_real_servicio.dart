@@ -10,6 +10,11 @@ bool esRechazoDelServidor(Object? error) =>
 
 bool esCierreDelServidor(Object? motivo) => motivo == 'io server disconnect';
 
+String? motivoCierreSesion(Object? datos) {
+  final motivo = datos is Map ? datos['motivo'] : null;
+  return motivo is String ? motivo : null;
+}
+
 class TiempoRealServicio {
   TiempoRealServicio({this.alCambiarConexion});
   final void Function(EstadoConexion)? alCambiarConexion;
@@ -25,7 +30,7 @@ class TiempoRealServicio {
   final _movimientosController = StreamController<void>.broadcast();
   final _usuariosController = StreamController<void>.broadcast();
   final _qrController = StreamController<Map<String, dynamic>>.broadcast();
-  final _sesionController = StreamController<void>.broadcast();
+  final _sesionController = StreamController<String?>.broadcast();
   final _bicicleterosController = StreamController<void>.broadcast();
   final _rechazosController = StreamController<void>.broadcast();
 
@@ -34,7 +39,7 @@ class TiempoRealServicio {
   Stream<void> get incidencias => _incidenciasController.stream;
   Stream<void> get movimientos => _movimientosController.stream;
   Stream<void> get usuarios => _usuariosController.stream;
-  Stream<void> get sesionCerrada => _sesionController.stream;
+  Stream<String?> get sesionCerrada => _sesionController.stream;
   Stream<void> get bicicleteros => _bicicleterosController.stream;
   Stream<void> get rechazos => _rechazosController.stream;
 
@@ -123,9 +128,9 @@ class TiempoRealServicio {
         _bicicleterosController.add(null);
       }
     });
-    socket.on('sesion', (_) {
+    socket.on('sesion', (datos) {
       if (!_sesionController.isClosed) {
-        _sesionController.add(null);
+        _sesionController.add(motivoCierreSesion(datos));
       }
     });
     socket.on('qr', (datos) {
