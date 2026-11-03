@@ -110,7 +110,11 @@ export const inicializarTiempoReal = (servidor: ServidorHttp): Server => {
 };
 
 export type MotivoCierreSesion =
-  'OTRO_DISPOSITIVO' | 'CUENTA_ELIMINADA' | 'CUENTA_DESACTIVADA' | 'CUENTA_ACTUALIZADA';
+  | 'OTRO_DISPOSITIVO'
+  | 'CUENTA_ELIMINADA'
+  | 'CUENTA_DESACTIVADA'
+  | 'CUENTA_ACTUALIZADA'
+  | 'CONTRASENA_ACTUALIZADA';
 
 export const cerrarSesionesTiempoReal = (
   usuarioId: string,
