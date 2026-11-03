@@ -102,6 +102,7 @@ import { entorno } from '../../src/configuracion/entorno';
 import { liberarBicicleteroGuardia } from '../../src/modulos/acceso/asignaciones/asignacion-guardia.servicio';
 import { olvidarDispositivosDeUsuario } from '../../src/modulos/notificaciones/notificacion.servicio';
 import { emitirCambioUsuarios } from '../../src/modulos/usuarios/usuario.eventos';
+import { cerrarSesionesTiempoReal } from '../../src/tiempo-real/tiempo-real';
 
 const repo = repositorio as jest.Mocked<typeof repositorio>;
 const enMinutos = (minutos: number) => new Date(Date.now() + minutos * 60 * 1000);
@@ -284,6 +285,7 @@ describe('cambiarContrasena', () => {
     expect(repo.buscarPorTokenCambioContrasena).toHaveBeenCalledWith(hashearToken('token'));
     expect(repo.actualizarContrasena).toHaveBeenCalledWith('u1', 'hash:Nueva#Clave2026');
     expect(revocarTodosLosRefreshTokens).toHaveBeenCalledWith('u1');
+    expect(cerrarSesionesTiempoReal).toHaveBeenCalledWith('u1', 'CONTRASENA_ACTUALIZADA');
     expect(crearCorreoContrasenaActualizada).toHaveBeenCalledWith('Ana Rojas');
     expect(crearCorreoCuentaActivada).not.toHaveBeenCalled();
     expect(emitirCambioUsuarios).not.toHaveBeenCalled();
