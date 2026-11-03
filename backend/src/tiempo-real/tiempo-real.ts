@@ -109,13 +109,19 @@ export const inicializarTiempoReal = (servidor: ServidorHttp): Server => {
   return io;
 };
 
-export const cerrarSesionesTiempoReal = (usuarioId: string): void => {
+export type MotivoCierreSesion =
+  'OTRO_DISPOSITIVO' | 'CUENTA_ELIMINADA' | 'CUENTA_DESACTIVADA' | 'CUENTA_ACTUALIZADA';
+
+export const cerrarSesionesTiempoReal = (
+  usuarioId: string,
+  motivo: MotivoCierreSesion = 'OTRO_DISPOSITIVO'
+): void => {
   if (!io) {
     return;
   }
 
   const sala = salaUsuario(usuarioId);
-  io.to(sala).emit(EventosTiempoReal.SESION, { motivo: 'OTRO_DISPOSITIVO' });
+  io.to(sala).emit(EventosTiempoReal.SESION, { motivo });
   const servidor = io;
   setTimeout(() => servidor.in(sala).disconnectSockets(true), 1000).unref();
 };
