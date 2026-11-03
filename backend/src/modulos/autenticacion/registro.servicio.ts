@@ -131,7 +131,8 @@ export const registrarUsuario = async (datos: DatosRegistro) => {
   });
 
   return {
-    message: 'Registro recibido. Revisa tu correo para activar la cuenta.',
+    message:
+      'Registro recibido. Revisa tu correo para activar la cuenta. Si no lo ves en unos minutos, revisa la carpeta de spam.',
     usuario: mapearUsuarioPublico(usuarioGuardado)
   };
 };
