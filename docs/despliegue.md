@@ -117,7 +117,40 @@ Los archivos de Firebase no se suben al repositorio: están en `.gitignore`.
 
 Sin correo nadie puede confirmar su cuenta ni recuperar su contraseña, así que este paso es obligatorio en producción.
 
-**Con Gmail:**
+**Recomendado en producción: enviar desde el mismo dominio de los enlaces.**
+
+Los correos deben salir desde una dirección del mismo dominio de los enlaces, con SPF, DKIM y DMARC. Si salen desde una cuenta de Gmail con enlaces a otro dominio, Google suele mandarlos a spam, sobre todo cuando el dominio es nuevo.
+
+- **Subdominio de la universidad:** lo ideal es una cuenta o alias institucional, por ejemplo `ubbike@ubiobio.cl`, con el SMTP que indique el área de informática. `ubiobio.cl` usa Google Workspace y ya publica SPF, DKIM y DMARC.
+- **Dominio propio:** usa un servicio de correo transaccional, como se describe a continuación.
+
+Con Resend (plan gratis de 3.000 correos al mes y 100 al día) y el dominio en Cloudflare:
+
+1. En resend.com, en **Domains → Add Domain**, agrega el dominio.
+2. En Cloudflare, en **DNS → Records**, agrega los registros que muestra Resend:
+   - un `MX` y un `TXT` para el subdominio `send` (SPF);
+   - un `TXT` para `resend._domainkey` (DKIM).
+3. Agrega el registro DMARC: tipo `TXT`, nombre `_dmarc` y contenido `v=DMARC1; p=none;`. Cuando los correos lleguen con DMARC aprobado, puedes subirlo a `p=quarantine`.
+4. En Resend presiona **Verify** y espera el estado *Verified*.
+5. En **API Keys** crea una clave con permiso de envío para ese dominio.
+6. Para que las respuestas lleguen a alguien, en Cloudflare activa **Email → Email Routing** y crea `soporte@DOMINIO`, con reenvío a un buzón real.
+7. Configura `.env`:
+
+   ```env
+   SMTP_HOST=smtp.resend.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=resend
+   SMTP_PASSWORD=<clave de API de Resend>
+   MAIL_FROM=UBBike <no-responder@DOMINIO>
+   CORREO_SOPORTE=soporte@DOMINIO
+   ```
+
+   Aquí `CORREO_SOPORTE` es obligatorio, porque `SMTP_USER` no es una dirección de correo.
+
+Para comprobarlo, abre en Gmail un correo recibido y elige **Mostrar original**: SPF, DKIM y DMARC deben decir `PASS`.
+
+**Con Gmail, solo para pruebas locales:**
 
 1. Usa una cuenta dedicada, por ejemplo `ubbike.notificaciones@gmail.com`.
 2. Activa la verificación en dos pasos.
