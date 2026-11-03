@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/app/aplicacion_ubbike.dart';
 import 'package:ubbike/app/principal/destino_inicial.dart';
+import 'package:ubbike/core/configuracion/licencias_terceros.dart';
 import 'package:ubbike/core/servicios/fcm_servicio.dart';
 import 'package:ubbike/features/incidencias/data/borrador_incidencia.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registrarLicenciasDeTerceros();
   await _inicializarFirebase();
   final incidenciaPendiente = await existeBorradorIncidencia();
   runApp(
