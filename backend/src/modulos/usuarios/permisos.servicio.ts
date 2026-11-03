@@ -23,7 +23,7 @@ import {
   horasExpiracionVerificacionCorreo
 } from '../autenticacion/autenticacion.tokens';
 import { asegurarNoEsUltimoAdministrador } from './usuario.servicio';
-import { emitirCambioUsuarios } from './usuario.eventos';
+import { cerrarSesionesUsuario, emitirCambioUsuarios } from './usuario.eventos';
 import { crearDatosInvitacionAcceso } from './invitacion.servicio';
 
 type DatosActualizarPermisos = {
@@ -166,6 +166,12 @@ export const actualizarPermisosUsuario = async (
   }
 
   const usuarioGuardado = await usuarioRepositorio.actualizar(usuario.id, datosActualizacion);
+  if (invalidarSesiones) {
+    cerrarSesionesUsuario(
+      usuario.id,
+      usuarioGuardado.cuentaActiva ? 'CUENTA_ACTUALIZADA' : 'CUENTA_DESACTIVADA'
+    );
+  }
 
   if (
     usuario.rol === RolUsuario.GUARDIA &&
