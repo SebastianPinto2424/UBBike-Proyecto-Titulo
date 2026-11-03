@@ -128,9 +128,11 @@ real la sesion abierta en cualquier otro dispositivo.
 
 Cuando administracion elimina o desactiva una cuenta, o le cambia el rol o el correo, el
 backend sube `versionSesion` y envia por tiempo real el evento `sesion` con su motivo
-(`CUENTA_ELIMINADA`, `CUENTA_DESACTIVADA` o `CUENTA_ACTUALIZADA`). La app cierra la sesion
-al instante y muestra el motivo en la pantalla de ingreso. Si la app estaba cerrada, la
-sesion se rechaza en la siguiente peticion.
+(`CUENTA_ELIMINADA`, `CUENTA_DESACTIVADA` o `CUENTA_ACTUALIZADA`). Lo mismo ocurre al
+cambiar la contrasena con el enlace del correo (`CONTRASENA_ACTUALIZADA`), en todos los
+dispositivos de esa cuenta. La app cierra la sesion al instante y muestra el motivo en un
+aviso temporal de la pantalla de ingreso. Si la app estaba cerrada, la sesion se rechaza en
+la siguiente peticion.
 
 Enlaces de los correos:
 
