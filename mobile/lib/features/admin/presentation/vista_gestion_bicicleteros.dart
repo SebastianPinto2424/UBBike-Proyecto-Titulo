@@ -8,6 +8,7 @@ import 'package:ubbike/features/admin/presentation/hoja_formulario_bicicletero.d
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/widgets/bicicletero_widgets.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/dialogo_eliminar.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/tarjeta_accion.dart';
@@ -338,44 +339,17 @@ class _PanelGestionBicicletero extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: onEditar,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ColoresUbb.azulApp,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Editar'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton(
-                  onPressed: onEliminar,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ColoresUbb.rojoInstitucional,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Eliminar'),
-                  ),
-                ),
-              ),
-            ],
+          child: BotonesAccion(
+            secundaria: AccionBoton(
+              texto: 'Editar',
+              color: ColoresUbb.azulApp,
+              onPressed: onEditar,
+            ),
+            principal: AccionBoton(
+              texto: 'Eliminar',
+              color: ColoresUbb.rojoInstitucional,
+              onPressed: onEliminar,
+            ),
           ),
         ),
       ),
