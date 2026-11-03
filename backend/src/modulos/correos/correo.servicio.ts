@@ -63,6 +63,9 @@ export const enviarCorreo = async (datos: DatosCorreo, db?: ClientePrisma): Prom
   await encolarEntrega('CORREO', { ...datos, adjuntos }, db);
 };
 
+const dominioRemitente = () =>
+  entorno.correo.remitente.match(/@([^\s@<>]+)>?\s*$/)?.[1] ?? 'ubbike.local';
+
 export const entregarCorreo = async (datos: CorreoEncolado, entregaId: string): Promise<void> => {
   const transporte = crearTransporte();
 
@@ -79,7 +82,7 @@ export const entregarCorreo = async (datos: CorreoEncolado, entregaId: string): 
   }
 
   await transporte.sendMail({
-    messageId: `<${entregaId}@ubbike.local>`,
+    messageId: `<${entregaId}@${dominioRemitente()}>`,
     from: entorno.correo.remitente,
     replyTo: entorno.correo.soporte,
     to: datos.para,
