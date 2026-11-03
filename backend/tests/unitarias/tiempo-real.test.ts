@@ -3,10 +3,15 @@ import { prismaSimulado } from '../apoyo/prisma-simulado';
 const mockIo = {
   use: jest.fn(),
   on: jest.fn(),
-  to: jest.fn().mockReturnValue({ emit: jest.fn() })
+  to: jest.fn().mockReturnValue({ emit: jest.fn() }),
+  in: jest.fn().mockReturnValue({ disconnectSockets: jest.fn() })
 };
 jest.mock('socket.io', () => ({ Server: jest.fn().mockImplementation(() => mockIo) }));
-import { inicializarTiempoReal, emitirTiempoReal } from '../../src/tiempo-real/tiempo-real';
+import {
+  cerrarSesionesTiempoReal,
+  inicializarTiempoReal,
+  emitirTiempoReal
+} from '../../src/tiempo-real/tiempo-real';
 import type { Server } from 'http';
 
 beforeEach(() => {
@@ -59,6 +64,20 @@ it('libera ambos temporizadores cuando se desconecta', () => {
   socket.on.mock.calls.find(([e]) => e === 'disconnect')![1]();
   expect(jest.getTimerCount()).toBe(0);
 });
+it('al cerrar las sesiones avisa el motivo y desconecta al usuario', async () => {
+  inicializarTiempoReal({} as Server);
+  const sala = mockIo.to('usuario:u');
+  const conexiones = mockIo.in('usuario:u');
+
+  cerrarSesionesTiempoReal('u', 'CUENTA_ELIMINADA');
+  cerrarSesionesTiempoReal('u');
+
+  expect(sala.emit).toHaveBeenCalledWith('sesion', { motivo: 'CUENTA_ELIMINADA' });
+  expect(sala.emit).toHaveBeenCalledWith('sesion', { motivo: 'OTRO_DISPOSITIVO' });
+  await jest.advanceTimersByTimeAsync(1000);
+  expect(conexiones.disconnectSockets).toHaveBeenCalledWith(true);
+});
+
 it('deduplica salas al emitir', () => {
   inicializarTiempoReal({} as Server);
   emitirTiempoReal(['u', 'u'], 'incidencia');
