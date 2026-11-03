@@ -40,3 +40,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/imagenes/ubbike-logo-transparente.png
+    - assets/ortografia/
