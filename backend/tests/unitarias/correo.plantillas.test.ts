@@ -333,12 +333,31 @@ describe('envío de correos', () => {
 
     expect(enviarMail).toHaveBeenCalledWith(
       expect.objectContaining({
-        messageId: '<e1@ubbike.local>',
+        messageId: expect.stringMatching(/^<e1@[^\s>]+>$/),
         from: entorno.correo.remitente,
         replyTo: entorno.correo.soporte,
         to: 'ana@alumnos.ubiobio.cl',
         subject: 'Asunto',
         headers: { 'X-Entity-Ref-ID': 'r1' }
+      })
+    );
+  });
+
+  it('el identificador del mensaje usa el dominio del remitente', async () => {
+    entorno.correo.host = 'smtp.example.com';
+    const remitenteOriginal = entorno.correo.remitente;
+    entorno.correo.remitente = 'Soporte@UBB <no-responder@ubbike.me>';
+
+    try {
+      await entregarCorreo({ para: correoAna, asunto: 'Asunto', texto: 't', html: 'h' }, 'e2');
+    } finally {
+      entorno.correo.remitente = remitenteOriginal;
+    }
+
+    expect(enviarMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: '<e2@ubbike.me>',
+        from: 'Soporte@UBB <no-responder@ubbike.me>'
       })
     );
   });
