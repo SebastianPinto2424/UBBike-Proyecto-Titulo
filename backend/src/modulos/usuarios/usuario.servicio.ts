@@ -13,7 +13,7 @@ import { TipoNotificacion } from '../notificaciones/tipo-notificacion';
 import { mapearUsuarioPublico } from './usuario.mapeador';
 import { RolUsuario } from './rol-usuario';
 import { validarCorreoParaRol } from './usuario.reglas';
-import { emitirCambioUsuarios } from './usuario.eventos';
+import { cerrarSesionesUsuario, emitirCambioUsuarios } from './usuario.eventos';
 import {
   crearTokenSeguro,
   horasExpiracionVerificacionCorreo
@@ -220,6 +220,7 @@ export const eliminarUsuarioAdmin = async (usuarioId: string, actorUsuarioId?: s
     tokenCambioContrasenaExpiraEn: null,
     versionSesion: { increment: 1 }
   });
+  cerrarSesionesUsuario(usuario.id, 'CUENTA_ELIMINADA');
 
   if (usuario.rol === RolUsuario.GUARDIA) {
     await liberarBicicleteroGuardia(usuario.id, actorUsuarioId ?? null);
