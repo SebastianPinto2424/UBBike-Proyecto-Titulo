@@ -130,6 +130,8 @@ void main() {
     expect(mensajeCierreRemoto('CUENTA_ELIMINADA'), mensajeCuentaEliminada);
     expect(mensajeCierreRemoto('CUENTA_DESACTIVADA'), mensajeCuentaDesactivada);
     expect(mensajeCierreRemoto('CUENTA_ACTUALIZADA'), mensajeCuentaActualizada);
+    expect(mensajeCierreRemoto('CONTRASENA_ACTUALIZADA'),
+        mensajeContrasenaActualizada);
     expect(mensajeCierreRemoto('OTRO_DISPOSITIVO'),
         mensajeSesionEnOtroDispositivo);
     expect(mensajeCierreRemoto(null), mensajeSesionEnOtroDispositivo);
