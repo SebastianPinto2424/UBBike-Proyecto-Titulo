@@ -126,6 +126,12 @@ Cada cuenta mantiene una sola sesion activa: `login` sube `versionSesion`, revoc
 refresh tokens anteriores, olvida los dispositivos push registrados y cierra en tiempo
 real la sesion abierta en cualquier otro dispositivo.
 
+Cuando administracion elimina o desactiva una cuenta, o le cambia el rol o el correo, el
+backend sube `versionSesion` y envia por tiempo real el evento `sesion` con su motivo
+(`CUENTA_ELIMINADA`, `CUENTA_DESACTIVADA` o `CUENTA_ACTUALIZADA`). La app cierra la sesion
+al instante y muestra el motivo en la pantalla de ingreso. Si la app estaba cerrada, la
+sesion se rechaza en la siguiente peticion.
+
 Enlaces de los correos:
 
 ```text
