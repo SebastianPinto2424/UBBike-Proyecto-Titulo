@@ -42,7 +42,11 @@ extension SnackBarSemantico on BuildContext {
     );
   }
 
-  void mostrarInfo(String mensaje) {
+  void mostrarInfo(
+    String mensaje, {
+    Duration duracion = const Duration(seconds: 4),
+    bool cerrable = false,
+  }) {
     mostrarAvisoUnico(
       SnackBar(
         content: Row(
@@ -55,6 +59,9 @@ extension SnackBarSemantico on BuildContext {
         backgroundColor: ColoresUbb.azulNoche,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: duracion,
+        showCloseIcon: cerrable,
+        closeIconColor: Colors.white,
       ),
     );
   }
