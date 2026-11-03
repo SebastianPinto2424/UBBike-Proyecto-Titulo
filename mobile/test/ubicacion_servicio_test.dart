@@ -11,6 +11,22 @@ class _Plataforma extends GeolocatorPlatform {
   int posiciones = 0;
   LocationSettings? ajustes;
   Object? fallo;
+  Position? ultima;
+  Stream<Position> Function() lecturas = () => const Stream.empty();
+  LocationSettings? ajustesLecturas;
+  int seguimientos = 0;
+
+  @override
+  Future<Position?> getLastKnownPosition(
+          {bool forceLocationManager = false}) async =>
+      ultima;
+
+  @override
+  Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
+    seguimientos++;
+    ajustesLecturas = locationSettings;
+    return lecturas();
+  }
 
   @override
   Future<bool> isLocationServiceEnabled() async => habilitado;
@@ -95,5 +111,79 @@ void main() {
       () async {
     plataforma.fallo = TimeoutException('Sin señal');
     expect(await servicio.obtenerPosicionActual(), isNull);
+  });
+
+  group('afinar la posición', () {
+    Position lectura(double precision, {DateTime? hora}) => Position(
+        latitude: -36.821,
+        longitude: -73.011,
+        timestamp: hora ?? DateTime.now(),
+        accuracy: precision,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0);
+
+    Future<List<double>> precisiones(Stream<Position> posiciones) async =>
+        [await for (final posicion in posiciones) posicion.accuracy];
+
+    test(
+        'entrega al instante la última posición reciente y luego solo '
+        'lecturas más precisas hasta llegar a 10 m', () async {
+      plataforma.ultima = lectura(60,
+          hora: DateTime.now().subtract(const Duration(seconds: 30)));
+      plataforma.lecturas = () => Stream.fromIterable(
+          [lectura(40), lectura(70), lectura(9), lectura(5)]);
+
+      expect(await precisiones(servicio.afinarPosicion()), [60, 40, 9]);
+    });
+
+    test('una última posición antigua no se muestra', () async {
+      plataforma.ultima = lectura(5,
+          hora: DateTime.now().subtract(const Duration(minutes: 10)));
+      plataforma.lecturas = () => Stream.fromIterable([lectura(12)]);
+
+      expect(await precisiones(servicio.afinarPosicion()), [12]);
+    });
+
+    test('si la última posición ya es precisa no enciende el GPS', () async {
+      plataforma.ultima = lectura(6);
+
+      expect(await precisiones(servicio.afinarPosicion()), [6]);
+      expect(plataforma.seguimientos, 0);
+    });
+
+    test('pide máxima precisión y una lectura por segundo en Android',
+        () async {
+      plataforma.lecturas = () => Stream.fromIterable([lectura(4)]);
+
+      await precisiones(servicio.afinarPosicion());
+
+      final ajustes = plataforma.ajustesLecturas as AndroidSettings;
+      expect(ajustes.accuracy, LocationAccuracy.best);
+      expect(ajustes.intervalDuration, const Duration(seconds: 1));
+      expect(ajustes.distanceFilter, 0);
+    });
+
+    test('sin permiso no busca la posición', () async {
+      plataforma.permiso = LocationPermission.deniedForever;
+
+      expect(await precisiones(servicio.afinarPosicion()), isEmpty);
+      expect(plataforma.seguimientos, 0);
+    });
+
+    test('termina aunque el GPS no responda', () async {
+      final sinSenal = StreamController<Position>();
+      addTearDown(sinSenal.close);
+      plataforma.lecturas = () => sinSenal.stream;
+
+      expect(
+        await precisiones(
+            servicio.afinarPosicion(limite: const Duration(milliseconds: 50))),
+        isEmpty,
+      );
+    });
   });
 }
