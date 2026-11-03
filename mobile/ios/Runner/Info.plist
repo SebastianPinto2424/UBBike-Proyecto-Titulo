@@ -42,7 +42,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>UBBike usa la cámara para escanear códigos QR y fotografiar bicicletas e incidencias.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>UBBike usa tu ubicación para sugerirte el bicicletero más cercano.</string>
+	<string>UBBike usa tu ubicación para sugerirte el bicicletero más cercano y, si administras bicicleteros, para marcarlos en el mapa.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
