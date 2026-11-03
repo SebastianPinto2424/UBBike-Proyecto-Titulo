@@ -11,6 +11,7 @@ import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/shared/utilidades/utilidades_sesion.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
+import 'package:ubbike/shared/widgets/dialogo_correo_enviado.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 
@@ -36,10 +37,8 @@ class _VistaPerfilState extends ConsumerState<VistaPerfil> {
     if (_enviando || _espera > 0) return;
     setState(() => _enviando = true);
     try {
-      final mensaje =
-          await ref.read(perfilVmProvider).solicitarCambioContrasena(correo);
+      await ref.read(perfilVmProvider).solicitarCambioContrasena(correo);
       if (!mounted) return;
-      context.mostrarExito(mensaje);
       setState(() => _espera = 60);
       _temporizador = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!mounted) {
@@ -49,6 +48,15 @@ class _VistaPerfilState extends ConsumerState<VistaPerfil> {
         setState(() => _espera--);
         if (_espera == 0) timer.cancel();
       });
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (_) => const DialogoCorreoEnviado(
+            proposito: 'cambiar tu contraseña',
+            nota: 'Al cambiarla, cerraremos tu sesión en todos tus equipos.',
+          ),
+        ),
+      );
     } on ExcepcionApi catch (error) {
       if (mounted) context.mostrarError(error.mensaje);
     } catch (_) {
