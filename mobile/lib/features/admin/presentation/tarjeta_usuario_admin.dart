@@ -366,34 +366,19 @@ class _PanelGestionUsuario extends StatelessWidget {
               const Divider(height: 28),
               const _EtiquetaSeccion('Acciones de cuenta'),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      key: Key('editar-usuario-${usuario.id}'),
-                      onPressed: () => onEditarCredenciales(usuario),
-                      child: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Editar datos'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      key: Key('eliminar-usuario-${usuario.id}'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColoresUbb.rojoInstitucional,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () => onEliminar(usuario),
-                      child: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Eliminar cuenta'),
-                      ),
-                    ),
-                  ),
-                ],
+              BotonesAccion(
+                secundaria: AccionBoton(
+                  texto: 'Editar datos',
+                  color: ColoresUbb.azulApp,
+                  clave: Key('editar-usuario-${usuario.id}'),
+                  onPressed: () => onEditarCredenciales(usuario),
+                ),
+                principal: AccionBoton(
+                  texto: 'Eliminar cuenta',
+                  color: ColoresUbb.rojoInstitucional,
+                  clave: Key('eliminar-usuario-${usuario.id}'),
+                  onPressed: () => onEliminar(usuario),
+                ),
               ),
             ],
           ),
