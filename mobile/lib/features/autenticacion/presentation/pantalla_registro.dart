@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ubbike/features/autenticacion/application/autenticacion_vm.dart';
-import 'package:ubbike/features/autenticacion/presentation/dialogo_correo_enviado.dart';
+import 'package:ubbike/shared/widgets/dialogo_correo_enviado.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ubbike/core/servicios/excepcion_api.dart';
@@ -254,7 +254,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     try {
       final correo = correoController.text.trim();
 
-      final mensaje = await ref.read(autenticacionVmProvider).registrar(
+      await ref.read(autenticacionVmProvider).registrar(
             nombre: nombreController.text.trim(),
             rut: rutController.text.trim(),
             correo: correo,
@@ -262,7 +262,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
           );
 
       if (mounted) {
-        unawaited(_mostrarCorreoEnviado(correo, mensaje));
+        unawaited(_mostrarCorreoEnviado(correo));
       }
     } on ExcepcionApi catch (error) {
       if (mounted) {
@@ -279,11 +279,15 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     }
   }
 
-  Future<void> _mostrarCorreoEnviado(String correo, String mensaje) async {
+  Future<void> _mostrarCorreoEnviado(String correo) async {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => DialogoCorreoEnviado(correo: correo, mensaje: mensaje),
+      builder: (_) => DialogoCorreoEnviado(
+        correo: correo,
+        proposito: 'activar tu cuenta',
+        textoBoton: 'Volver al ingreso',
+      ),
     );
     if (mounted) {
       Navigator.of(context).pop();
