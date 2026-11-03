@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
+import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/utilidades/utiles_comun.dart';
 
@@ -370,44 +371,17 @@ class _PanelGestionBicicleta extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: onEditar,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ColoresUbb.azulApp,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Editar'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: onEliminar,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ColoresUbb.rojoInstitucional,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Eliminar'),
-                      ),
-                    ),
-                  ),
-                ],
+              BotonesAccion(
+                secundaria: AccionBoton(
+                  texto: 'Editar',
+                  color: ColoresUbb.azulApp,
+                  onPressed: onEditar,
+                ),
+                principal: AccionBoton(
+                  texto: 'Eliminar',
+                  color: ColoresUbb.rojoInstitucional,
+                  onPressed: onEliminar,
+                ),
               ),
             ],
           ),
