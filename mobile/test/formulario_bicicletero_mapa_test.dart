@@ -27,20 +27,17 @@ class _TilesMemoria extends TileProvider {
 }
 
 class _Gps extends UbicacionServicio {
-  _Gps(this.resultado);
-  final Future<Position?> Function() resultado;
+  _Gps(this.posiciones);
+  final Stream<Position> Function() posiciones;
   int llamadas = 0;
-  LocationAccuracy? precisionPedida;
-  Duration? limitePedido;
   @override
-  Future<Position?> obtenerPosicionActual({
-    LocationAccuracy precision = LocationAccuracy.medium,
-    Duration limite = const Duration(seconds: 6),
+  Stream<Position> afinarPosicion({
+    double precisionObjetivo = 10,
+    Duration limite = const Duration(seconds: 15),
+    Duration antiguedadMaxima = const Duration(minutes: 2),
   }) {
     llamadas++;
-    precisionPedida = precision;
-    limitePedido = limite;
-    return resultado();
+    return posiciones();
   }
 }
 
@@ -55,17 +52,18 @@ class _Buscador implements GeocodificacionRepositorio {
   }
 }
 
-Position _posicion() => Position(
-    latitude: -36.821,
-    longitude: -73.011,
-    timestamp: DateTime.now(),
-    accuracy: 8,
-    altitude: 0,
-    altitudeAccuracy: 0,
-    heading: 0,
-    headingAccuracy: 0,
-    speed: 0,
-    speedAccuracy: 0);
+Position _posicion({double latitud = -36.821, double precision = 8}) =>
+    Position(
+        latitude: latitud,
+        longitude: -73.011,
+        timestamp: DateTime.now(),
+        accuracy: precision,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0);
 
 final _bicicletero = BicicleteroApp.desdeJson({
   'id': 'b',
@@ -93,7 +91,7 @@ Future<void> _abrirHoja(
       overrides: [
         fabricaTilesMapaProvider.overrideWithValue(() => _TilesMemoria()),
         ubicacionServicioProvider
-            .overrideWithValue(gps ?? _Gps(() async => null)),
+            .overrideWithValue(gps ?? _Gps(() => const Stream.empty())),
         geocodificacionRepositorioProvider
             .overrideWithValue(buscador ?? _Buscador((_) async => const [])),
       ],
@@ -439,16 +437,18 @@ void main() {
 
   group('GPS', () {
     testWidgets('no se pide solo al abrir la hoja', (tester) async {
-      final gps = _Gps(() async => _posicion());
+      final gps = _Gps(() => Stream.value(_posicion()));
       await _abrirHoja(tester, gps: gps, alGuardar: (_) async {});
       await _abrirUbicacion(tester);
 
       expect(gps.llamadas, 0);
     });
 
-    testWidgets('usar mi ubicación pide alta precisión y fija el punto',
+    testWidgets(
+        'usar mi ubicación fija el punto con la primera lectura y lo afina',
         (tester) async {
-      final gps = _Gps(() async => _posicion());
+      final lecturas = StreamController<Position>.broadcast();
+      final gps = _Gps(() => lecturas.stream);
       DatosFormularioBicicletero? enviada;
       await _abrirHoja(tester, gps: gps, alGuardar: (datos) async {
         enviada = datos;
@@ -458,12 +458,19 @@ void main() {
 
       await tester.ensureVisible(find.byKey(const Key('usar-mi-ubicacion')));
       await tester.tap(find.byKey(const Key('usar-mi-ubicacion')));
-      await _asentar(tester);
+      await tester.pump();
 
+      lecturas.add(_posicion(latitud: -36.825, precision: 35));
+      await _asentar(tester);
       expect(gps.llamadas, 1);
-      expect(gps.precisionPedida, LocationAccuracy.high);
-      expect(gps.limitePedido, const Duration(seconds: 20));
-      expect(find.textContaining('8 m'), findsOneWidget);
+      expect(find.textContaining('Precisión actual: 35 m'), findsOneWidget);
+      expect(find.textContaining('-36.825000, -73.011000'), findsWidgets);
+
+      lecturas.add(_posicion(precision: 8));
+      await lecturas.close();
+      await _asentar(tester);
+      expect(find.textContaining('Precisión aproximada: 8 m'), findsOneWidget);
+      expect(find.textContaining('-36.821000, -73.011000'), findsWidgets);
 
       await _guardar(tester);
       await _asentar(tester);
@@ -472,7 +479,7 @@ void main() {
 
     testWidgets('sin resultado explica el problema', (tester) async {
       await _abrirHoja(tester,
-          gps: _Gps(() async => null), alGuardar: (_) async {});
+          gps: _Gps(() => const Stream.empty()), alGuardar: (_) async {});
       await _abrirUbicacion(tester);
 
       await tester.ensureVisible(find.byKey(const Key('usar-mi-ubicacion')));
@@ -482,11 +489,11 @@ void main() {
       expect(find.textContaining('localización esté activada'), findsOneWidget);
     });
 
-    testWidgets('un GPS tardío no reemplaza el punto marcado a mano',
+    testWidgets('marcar el punto a mano detiene el afinado del GPS',
         (tester) async {
-      final espera = Completer<Position?>();
+      final lecturas = StreamController<Position>.broadcast();
       await _abrirHoja(tester,
-          gps: _Gps(() => espera.future), alGuardar: (_) async {});
+          gps: _Gps(() => lecturas.stream), alGuardar: (_) async {});
       await _abrirUbicacion(tester);
 
       await tester.ensureVisible(find.byKey(const Key('usar-mi-ubicacion')));
@@ -494,11 +501,14 @@ void main() {
       await tester.pump();
 
       await _tocarMapa(tester, const LatLng(-36.823456, -73.012345));
-      espera.complete(_posicion());
+      lecturas.add(_posicion());
+      await lecturas.close();
       await _asentar(tester);
 
+      expect(lecturas.hasListener, isFalse);
       expect(find.textContaining('-36.823456, -73.012345'), findsWidgets);
-      expect(find.textContaining('Precisión aproximada'), findsNothing);
+      expect(find.textContaining('Precisión'), findsNothing);
+      expect(find.text('Usar mi ubicación'), findsOneWidget);
     });
   });
 
