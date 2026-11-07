@@ -16,7 +16,7 @@ if (-not (Test-Path (Join-Path $raiz 'mobile\android\app\google-services.json'))
 }
 
 if (-not (Test-Path (Join-Path $raiz 'mobile\android\key.properties'))) {
-    Write-Warning "No existe mobile\android\key.properties: la APK se firma con la llave de depuracion de este equipo."
+    throw "Falta mobile\android\key.properties. La APK de produccion debe firmarse con una llave propia."
 }
 
 try {
