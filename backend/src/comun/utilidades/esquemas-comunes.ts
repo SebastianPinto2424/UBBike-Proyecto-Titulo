@@ -22,3 +22,11 @@ export const esquemaLimitePagina = Joi.number().integer().min(1).messages({
 export const esquemaCursorPagina = Joi.string().uuid().messages({
   'string.guid': 'Cursor de paginación inválido'
 });
+
+export const alcancePropio = 'PROPIO';
+
+export type AlcanceConsulta = typeof alcancePropio;
+
+export const esquemaAlcanceConsulta = Joi.string().valid(alcancePropio).messages({
+  'any.only': 'Alcance de consulta inválido'
+});
