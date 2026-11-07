@@ -366,6 +366,7 @@ class _VistaGestionManualGuardiaState
       errorFotoBicicletaManual = null;
       campos.limpiarBicicleta();
     });
+    enfocarAlDibujar(campos.focoDescripcion);
   }
 
   void _mostrarRechazoManual(BuildContext context) {
