@@ -1,5 +1,6 @@
 import { SolicitudAutenticada } from '../../../comun/middlewares/autenticacion.middleware';
 import { controladorAsync } from '../../../comun/utilidades/controlador-async';
+import type { AlcanceConsulta } from '../../../comun/utilidades/esquemas-comunes';
 import {
   actualizarEstadoSolicitudGuardia,
   cancelarSolicitudGuardia
@@ -28,7 +29,8 @@ export const listar = controladorAsync<SolicitudAutenticada>(async (req, res) =>
     rol: req.usuario!.rol,
     estado: req.query.estado?.toString() as EstadoSolicitudGuardia | 'TODOS' | undefined,
     q: req.query.q?.toString(),
-    limite: req.query.limite ? Number(req.query.limite) : undefined
+    limite: req.query.limite ? Number(req.query.limite) : undefined,
+    alcance: req.query.alcance as AlcanceConsulta | undefined
   });
 
   return res.status(200).json({ solicitudes });
