@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-const int maxFotoDataUrlLength = 7000000;
+const int largoMaximoFotoDataUrl = 7000000;
 
 const _mensajeFormato = 'La foto debe ser JPG, PNG o WEBP.';
 const _mensajePeso = 'La foto es muy pesada. Elige una imagen más liviana.';
@@ -18,7 +18,7 @@ FotoPreparada prepararFoto(Uint8List bytes, {int? maximoBytes}) {
   }
 
   final dataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
-  if (dataUrl.length > maxFotoDataUrlLength) {
+  if (dataUrl.length > largoMaximoFotoDataUrl) {
     return (dataUrl: null, error: _mensajePeso);
   }
   return (dataUrl: dataUrl, error: null);
