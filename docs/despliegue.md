@@ -195,7 +195,7 @@ En el primer arranque el backend aplica las migraciones de la base de datos, cre
 Se hace en el equipo de desarrollo, no en el servidor.
 
 1. Pon `google-services.json` en `mobile/android/app/` (paso 4).
-2. **Firma propia (recomendado).** Así cualquier equipo puede compilar actualizaciones que se instalen encima de la versión anterior.
+2. **Firma propia (obligatoria).** Así cualquier equipo autorizado puede compilar actualizaciones que se instalen encima de la versión anterior.
    1. Genera la llave una sola vez y guárdala respaldada fuera del repositorio:
 
       ```bash
@@ -211,7 +211,7 @@ Se hace en el equipo de desarrollo, no en el servidor.
       keyPassword=<clave de la llave>
       ```
 
-   Sin `key.properties`, la APK se firma con la llave de depuración del equipo que compila.
+   Sin `key.properties`, los scripts detienen la compilación para impedir que una APK de producción se publique con la llave de depuración.
 3. Compila apuntando al subdominio:
 
    ```bash
@@ -258,5 +258,26 @@ Si alguna vez se activaron las cuentas de demostración, se quitan siguiendo "Cu
   - Las páginas de los enlaces de correo (`/enlaces/`) quedan fuera de ese filtro, porque al enviar su formulario el navegador manda `Origin: null`. Las protegen el token de un solo uso del correo, el límite de intentos y su propia CSP.
   - Las apps no envían cabecera `Origin`, porque CORS es una regla de los navegadores, así que no se ven afectadas.
   - `CORS_ORIGINS` queda vacío. Solo se agregan orígenes si algún día existe un frontend web, separados por comas.
-- **Autenticación:** CORS no reemplaza la autenticación. Cada ruta protegida exige un token JWT de corta duración, con refresh token rotativo y una sola sesión por cuenta. El inicio de sesión, el registro y los enlaces tienen límite de intentos por IP, por eso `TRUST_PROXY` debe coincidir con el proxy usado.
+- **Autenticación:** CORS no reemplaza la autenticación. Cada ruta protegida exige un token JWT de corta duración, con refresh token rotativo y una sola sesión por cuenta.
+- **Límites de intentos:** se cuentan por identidad (correo, cuenta o enlace) y, además, con un techo amplio por red. En la Wi-Fi del campus cientos de personas comparten la misma IP pública, así que un límite solo por IP bloquearía a todo un curso que se registra a la vez. Los techos por red se ajustan con `RATE_LIMIT_FACTOR` (por ejemplo, `2` los duplica) y `TRUST_PROXY` debe coincidir con el proxy usado para que la IP sea la real.
+
+## 9. Capacidad medida
+
+Prueba de carga del 06-11-2026 sobre una copia aislada del backend (modo producción, PostgreSQL y Redis propios, 3.000 estudiantes sintéticos, 2 bicicleteros con su guardia) en un PC de 12 hilos:
+
+| Escenario | Resultado |
+| --- | --- |
+| 50 celulares abriendo la app a la vez | 254 peticiones/s, 95 % bajo 0,26 s, sin errores |
+| 200 celulares a la vez | 314 peticiones/s, 95 % bajo 1 s, sin errores |
+| 100 estudiantes generando QR a la vez | 124 QR/s, sin errores |
+| 600 ingresos validados por 2 guardias, con 50 celulares leyendo | 16 ingresos/s, 0 duplicados, 0 autovalidaciones |
+| 2.000 celulares conectados en tiempo real | conectados en 6,6 s; el aviso de un ingreso llega a todos en 0,7 s; 400 MB de memoria |
+| 20 inicios de sesión a la vez | 6 por segundo; el resto de la API sigue respondiendo en 0,09 s |
+| 30 registros desde la misma red | 30 aceptados |
+
+Para la sede Concepción (del orden de 5.000 estudiantes) la demanda esperable en la hora punta es de decenas de peticiones por segundo, muy por debajo de lo medido. El límite real en la entrada de clases son los guardias: validar un QR toma unos segundos por persona, así que con un guardia por bicicletero conviene reforzar los turnos de mayor llegada.
+
+Si algún día se necesita más capacidad:
+- `UV_THREADPOOL_SIZE=8` duplica los inicios de sesión simultáneos (el cifrado de contraseñas corre en ese grupo de hilos y no detiene al resto de la API).
+- Varias instancias del backend detrás de un balanceador requieren el adaptador de Redis de Socket.IO y sesiones persistentes en el balanceador.
 - **Secretos:** `.env`, la credencial de Firebase, `google-services.json`, las llaves de firma y las APK nunca se suben al repositorio.
