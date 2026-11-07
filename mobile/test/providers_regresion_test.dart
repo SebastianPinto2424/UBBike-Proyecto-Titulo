@@ -17,7 +17,7 @@ void main() {
     fallar = false;
     c = ProviderContainer(overrides: [
       clienteApiProvider
-          .overrideWithValue(ClienteApi(httpClient: MockClient((r) async {
+          .overrideWithValue(ClienteApi(cliente: MockClient((r) async {
         if (fallar) return http.Response('{}', 503);
         final json = switch (r.url.path) {
           '/historial/resumen' => {
