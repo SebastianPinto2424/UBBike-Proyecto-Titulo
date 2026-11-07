@@ -50,8 +50,14 @@ class SolicitudGuardiaRepositorio {
     String? estado,
     String? q,
     int? limite,
+    bool propias = false,
   }) =>
-      _api.listarSolicitudes(estado: estado, q: q, limite: limite);
+      _api.listarSolicitudes(
+        estado: estado,
+        q: q,
+        limite: limite,
+        propias: propias,
+      );
 
   Future<SolicitudGuardiaApp> actualizarEstado({
     required String solicitudId,
