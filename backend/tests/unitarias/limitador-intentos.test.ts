@@ -5,7 +5,12 @@ jest.mock('../../src/configuracion/redis', () => ({
 }));
 
 import type { NextFunction, Request, Response } from 'express';
-import { limitarIntentos } from '../../src/comun/middlewares/limitador-intentos.middleware';
+import {
+  limitarIntentos,
+  porCampoDelCuerpo,
+  porHuellaDelCampo,
+  porUsuarioAutenticado
+} from '../../src/comun/middlewares/limitador-intentos.middleware';
 
 type Terminar = () => void;
 
@@ -54,7 +59,7 @@ const ejecutar = async (
   return { pasó, res };
 };
 
-const opcionesLogin = {
+const opcionesInicioSesion = {
   ventanaMs: 60_000,
   maximo: 3,
   mensaje: 'Demasiados intentos fallidos para esta cuenta. Intenta más tarde.',
@@ -64,7 +69,7 @@ const opcionesLogin = {
 
 describe('limitador de intentos de ingreso', () => {
   it('los ingresos correctos no gastan el cupo', async () => {
-    const middleware = limitarIntentos(opcionesLogin);
+    const middleware = limitarIntentos(opcionesInicioSesion);
 
     for (let i = 0; i < 10; i++) {
       const { pasó } = await ejecutar(middleware, 'ok@ubiobio.cl', 200);
@@ -73,7 +78,7 @@ describe('limitador de intentos de ingreso', () => {
   });
 
   it('bloquea recien despues de agotar los intentos fallidos', async () => {
-    const middleware = limitarIntentos(opcionesLogin);
+    const middleware = limitarIntentos(opcionesInicioSesion);
 
     for (let i = 0; i < 3; i++) {
       const { pasó } = await ejecutar(middleware, 'falla@ubiobio.cl', 401);
@@ -87,7 +92,7 @@ describe('limitador de intentos de ingreso', () => {
   });
 
   it('el bloqueo de una cuenta no afecta a las demas', async () => {
-    const middleware = limitarIntentos(opcionesLogin);
+    const middleware = limitarIntentos(opcionesInicioSesion);
 
     for (let i = 0; i < 4; i++) {
       await ejecutar(middleware, 'bloqueada@ubiobio.cl', 401);
@@ -110,5 +115,25 @@ describe('limitador de intentos de ingreso', () => {
     expect((await ejecutar(middleware, 'a@ubiobio.cl', 200)).pasó).toBe(true);
     expect((await ejecutar(middleware, 'a@ubiobio.cl', 200)).pasó).toBe(true);
     expect((await ejecutar(middleware, 'a@ubiobio.cl', 200)).pasó).toBe(false);
+  });
+});
+
+describe('claves del limitador por identidad', () => {
+  it('normaliza el correo y nunca guarda el token del enlace en claro', () => {
+    const req = {
+      body: { correo: '  Ana.Rojas@Alumnos.UBIOBIO.cl ', token: 'token-secreto-del-enlace' }
+    } as Request;
+
+    expect(porCampoDelCuerpo('login', 'correo')(req)).toBe('login:ana.rojas@alumnos.ubiobio.cl');
+    const huella = porHuellaDelCampo('enlace', 'token')(req);
+    expect(huella).toMatch(/^enlace:[0-9a-f]{32}$/);
+    expect(huella).not.toContain('secreto');
+  });
+
+  it('separa a cada persona autenticada aunque compartan la misma red', () => {
+    const ana = { usuario: { usuarioId: 'u1' }, ip: '200.1.1.1' } as unknown as Request;
+    const luis = { usuario: { usuarioId: 'u2' }, ip: '200.1.1.1' } as unknown as Request;
+
+    expect(porUsuarioAutenticado('cambio')(ana)).not.toBe(porUsuarioAutenticado('cambio')(luis));
   });
 });
