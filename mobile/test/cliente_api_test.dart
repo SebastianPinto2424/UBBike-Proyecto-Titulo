@@ -14,7 +14,7 @@ void main() {
     var refresh = 'r1';
     var renovaciones = 0;
     final barrera = Completer<void>();
-    final httpClient = MockClient((r) async {
+    final clienteFalso = MockClient((r) async {
       if (r.url.path.endsWith('/refresh')) {
         renovaciones++;
         await barrera.future;
@@ -25,7 +25,7 @@ void main() {
           '{}', r.headers['Authorization'] == 'Bearer nuevo' ? 200 : 401);
     });
     ClienteApi cliente() => ClienteApi(
-        httpClient: httpClient,
+        cliente: clienteFalso,
         obtenerToken: () => token,
         obtenerRefreshToken: () => refresh,
         obtenerUsuarioId: () => 'usuario',
@@ -47,7 +47,7 @@ void main() {
     test('un refresh $status no cierra la sesión', () async {
       var expirada = false;
       final cliente = ClienteApi(
-          httpClient: MockClient((r) async => http.Response(
+          cliente: MockClient((r) async => http.Response(
               '{}', r.url.path.endsWith('/refresh') ? status : 401)),
           obtenerToken: () => 't',
           obtenerRefreshToken: () => 'r$status',
@@ -66,7 +66,7 @@ void main() {
   test('fallo de red al renovar conserva la sesión', () async {
     var expirada = false;
     final cliente = ClienteApi(
-        httpClient: MockClient((r) async {
+        cliente: MockClient((r) async {
           if (r.url.path.endsWith('/refresh')) {
             throw http.ClientException('sin red');
           }
@@ -88,7 +88,7 @@ void main() {
   test('refresh rechazado expira la sesión una vez', () async {
     var expiraciones = 0;
     final cliente = ClienteApi(
-        httpClient: MockClient((_) async => http.Response('{}', 401)),
+        cliente: MockClient((_) async => http.Response('{}', 401)),
         obtenerToken: () => 't',
         obtenerRefreshToken: () => 'rechazado',
         obtenerUsuarioId: () => 'u',
@@ -102,7 +102,7 @@ void main() {
   test('renovación tardía no revive una sesión cerrada', () async {
     String? refresh = 'tardio';
     var actualizaciones = 0;
-    final httpClient = MockClient((r) async {
+    final clienteFalso = MockClient((r) async {
       if (r.url.path.endsWith('/refresh')) {
         refresh = null;
         return http.Response('{"token":"nuevo","refreshToken":"r2"}', 200);
@@ -110,7 +110,7 @@ void main() {
       return http.Response('{}', 401);
     });
     final cliente = ClienteApi(
-        httpClient: httpClient,
+        cliente: clienteFalso,
         obtenerToken: () => 't',
         obtenerRefreshToken: () => refresh,
         obtenerUsuarioId: () => 'u',
@@ -122,8 +122,8 @@ void main() {
   });
   test('toda petición tiene tiempo límite', () async {
     final cliente = ClienteApi(
-        timeout: const Duration(milliseconds: 5),
-        httpClient: MockClient((_) => Completer<http.Response>().future));
+        tiempoLimite: const Duration(milliseconds: 5),
+        cliente: MockClient((_) => Completer<http.Response>().future));
     await expectLater(
         cliente.get('/perfil'),
         throwsA(isA<ExcepcionApi>()
@@ -131,7 +131,7 @@ void main() {
   });
   test('un error 500 no muestra detalles del servidor', () async {
     final cliente = ClienteApi(
-        httpClient: MockClient((_) async =>
+        cliente: MockClient((_) async =>
             http.Response('{"message":"Error interno del servidor"}', 500)));
     await expectLater(
         cliente.get('/perfil'),
@@ -142,7 +142,7 @@ void main() {
   test('una respuesta que no es JSON se trata como servidor no disponible',
       () async {
     final cliente = ClienteApi(
-        httpClient: MockClient(
+        cliente: MockClient(
             (_) async => http.Response('<html>ERR_NGROK_3200</html>', 404)));
     await expectLater(
         cliente.post('/incidencias'),
@@ -151,7 +151,7 @@ void main() {
   });
   test('el código del error llega a la app', () async {
     final cliente = ClienteApi(
-        httpClient: MockClient((_) async => http.Response(
+        cliente: MockClient((_) async => http.Response(
             '{"message":"Aún no confirmas tu correo.","codigo":"CORREO_NO_VERIFICADO"}',
             403,
             headers: {'content-type': 'application/json; charset=utf-8'})));
@@ -163,7 +163,7 @@ void main() {
   });
   test('sin red una escritura avisa que no hay conexión', () async {
     final cliente = ClienteApi(
-        httpClient:
+        cliente:
             MockClient((_) async => throw http.ClientException('sin red')));
     await expectLater(
         cliente.post('/incidencias'),
