@@ -34,11 +34,11 @@ class _HojaFormularioBicicletaState
     extends ConsumerState<HojaFormularioBicicleta> {
   BicicletasVm get vm => ref.read(bicicletasVmProvider);
   final capturaFotos = CapturaFotos();
-  final formKeyBicicleta = GlobalKey<FormState>();
-  late final TextEditingController descripcionController;
-  late final TextEditingController marcaController;
-  late final TextEditingController modeloController;
-  late final TextEditingController numeroSerieController;
+  final claveFormularioBicicleta = GlobalKey<FormState>();
+  late final TextEditingController controladorDescripcion;
+  late final TextEditingController controladorMarca;
+  late final TextEditingController controladorModelo;
+  late final TextEditingController controladorNumeroSerie;
   final descripcionFocusNode = FocusNode();
   final marcaFocusNode = FocusNode();
   final modeloFocusNode = FocusNode();
@@ -57,14 +57,14 @@ class _HojaFormularioBicicletaState
   void initState() {
     super.initState();
     final bicicleta = widget.bicicleta;
-    descripcionController =
+    controladorDescripcion =
         TextEditingController(text: bicicleta?.descripcion ?? '');
-    marcaController = TextEditingController(text: bicicleta?.marca ?? '');
-    modeloController = TextEditingController(text: bicicleta?.modelo ?? '');
+    controladorMarca = TextEditingController(text: bicicleta?.marca ?? '');
+    controladorModelo = TextEditingController(text: bicicleta?.modelo ?? '');
     colorTexto =
         normalizarColorBicicleta(bicicleta?.color) ?? bicicleta?.color ?? '';
     aroSeleccionado = normalizarAroBicicleta(bicicleta?.aro);
-    numeroSerieController =
+    controladorNumeroSerie =
         TextEditingController(text: bicicleta?.numeroSerie ?? '');
     fotoSeleccionada = bicicleta?.fotoUrl;
     activar = bicicleta?.activa ?? true;
@@ -90,10 +90,10 @@ class _HojaFormularioBicicletaState
     marcaFocusNode.dispose();
     modeloFocusNode.dispose();
     numeroSerieFocusNode.dispose();
-    descripcionController.dispose();
-    marcaController.dispose();
-    modeloController.dispose();
-    numeroSerieController.dispose();
+    controladorDescripcion.dispose();
+    controladorMarca.dispose();
+    controladorModelo.dispose();
+    controladorNumeroSerie.dispose();
     super.dispose();
   }
 
@@ -142,12 +142,12 @@ class _HojaFormularioBicicletaState
     }
 
     setState(() {
-      descripcionController.text = borrador.descripcion;
-      marcaController.text = borrador.marca;
-      modeloController.text = borrador.modelo;
+      controladorDescripcion.text = borrador.descripcion;
+      controladorMarca.text = borrador.marca;
+      controladorModelo.text = borrador.modelo;
       colorTexto = borrador.color;
       aroSeleccionado = borrador.aro;
-      numeroSerieController.text = borrador.numeroSerie;
+      controladorNumeroSerie.text = borrador.numeroSerie;
       activar = borrador.activar;
       _versionRestaurada++;
     });
@@ -164,12 +164,12 @@ class _HojaFormularioBicicletaState
   Future<void> _guardarBorradorActual() async {
     await guardarBorradorBicicleta(
       BorradorBicicleta(
-        descripcion: descripcionController.text,
-        marca: marcaController.text,
-        modelo: modeloController.text,
+        descripcion: controladorDescripcion.text,
+        marca: controladorMarca.text,
+        modelo: controladorModelo.text,
         color: colorTexto,
         aro: aroSeleccionado,
-        numeroSerie: numeroSerieController.text,
+        numeroSerie: controladorNumeroSerie.text,
         activar: activar,
       ),
     );
@@ -215,13 +215,14 @@ class _HojaFormularioBicicletaState
   }
 
   Future<void> _guardar() async {
-    if (formKeyBicicleta.currentState?.validate() != true || guardando) {
+    if (claveFormularioBicicleta.currentState?.validate() != true ||
+        guardando) {
       return;
     }
 
-    final descripcion = descripcionController.text.trim();
+    final descripcion = controladorDescripcion.text.trim();
     final color = normalizarColorBicicleta(colorTexto) ?? '';
-    final numeroSerie = numeroSerieController.text.trim().toUpperCase();
+    final numeroSerie = controladorNumeroSerie.text.trim().toUpperCase();
 
     setState(() {
       guardando = true;
@@ -233,8 +234,8 @@ class _HojaFormularioBicicletaState
       if (bicicleta == null) {
         await vm.crear(
           descripcion: descripcion,
-          marca: marcaController.text.trim(),
-          modelo: modeloController.text.trim(),
+          marca: controladorMarca.text.trim(),
+          modelo: controladorModelo.text.trim(),
           color: color,
           aro: aroSeleccionado ?? '',
           numeroSerie: numeroSerie,
@@ -246,8 +247,8 @@ class _HojaFormularioBicicletaState
         await vm.actualizar(
           bicicletaId: bicicleta.id,
           descripcion: descripcion,
-          marca: marcaController.text.trim(),
-          modelo: modeloController.text.trim(),
+          marca: controladorMarca.text.trim(),
+          modelo: controladorModelo.text.trim(),
           color: color,
           aro: aroSeleccionado ?? '',
           numeroSerie: numeroSerie,
@@ -287,7 +288,7 @@ class _HojaFormularioBicicletaState
       ),
       child: SingleChildScrollView(
         child: Form(
-          key: formKeyBicicleta,
+          key: claveFormularioBicicleta,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -301,7 +302,7 @@ class _HojaFormularioBicicletaState
               ),
               const SizedBox(height: 14),
               TextFormField(
-                controller: descripcionController,
+                controller: controladorDescripcion,
                 spellCheckConfiguration: revisionOrtografica(),
                 textCapitalization: TextCapitalization.sentences,
                 focusNode: descripcionFocusNode,
@@ -320,7 +321,7 @@ class _HojaFormularioBicicletaState
                 children: [
                   Expanded(
                     child: TextFormField(
-                      controller: marcaController,
+                      controller: controladorMarca,
                       focusNode: marcaFocusNode,
                       decoration: decoracionCampoFormularioBicicleta(
                         labelText: 'Marca',
@@ -336,7 +337,7 @@ class _HojaFormularioBicicletaState
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
-                      controller: modeloController,
+                      controller: controladorModelo,
                       focusNode: modeloFocusNode,
                       decoration: decoracionCampoFormularioBicicleta(
                         labelText: 'Modelo',
@@ -408,7 +409,7 @@ class _HojaFormularioBicicletaState
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: numeroSerieController,
+                controller: controladorNumeroSerie,
                 focusNode: numeroSerieFocusNode,
                 decoration: decoracionCampoFormularioBicicleta(
                   labelText: 'Número de serie',
