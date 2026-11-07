@@ -2,11 +2,27 @@ import { ErrorRequestHandler } from 'express';
 import { Prisma } from '../../generated/prisma/client';
 import { ErrorHttp } from '../errores/error-http';
 
+type ErrorJsonMalformado = SyntaxError & {
+  status?: number;
+  type?: string;
+};
+
+const esErrorJsonMalformado = (error: unknown): error is ErrorJsonMalformado =>
+  error instanceof SyntaxError &&
+  (error as ErrorJsonMalformado).status === 400 &&
+  (error as ErrorJsonMalformado).type === 'entity.parse.failed';
+
 export const middlewareErrores: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof ErrorHttp) {
     return res.status(error.statusCode).json({
       message: error.message,
       ...(error.codigo ? { codigo: error.codigo } : {})
+    });
+  }
+
+  if (esErrorJsonMalformado(error)) {
+    return res.status(400).json({
+      message: 'El cuerpo JSON no es válido.'
     });
   }
 
