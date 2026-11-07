@@ -7,8 +7,8 @@ import 'package:ubbike/shared/widgets/estilos_formulario_autenticacion.dart';
 class FormularioIngreso extends StatelessWidget {
   const FormularioIngreso({
     super.key,
-    required this.correoController,
-    required this.contrasenaController,
+    required this.controladorCorreo,
+    required this.controladorContrasena,
     required this.cargando,
     required this.mostrarContrasena,
     required this.onAlternarContrasena,
@@ -17,8 +17,8 @@ class FormularioIngreso extends StatelessWidget {
     required this.onRecuperar,
   });
 
-  final TextEditingController correoController;
-  final TextEditingController contrasenaController;
+  final TextEditingController controladorCorreo;
+  final TextEditingController controladorContrasena;
   final bool cargando;
   final bool mostrarContrasena;
   final VoidCallback onAlternarContrasena;
@@ -49,7 +49,7 @@ class FormularioIngreso extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         TextFormField(
-          controller: correoController,
+          controller: controladorCorreo,
           decoration: decoracionCampoAutenticacion(
             labelText: 'Correo electrónico',
             icono: Icons.mail_outline,
@@ -67,7 +67,7 @@ class FormularioIngreso extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         TextFormField(
-          controller: contrasenaController,
+          controller: controladorContrasena,
           decoration: decoracionCampoAutenticacion(
             labelText: 'Contraseña',
             icono: Icons.lock_outline,
