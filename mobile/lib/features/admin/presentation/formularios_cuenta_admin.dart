@@ -24,10 +24,10 @@ class HojaCrearUsuario extends StatefulWidget {
 }
 
 class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
-  final formKeyCrearCuenta = GlobalKey<FormState>();
-  final nombreController = TextEditingController();
-  final correoController = TextEditingController();
-  final rutController = TextEditingController();
+  final claveFormularioCrearCuenta = GlobalKey<FormState>();
+  final controladorNombre = TextEditingController();
+  final controladorCorreo = TextEditingController();
+  final controladorRut = TextEditingController();
   final nombreFocus = FocusNode();
   final correoFocus = FocusNode();
   final rutFocus = FocusNode();
@@ -55,23 +55,23 @@ class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
     nombreFocus.dispose();
     correoFocus.dispose();
     rutFocus.dispose();
-    nombreController.dispose();
-    correoController.dispose();
-    rutController.dispose();
+    controladorNombre.dispose();
+    controladorCorreo.dispose();
+    controladorRut.dispose();
     super.dispose();
   }
 
   void _guardar() {
-    if (formKeyCrearCuenta.currentState?.validate() != true) {
+    if (claveFormularioCrearCuenta.currentState?.validate() != true) {
       return;
     }
 
     Navigator.pop(
       context,
       (
-        nombre: nombreController.text.trim(),
-        correo: correoController.text.trim().toLowerCase(),
-        rut: rutController.text.trim(),
+        nombre: controladorNombre.text.trim(),
+        correo: controladorCorreo.text.trim().toLowerCase(),
+        rut: controladorRut.text.trim(),
         rol: rol,
       ),
     );
@@ -88,7 +88,7 @@ class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
       ),
       child: SingleChildScrollView(
         child: Form(
-          key: formKeyCrearCuenta,
+          key: claveFormularioCrearCuenta,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -138,7 +138,7 @@ class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
               ),
               const SizedBox(height: 18),
               TextFormField(
-                controller: nombreController,
+                controller: controladorNombre,
                 focusNode: nombreFocus,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
@@ -154,7 +154,7 @@ class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
               ),
               const SizedBox(height: 18),
               TextFormField(
-                controller: correoController,
+                controller: controladorCorreo,
                 focusNode: correoFocus,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
@@ -170,7 +170,7 @@ class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
               ),
               const SizedBox(height: 18),
               TextFormField(
-                controller: rutController,
+                controller: controladorRut,
                 focusNode: rutFocus,
                 autocorrect: false,
                 enableSuggestions: false,
@@ -202,38 +202,38 @@ class _HojaCrearUsuarioState extends State<HojaCrearUsuario> {
 }
 
 class _HojaEditarCuentaState extends State<HojaEditarCuenta> {
-  final formKeyEditarCuenta = GlobalKey<FormState>();
-  late final TextEditingController nombreController;
-  late final TextEditingController correoController;
-  late final TextEditingController rutController;
+  final claveFormularioEditarCuenta = GlobalKey<FormState>();
+  late final TextEditingController controladorNombre;
+  late final TextEditingController controladorCorreo;
+  late final TextEditingController controladorRut;
 
   @override
   void initState() {
     super.initState();
-    nombreController = TextEditingController(text: widget.usuario.nombre);
-    correoController = TextEditingController(text: widget.usuario.correo);
-    rutController = TextEditingController(text: widget.usuario.rut ?? '');
+    controladorNombre = TextEditingController(text: widget.usuario.nombre);
+    controladorCorreo = TextEditingController(text: widget.usuario.correo);
+    controladorRut = TextEditingController(text: widget.usuario.rut ?? '');
   }
 
   @override
   void dispose() {
-    nombreController.dispose();
-    correoController.dispose();
-    rutController.dispose();
+    controladorNombre.dispose();
+    controladorCorreo.dispose();
+    controladorRut.dispose();
     super.dispose();
   }
 
   void _guardar() {
-    if (formKeyEditarCuenta.currentState?.validate() != true) {
+    if (claveFormularioEditarCuenta.currentState?.validate() != true) {
       return;
     }
 
     Navigator.pop(
       context,
       (
-        nombre: nombreController.text.trim(),
-        correo: correoController.text.trim(),
-        rut: rutController.text.trim(),
+        nombre: controladorNombre.text.trim(),
+        correo: controladorCorreo.text.trim(),
+        rut: controladorRut.text.trim(),
       ),
     );
   }
@@ -249,7 +249,7 @@ class _HojaEditarCuentaState extends State<HojaEditarCuenta> {
       ),
       child: SingleChildScrollView(
         child: Form(
-          key: formKeyEditarCuenta,
+          key: claveFormularioEditarCuenta,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -274,14 +274,14 @@ class _HojaEditarCuentaState extends State<HojaEditarCuenta> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: nombreController,
+                controller: controladorNombre,
                 textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(labelText: 'Nombre'),
                 validator: _validarNombreCuentaAdmin,
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: correoController,
+                controller: controladorCorreo,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
                 textInputAction: TextInputAction.next,
@@ -297,7 +297,7 @@ class _HojaEditarCuentaState extends State<HojaEditarCuenta> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: rutController,
+                controller: controladorRut,
                 autocorrect: false,
                 inputFormatters: [FormateadorRut()],
                 textInputAction: TextInputAction.done,
