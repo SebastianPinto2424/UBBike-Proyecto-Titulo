@@ -14,7 +14,7 @@ void main() {
       late http.Request enviada;
       final cliente = ClienteApi(
           obtenerToken: () => 'jwt-prueba',
-          httpClient: MockClient((r) async {
+          cliente: MockClient((r) async {
             enviada = r;
             return http.Response(
                 jsonEncode({
