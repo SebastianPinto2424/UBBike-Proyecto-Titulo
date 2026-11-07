@@ -15,10 +15,10 @@ void main() {
     }
   });
 
-  test('el guardia valida accesos y atiende avisos', () {
+  test('el guardia valida accesos desde el centro y atiende avisos', () {
     expect(
       _etiquetas(RolUsuario.guardia),
-      ['Inicio', 'Historial', 'Validar', 'Avisos', 'Perfil'],
+      ['Inicio', 'Historial', 'Validar', 'Avisos', 'Mi cuenta'],
     );
   });
 
@@ -27,24 +27,69 @@ void main() {
 
     expect(
       etiquetas,
-      ['Inicio', 'Movimientos', 'Guardias', 'Soporte', 'Perfil'],
+      ['Inicio', 'Movimientos', 'Guardias', 'Soporte', 'Mi cuenta'],
     );
     expect(etiquetas, isNot(contains('Validar')));
     expect(etiquetas, isNot(contains('QR')));
   });
 
-  test('el administrador accede a todo y a la gestión', () {
+  test('el administrador valida desde el centro y atiende soporte', () {
     expect(
       _etiquetas(RolUsuario.administrador),
-      ['Inicio', 'Bicicletas', 'Validar', 'Soporte', 'Gestión', 'Perfil'],
+      ['Inicio', 'Soporte', 'Validar', 'Gestión', 'Mi cuenta'],
     );
   });
 
-  test('todos los roles parten en Inicio y terminan en Perfil', () {
+  test(
+      'ninguna barra pasa de cinco destinos y la acción principal va al centro',
+      () {
     for (final rol in RolUsuario.values) {
       final etiquetas = _etiquetas(rol);
+      expect(etiquetas, hasLength(5), reason: '$rol');
       expect(etiquetas.first, 'Inicio', reason: '$rol');
-      expect(etiquetas.last, 'Perfil', reason: '$rol');
+      expect(
+        etiquetas[indicePerfil],
+        rol.esUsuarioRegular ? 'Perfil' : 'Mi cuenta',
+        reason: '$rol',
+      );
     }
+    for (final rol in [RolUsuario.guardia, RolUsuario.administrador]) {
+      expect(_etiquetas(rol)[indiceValidar], 'Validar', reason: '$rol');
+    }
+  });
+
+  test('los títulos acompañan a cada destino de la barra', () {
+    for (final rol in RolUsuario.values) {
+      expect(
+        titulosPorRol(rol).map((titulo) => titulo.$2).toList(),
+        _etiquetas(rol),
+        reason: '$rol',
+      );
+    }
+  });
+
+  test('los índices compartidos apuntan a la sección de cada rol', () {
+    for (final rol in RolUsuario.values) {
+      expect(
+        _etiquetas(rol)[indiceSoportePorRol(rol)],
+        rol == RolUsuario.guardia ? 'Avisos' : 'Soporte',
+        reason: '$rol',
+      );
+    }
+    expect(
+      _etiquetas(RolUsuario.administrador)[indiceGestionAdministrador],
+      'Gestión',
+    );
+  });
+
+  test('guardia, central y administrador usan el destino Mi cuenta', () {
+    expect(
+      RolUsuario.values.where(usaDestinoMiCuenta),
+      unorderedEquals([
+        RolUsuario.guardia,
+        RolUsuario.adminCentral,
+        RolUsuario.administrador,
+      ]),
+    );
   });
 }
