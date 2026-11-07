@@ -21,14 +21,14 @@ class VistaMovimientosUsuario extends ConsumerStatefulWidget {
 
 class _VistaMovimientosUsuarioState
     extends ConsumerState<VistaMovimientosUsuario> {
-  final filtroController = TextEditingController();
+  final controladorFiltro = TextEditingController();
 
   MovimientosUsuarioVm get vm =>
       ref.read(movimientosUsuarioVmProvider.notifier);
 
   @override
   void dispose() {
-    filtroController.dispose();
+    controladorFiltro.dispose();
     super.dispose();
   }
 
@@ -38,11 +38,11 @@ class _VistaMovimientosUsuarioState
 
   void _programarBusqueda() {
     setState(() {});
-    vm.buscar(filtroController.text);
+    vm.buscar(controladorFiltro.text);
   }
 
   void _limpiarFiltros() {
-    filtroController.clear();
+    controladorFiltro.clear();
     vm.limpiarFiltros();
   }
 
@@ -56,7 +56,7 @@ class _VistaMovimientosUsuarioState
   }
 
   List<FiltroActivo> _filtrosActivos(FiltrosMovimientosUsuario filtros) {
-    final busqueda = filtroController.text.trim();
+    final busqueda = controladorFiltro.text.trim();
     return [
       if (filtros.periodo != 'MES')
         FiltroActivo(
@@ -82,7 +82,7 @@ class _VistaMovimientosUsuarioState
         FiltroActivo(
           etiqueta: 'Busca: $busqueda',
           onQuitar: () {
-            filtroController.clear();
+            controladorFiltro.clear();
             _recargar();
           },
         ),
@@ -100,16 +100,16 @@ class _VistaMovimientosUsuarioState
         const TituloApartado(titulo: 'Mis movimientos'),
         const SizedBox(height: 10),
         TextField(
-          controller: filtroController,
+          controller: controladorFiltro,
           decoration: InputDecoration(
             labelText: 'Buscar por bicicleta, bicicletero o guardia',
             prefixIcon: const Icon(Icons.search),
-            suffixIcon: filtroController.text.isEmpty
+            suffixIcon: controladorFiltro.text.isEmpty
                 ? null
                 : IconButton(
                     tooltip: 'Limpiar búsqueda',
                     onPressed: () {
-                      filtroController.clear();
+                      controladorFiltro.clear();
                       _recargar();
                     },
                     icon: const Icon(Icons.close),
