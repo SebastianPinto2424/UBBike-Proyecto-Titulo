@@ -40,8 +40,8 @@ class HojaRegistrarIncidencia extends StatefulWidget {
 }
 
 class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
-  final formKeyIncidencia = GlobalKey<FormState>();
-  final descripcionController = TextEditingController();
+  final claveFormularioIncidencia = GlobalKey<FormState>();
+  final controladorDescripcion = TextEditingController();
   final capturaFotos = CapturaFotos();
   final fotos = <String>[];
   BicicleteroApp? bicicleteroSeleccionado;
@@ -74,7 +74,7 @@ class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
       }
     }
     tipoSeleccionado = borrador.tipo;
-    descripcionController.text = borrador.descripcion;
+    controladorDescripcion.text = borrador.descripcion;
     fotos.addAll(borrador.fotos.take(maximoFotosIncidencia));
   }
 
@@ -91,7 +91,7 @@ class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
   @override
   void dispose() {
     unawaited(borrarBorradorIncidencia());
-    descripcionController.dispose();
+    controladorDescripcion.dispose();
     super.dispose();
   }
 
@@ -100,7 +100,7 @@ class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
           bicicleteroId: bicicleteroSeleccionado?.id,
           bicicletaId: bicicletaSeleccionada?.id,
           tipo: tipoSeleccionado,
-          descripcion: descripcionController.text,
+          descripcion: controladorDescripcion.text,
           fotos: List<String>.of(fotos),
         ),
       );
@@ -148,10 +148,10 @@ class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
 
   Future<void> _enviar() async {
     final bicicletero = bicicleteroSeleccionado;
-    final descripcion = descripcionController.text.trim();
+    final descripcion = controladorDescripcion.text.trim();
 
     if (bicicletero == null ||
-        formKeyIncidencia.currentState?.validate() != true ||
+        claveFormularioIncidencia.currentState?.validate() != true ||
         enviando) {
       return;
     }
@@ -212,7 +212,7 @@ class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
             ),
             const SizedBox(height: 12),
             Form(
-              key: formKeyIncidencia,
+              key: claveFormularioIncidencia,
               child: FormularioIncidencia(
                 cargando: false,
                 enviando: enviando,
@@ -221,7 +221,7 @@ class _HojaRegistrarIncidenciaState extends State<HojaRegistrarIncidencia> {
                 bicicleteroSeleccionado: bicicleteroSeleccionado,
                 bicicletaSeleccionada: bicicletaSeleccionada,
                 tipoSeleccionado: tipoSeleccionado,
-                descripcionController: descripcionController,
+                controladorDescripcion: controladorDescripcion,
                 fotos: fotos,
                 onCamara: () => _seleccionarFoto(ImageSource.camera),
                 onGaleria: () => _seleccionarFoto(ImageSource.gallery),
