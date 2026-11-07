@@ -15,8 +15,8 @@ class ClienteApi {
     this.obtenerUsuarioId,
     this.alActualizarTokens,
     this.alExpirarSesion,
-    this.httpClient,
-    this.timeout = const Duration(seconds: 20),
+    this.cliente,
+    this.tiempoLimite = const Duration(seconds: 20),
   });
 
   final String? Function()? obtenerToken;
@@ -25,15 +25,15 @@ class ClienteApi {
   final Future<void> Function(String token, String? refreshToken)?
       alActualizarTokens;
   final Future<void> Function()? alExpirarSesion;
-  final http.Client? httpClient;
-  final Duration timeout;
-  http.Client get _http => httpClient ?? clienteHttp;
+  final http.Client? cliente;
+  final Duration tiempoLimite;
+  http.Client get _http => cliente ?? clienteHttp;
 
   static final Map<String, Future<bool>> _renovaciones = {};
 
   Uri _uri(String ruta) => Uri.parse('${ConfiguracionApi.baseUrl}$ruta');
 
-  Map<String, String> _headers() {
+  Map<String, String> _encabezados() {
     final token = obtenerToken?.call();
     return {
       'Content-Type': 'application/json',
@@ -72,19 +72,19 @@ class ClienteApi {
 
   Future<Map<String, dynamic>> get(String ruta) async {
     return _procesarRespuesta(await _leerConReintento(
-        () => _http.get(_uri(ruta), headers: _headers())));
+        () => _http.get(_uri(ruta), headers: _encabezados())));
   }
 
   Future<String> getTexto(String ruta) async {
     final respuesta = await _leerConReintento(
-        () => _http.get(_uri(ruta), headers: _headers()));
+        () => _http.get(_uri(ruta), headers: _encabezados()));
     if (respuesta.statusCode >= 400) _procesarRespuesta(respuesta);
     return respuesta.body;
   }
 
   Future<Uint8List> getBytes(String ruta) async {
     final respuesta = await _leerConReintento(
-        () => _http.get(_uri(ruta), headers: _headers()));
+        () => _http.get(_uri(ruta), headers: _encabezados()));
     if (respuesta.statusCode >= 400) _procesarRespuesta(respuesta);
     return respuesta.bodyBytes;
   }
@@ -96,7 +96,7 @@ class ClienteApi {
     return _ejecutar(
       () => _http.post(
         _uri(ruta),
-        headers: _headers(),
+        headers: _encabezados(),
         body: jsonEncode(body ?? {}),
       ),
     );
@@ -109,7 +109,7 @@ class ClienteApi {
     return _ejecutar(
       () => _http.patch(
         _uri(ruta),
-        headers: _headers(),
+        headers: _encabezados(),
         body: jsonEncode(body ?? {}),
       ),
     );
@@ -122,7 +122,7 @@ class ClienteApi {
     return _ejecutar(
       () => _http.delete(
         _uri(ruta),
-        headers: _headers(),
+        headers: _encabezados(),
         body: body == null ? null : jsonEncode(body),
       ),
     );
@@ -148,13 +148,13 @@ class ClienteApi {
   ) async {
     final tokenEnviado = obtenerToken?.call();
     final usuarioEnviado = obtenerUsuarioId?.call();
-    var respuesta = await solicitud().timeout(timeout);
+    var respuesta = await solicitud().timeout(tiempoLimite);
 
     if (respuesta.statusCode == 401) {
       if (obtenerUsuarioId?.call() != usuarioEnviado) return respuesta;
 
       if (obtenerToken?.call() != tokenEnviado) {
-        return solicitud().timeout(timeout);
+        return solicitud().timeout(tiempoLimite);
       }
       final refreshToken = obtenerRefreshToken?.call();
       final usuarioId = obtenerUsuarioId?.call();
@@ -176,7 +176,7 @@ class ClienteApi {
           }
         }
         if (reintentado) {
-          respuesta = await solicitud().timeout(timeout);
+          respuesta = await solicitud().timeout(tiempoLimite);
         }
       }
     }
@@ -195,7 +195,7 @@ class ClienteApi {
           body: jsonEncode(
               {'usuarioId': usuarioId, 'refreshToken': refreshToken}),
         )
-        .timeout(timeout);
+        .timeout(tiempoLimite);
 
     if (respuesta.statusCode == 200) {
       final datos = jsonDecode(respuesta.body) as Map<String, dynamic>;
