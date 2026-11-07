@@ -92,7 +92,8 @@ class MovimientosUsuarioVm
           estado: filtros.estado,
           origen: filtros.origen,
           pagina: numero,
-          limite: 20);
+          limite: 20,
+          propios: true);
       datos.addAll(pagina.movimientos);
       if (revision != _revision) return datos;
       _pagina = numero;
@@ -117,7 +118,8 @@ class MovimientosUsuarioVm
           estado: filtros.estado,
           origen: filtros.origen,
           pagina: _pagina + 1,
-          limite: 20);
+          limite: 20,
+          propios: true);
       if (revision != _revision) return;
       _pagina = pagina.pagina;
       hayMas = pagina.hayMas;
