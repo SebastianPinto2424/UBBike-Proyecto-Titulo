@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
 import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/features/acceso/presentation/formulario_qr_validado.dart';
+import 'package:ubbike/shared/widgets/campo_solo_lectura.dart';
 
 QrValidadoApp _qr(String tipo) => QrValidadoApp(
       token: 'UBBIKE-prueba',
@@ -59,5 +60,26 @@ void main() {
     await tester.tap(find.text('Rechazar retiro'));
     expect(confirmado, 1);
     expect(denegado, 1);
+  });
+
+  testWidgets(
+      'los datos del QR se ven como solo lectura y solo el comentario se '
+      'edita', (tester) async {
+    await _montar(tester, _qr('INGRESO'));
+
+    expect(find.byType(CampoSoloLectura), findsNWidgets(10));
+    expect(find.byIcon(Icons.lock_outline), findsNothing);
+    expect(find.widgetWithText(CampoSoloLectura, 'Ana Pérez'), findsOneWidget);
+    expect(find.widgetWithText(CampoSoloLectura, 'Sin marca'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(CampoSoloLectura, 'Ana Pérez'));
+    await tester.pump();
+    expect(tester.testTextInput.hasAnyClients, isFalse);
+
+    final comentario =
+        find.widgetWithText(TextFormField, 'Comentario opcional del guardia');
+    await tester.ensureVisible(comentario);
+    await tester.enterText(comentario, 'Trae candado');
+    expect(find.text('Trae candado'), findsOneWidget);
   });
 }
