@@ -2,7 +2,7 @@ import {
   esquemaCambioContrasena,
   esquemaCompletarRegistro,
   esquemaInicioSesion,
-  esquemaRefreshToken,
+  esquemaTokenRenovacion,
   esquemaRegistro,
   esquemaSolicitudCambioContrasena,
   esquemaVerificarCorreo
@@ -187,10 +187,12 @@ describe('esquemaSolicitudCambioContrasena y esquemaVerificarCorreo', () => {
   });
 });
 
-describe('esquemaRefreshToken', () => {
+describe('esquemaTokenRenovacion', () => {
   it('exige usuarioId con formato UUID', () => {
-    expect(esValido(esquemaRefreshToken, { usuarioId: UUID, refreshToken: 't' })).toBe(true);
-    expect(esValido(esquemaRefreshToken, { usuarioId: 'no-uuid', refreshToken: 't' })).toBe(false);
+    expect(esValido(esquemaTokenRenovacion, { usuarioId: UUID, refreshToken: 't' })).toBe(true);
+    expect(esValido(esquemaTokenRenovacion, { usuarioId: 'no-uuid', refreshToken: 't' })).toBe(
+      false
+    );
   });
 });
 
@@ -598,5 +600,7 @@ describe('validaciones alineadas con los formularios de la app', () => {
     expect(esValido(esquemaConsultaHistorial, { tipo: 'PRESTAMO' })).toBe(false);
     expect(esValido(esquemaConsultaHistorial, { desde: 'ayer' })).toBe(false);
     expect(esValido(esquemaConsultaHistorial, { guardiaId: 'g1' })).toBe(false);
+    expect(esValido(esquemaConsultaHistorial, { alcance: 'PROPIO' })).toBe(true);
+    expect(esValido(esquemaConsultaHistorial, { alcance: 'TODOS' })).toBe(false);
   });
 });
