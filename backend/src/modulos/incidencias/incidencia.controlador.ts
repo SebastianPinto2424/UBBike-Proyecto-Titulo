@@ -1,5 +1,6 @@
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
 import { controladorAsync } from '../../comun/utilidades/controlador-async';
+import type { AlcanceConsulta } from '../../comun/utilidades/esquemas-comunes';
 import { actualizarEstadoIncidencia, recordarIncidencia } from './seguimiento-incidencia.servicio';
 import { crearIncidencia, listarIncidencias } from './incidencia.servicio';
 
@@ -31,7 +32,8 @@ export const listar = controladorAsync<SolicitudAutenticada>(async (req, res) =>
     bicicleteroId: req.query.bicicleteroId as string | undefined,
     q: req.query.q as string | undefined,
     cursor,
-    limite
+    limite,
+    alcance: req.query.alcance as AlcanceConsulta | undefined
   });
 
   return res.status(200).json(resultado);
