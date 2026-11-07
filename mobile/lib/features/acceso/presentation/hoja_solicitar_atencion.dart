@@ -22,8 +22,8 @@ class HojaSolicitarAtencion extends StatefulWidget {
 }
 
 class _HojaSolicitarAtencionState extends State<HojaSolicitarAtencion> {
-  final formKeySolicitarAtencion = GlobalKey<FormState>();
-  final mensajeController = TextEditingController();
+  final claveFormularioSolicitarAtencion = GlobalKey<FormState>();
+  final controladorMensaje = TextEditingController();
   BicicleteroApp? seleccionado;
   bool enviando = false;
   String? error;
@@ -37,14 +37,14 @@ class _HojaSolicitarAtencionState extends State<HojaSolicitarAtencion> {
 
   @override
   void dispose() {
-    mensajeController.dispose();
+    controladorMensaje.dispose();
     super.dispose();
   }
 
   Future<void> _enviar() async {
     final bicicletero = seleccionado;
     if (bicicletero == null ||
-        formKeySolicitarAtencion.currentState?.validate() != true ||
+        claveFormularioSolicitarAtencion.currentState?.validate() != true ||
         enviando) {
       return;
     }
@@ -54,7 +54,7 @@ class _HojaSolicitarAtencionState extends State<HojaSolicitarAtencion> {
       error = null;
     });
     final motivo =
-        await widget.onEnviar(bicicletero.id, mensajeController.text.trim());
+        await widget.onEnviar(bicicletero.id, controladorMensaje.text.trim());
 
     if (!mounted) {
       return;
@@ -80,7 +80,7 @@ class _HojaSolicitarAtencionState extends State<HojaSolicitarAtencion> {
       ),
       child: SingleChildScrollView(
         child: Form(
-          key: formKeySolicitarAtencion,
+          key: claveFormularioSolicitarAtencion,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -128,7 +128,7 @@ class _HojaSolicitarAtencionState extends State<HojaSolicitarAtencion> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: TextFormField(
-                  controller: mensajeController,
+                  controller: controladorMensaje,
                   spellCheckConfiguration: revisionOrtografica(),
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: 3,
