@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ubbike/features/acceso/presentation/campos_gestion_manual.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
+import 'package:ubbike/shared/widgets/campo_solo_lectura.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/features/acceso/presentation/gestion_manual_widgets.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
@@ -50,6 +51,8 @@ class SeccionBicicletaManual extends StatelessWidget {
     final creandoBicicletaNueva = bicicletaSeleccionadaId == null;
     final mostrandoBicicletaRegistrada =
         bicicletasRegistradas.isNotEmpty && bicicletaSeleccionadaId != null;
+    final datosBloqueados =
+        bicicletaSeleccionadaId != null && operacion == 'RETIRO';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,173 +151,197 @@ class SeccionBicicletaManual extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            TextFormField(
-              controller: campos.descripcion,
-              spellCheckConfiguration: revisionOrtografica(),
-              textCapitalization: TextCapitalization.sentences,
-              focusNode: campos.focoDescripcion,
-              readOnly:
-                  bicicletaSeleccionadaId != null && operacion == 'RETIRO',
-              onChanged: (_) => onCampoEditado(),
-              decoration: decoracionCampoGestionManual(
-                labelText: 'Descripción',
-                helperText: ayudaSiActivo(
-                  campos.focoDescripcion,
-                  'Nombre breve para reconocer la bicicleta.',
+            if (datosBloqueados) const _AvisoDatosBloqueados(),
+            _soloLecturaSi(
+              datosBloqueados,
+              etiqueta: 'Descripción',
+              controlador: campos.descripcion,
+              textoVacio: 'Sin descripción',
+              editable: TextFormField(
+                controller: campos.descripcion,
+                spellCheckConfiguration: revisionOrtografica(),
+                textCapitalization: TextCapitalization.sentences,
+                focusNode: campos.focoDescripcion,
+                onChanged: (_) => onCampoEditado(),
+                decoration: decoracionCampoGestionManual(
+                  labelText: 'Descripción',
+                  helperText: ayudaSiActivo(
+                    campos.focoDescripcion,
+                    'Nombre breve para reconocer la bicicleta.',
+                  ),
                 ),
+                validator: (valor) => creandoBicicletaNueva
+                    ? validarDescripcionBicicleta(valor)
+                    : validarDescripcionBicicletaManual(
+                        valor,
+                        false,
+                      ),
               ),
-              validator: (valor) => creandoBicicletaNueva
-                  ? validarDescripcionBicicleta(valor)
-                  : validarDescripcionBicicletaManual(
-                      valor,
-                      false,
-                    ),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: campos.marca,
-                    focusNode: campos.focoMarca,
-                    readOnly: bicicletaSeleccionadaId != null &&
-                        operacion == 'RETIRO',
-                    onChanged: (_) => onCampoEditado(),
-                    decoration: decoracionCampoGestionManual(
-                      labelText: 'Marca',
-                      helperText: ayudaSiActivo(
-                        campos.focoMarca,
-                        'Usa la marca visible o registrada.',
-                      ),
-                    ),
-                    validator: (valor) => validarCampoRequeridoConFormato(
-                      valor,
-                      requerido: creandoBicicletaNueva,
-                      mensajeRequerido: 'Ingresa la marca.',
-                      validarFormato: validarMarcaBicicleta,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: campos.modelo,
-                    focusNode: campos.focoModelo,
-                    readOnly: bicicletaSeleccionadaId != null &&
-                        operacion == 'RETIRO',
-                    onChanged: (_) => onCampoEditado(),
-                    decoration: decoracionCampoGestionManual(
-                      labelText: 'Modelo',
-                      helperText: ayudaSiActivo(
-                        campos.focoModelo,
-                        'Usa el modelo visible o una referencia breve.',
-                      ),
-                    ),
-                    validator: (valor) => validarCampoRequeridoConFormato(
-                      valor,
-                      requerido: creandoBicicletaNueva,
-                      mensajeRequerido: 'Ingresa el modelo.',
-                      validarFormato: validarModeloBicicleta,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: CampoColorBicicleta(
-                    key: ValueKey(
-                      'color-manual-${bicicletaSeleccionadaId ?? 'nuevo'}',
-                    ),
-                    valorInicial: campos.color.text,
-                    habilitado: !(bicicletaSeleccionadaId != null &&
-                        operacion == 'RETIRO'),
-                    helperText: 'Color principal o combinacion simple.',
-                    onChanged: (valor) {
-                      campos.color.text = valor;
-                      onCampoEditado();
-                    },
-                    validator: (valor) => validarCampoRequeridoConFormato(
-                      valor,
-                      requerido: creandoBicicletaNueva,
-                      mensajeRequerido: 'Ingresa el color.',
-                      validarFormato: validarColorBicicleta,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FormField<String>(
-                    key: ValueKey(
-                      'aro-manual-${bicicletaSeleccionadaId ?? 'nuevo'}-${campos.aro.text}',
-                    ),
-                    initialValue: normalizarAroBicicleta(
-                          campos.aro.text,
-                        ) ??
-                        '',
-                    validator: (valor) => validarAroGestionManual(
-                      valor,
-                      requerido: creandoBicicletaNueva,
-                    ),
-                    builder: (field) {
-                      final bloqueado = bicicletaSeleccionadaId != null &&
-                          operacion == 'RETIRO';
-                      final valor = field.value ?? '';
-
-                      return DropdownAnclado<String>(
-                        value: valor,
-                        decoration: decoracionCampoGestionManual(
-                          labelText: 'Aro',
-                          errorText: field.errorText,
-                          helperText: 'Selecciona la medida del aro.',
+                  child: _soloLecturaSi(
+                    datosBloqueados,
+                    etiqueta: 'Marca',
+                    controlador: campos.marca,
+                    textoVacio: 'Sin marca',
+                    editable: TextFormField(
+                      controller: campos.marca,
+                      focusNode: campos.focoMarca,
+                      onChanged: (_) => onCampoEditado(),
+                      decoration: decoracionCampoGestionManual(
+                        labelText: 'Marca',
+                        helperText: ayudaSiActivo(
+                          campos.focoMarca,
+                          'Usa la marca visible o registrada.',
                         ),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: '',
-                            child: Text('Seleccionar'),
-                          ),
-                          ...arosBicicleta.map(
-                            (aro) => DropdownMenuItem<String>(
-                              value: aro,
-                              child: Text(aro),
-                            ),
-                          ),
-                        ],
-                        onChanged: bloqueado
-                            ? null
-                            : (valor) {
-                                final seleccionado = valor ?? '';
-                                field.didChange(seleccionado);
-                                campos.aro.text = seleccionado;
-                                onCampoEditado();
-                              },
-                      );
-                    },
+                      ),
+                      validator: (valor) => validarCampoRequeridoConFormato(
+                        valor,
+                        requerido: creandoBicicletaNueva,
+                        mensajeRequerido: 'Ingresa la marca.',
+                        validarFormato: validarMarcaBicicleta,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _soloLecturaSi(
+                    datosBloqueados,
+                    etiqueta: 'Modelo',
+                    controlador: campos.modelo,
+                    textoVacio: 'Sin modelo',
+                    editable: TextFormField(
+                      controller: campos.modelo,
+                      focusNode: campos.focoModelo,
+                      onChanged: (_) => onCampoEditado(),
+                      decoration: decoracionCampoGestionManual(
+                        labelText: 'Modelo',
+                        helperText: ayudaSiActivo(
+                          campos.focoModelo,
+                          'Usa el modelo visible o una referencia breve.',
+                        ),
+                      ),
+                      validator: (valor) => validarCampoRequeridoConFormato(
+                        valor,
+                        requerido: creandoBicicletaNueva,
+                        mensajeRequerido: 'Ingresa el modelo.',
+                        validarFormato: validarModeloBicicleta,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: campos.numeroSerie,
-              focusNode: campos.focoNumeroSerie,
-              readOnly:
-                  bicicletaSeleccionadaId != null && operacion == 'RETIRO',
-              onChanged: (_) => onCampoEditado(),
-              decoration: decoracionCampoGestionManual(
-                labelText: 'N° de serie',
-                helperText: ayudaSiActivo(
-                  campos.focoNumeroSerie,
-                  'Código del marco, sin espacios.',
+            Row(
+              children: [
+                Expanded(
+                  child: _soloLecturaSi(
+                    datosBloqueados,
+                    etiqueta: 'Color',
+                    controlador: campos.color,
+                    textoVacio: 'Sin color',
+                    editable: CampoColorBicicleta(
+                      key: ValueKey(
+                        'color-manual-${bicicletaSeleccionadaId ?? 'nuevo'}',
+                      ),
+                      valorInicial: campos.color.text,
+                      habilitado: true,
+                      helperText: 'Color principal o combinacion simple.',
+                      onChanged: (valor) {
+                        campos.color.text = valor;
+                        onCampoEditado();
+                      },
+                      validator: (valor) => validarCampoRequeridoConFormato(
+                        valor,
+                        requerido: creandoBicicletaNueva,
+                        mensajeRequerido: 'Ingresa el color.',
+                        validarFormato: validarColorBicicleta,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              validator: (valor) => validarCampoRequeridoConFormato(
-                valor,
-                requerido: creandoBicicletaNueva,
-                mensajeRequerido: 'Ingresa el número de serie.',
-                validarFormato: validarNumeroSerieBicicleta,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _soloLecturaSi(
+                    datosBloqueados,
+                    etiqueta: 'Aro',
+                    controlador: campos.aro,
+                    textoVacio: 'Sin aro',
+                    editable: FormField<String>(
+                      key: ValueKey(
+                        'aro-manual-${bicicletaSeleccionadaId ?? 'nuevo'}-${campos.aro.text}',
+                      ),
+                      initialValue: normalizarAroBicicleta(
+                            campos.aro.text,
+                          ) ??
+                          '',
+                      validator: (valor) => validarAroGestionManual(
+                        valor,
+                        requerido: creandoBicicletaNueva,
+                      ),
+                      builder: (field) {
+                        final valor = field.value ?? '';
+
+                        return DropdownAnclado<String>(
+                          value: valor,
+                          decoration: decoracionCampoGestionManual(
+                            labelText: 'Aro',
+                            errorText: field.errorText,
+                            helperText: 'Selecciona la medida del aro.',
+                          ),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: '',
+                              child: Text('Seleccionar'),
+                            ),
+                            ...arosBicicleta.map(
+                              (aro) => DropdownMenuItem<String>(
+                                value: aro,
+                                child: Text(aro),
+                              ),
+                            ),
+                          ],
+                          onChanged: (valor) {
+                            final seleccionado = valor ?? '';
+                            field.didChange(seleccionado);
+                            campos.aro.text = seleccionado;
+                            onCampoEditado();
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _soloLecturaSi(
+              datosBloqueados,
+              etiqueta: 'N° de serie',
+              controlador: campos.numeroSerie,
+              textoVacio: 'Sin número de serie',
+              editable: TextFormField(
+                controller: campos.numeroSerie,
+                focusNode: campos.focoNumeroSerie,
+                onChanged: (_) => onCampoEditado(),
+                decoration: decoracionCampoGestionManual(
+                  labelText: 'N° de serie',
+                  helperText: ayudaSiActivo(
+                    campos.focoNumeroSerie,
+                    'Código del marco, sin espacios.',
+                  ),
+                ),
+                validator: (valor) => validarCampoRequeridoConFormato(
+                  valor,
+                  requerido: creandoBicicletaNueva,
+                  mensajeRequerido: 'Ingresa el número de serie.',
+                  validarFormato: validarNumeroSerieBicicleta,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -339,6 +366,53 @@ class SeccionBicicletaManual extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+Widget _soloLecturaSi(
+  bool bloqueado, {
+  required String etiqueta,
+  required TextEditingController controlador,
+  required String textoVacio,
+  required Widget editable,
+}) {
+  if (!bloqueado) {
+    return editable;
+  }
+  return CampoSoloLectura(
+    decoracion: decoracionCampoGestionManual(labelText: etiqueta),
+    controlador: controlador,
+    textoVacio: textoVacio,
+  );
+}
+
+class _AvisoDatosBloqueados extends StatelessWidget {
+  const _AvisoDatosBloqueados();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.lock_outline,
+            size: 16,
+            color: ColoresUbb.textoSecundario,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Datos de la bicicleta registrada: en un retiro no se pueden '
+              'cambiar.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ColoresUbb.textoSecundario,
+                  ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
