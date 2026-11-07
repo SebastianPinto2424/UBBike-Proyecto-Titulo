@@ -1,5 +1,6 @@
 import { ErrorHttp } from '../../../comun/errores/error-http';
 import { bloquearClave, bloquearFila } from '../../../comun/utilidades/bloqueos';
+import { alcancePropio, type AlcanceConsulta } from '../../../comun/utilidades/esquemas-comunes';
 import type { ClientePrisma } from '../../../configuracion/prisma';
 import { Prisma } from '../../../generated/prisma/client';
 import { registrarAuditoria } from '../../auditoria/auditoria.servicio';
@@ -24,7 +25,8 @@ import { TipoSolicitudGuardia } from './tipo-solicitud-guardia';
 import {
   rolesCentral,
   estadosCerrados,
-  calcularSegundosParaRecordatorio
+  calcularSegundosParaRecordatorio,
+  impedirAtencionPropia
 } from './solicitud-guardia.reglas';
 import { mapearSolicitudGuardia } from './solicitud-guardia.mapeador';
 
@@ -48,6 +50,7 @@ type DatosListarSolicitudes = {
   estado?: EstadoSolicitudGuardia | 'TODOS';
   q?: string;
   limite?: number;
+  alcance?: AlcanceConsulta;
 };
 
 const notificarGuardiaAsignado = async (
@@ -242,6 +245,7 @@ export const crearSolicitudGuardia = async (datos: DatosCrearSolicitud) => {
       datos.bicicleteroId,
       db
     );
+    impedirAtencionPropia(asignacion?.guardia.id, datos.usuarioId);
 
     const solicitudGuardada = await solicitudGuardiaRepositorio.crear(
       {
@@ -318,7 +322,9 @@ export const crearSolicitudGuardia = async (datos: DatosCrearSolicitud) => {
 export const listarSolicitudesGuardia = async (datos: DatosListarSolicitudes) => {
   const condiciones: Prisma.SolicitudGuardiaWhereInput[] = [];
 
-  if (datos.rol === RolUsuario.GUARDIA) {
+  if (datos.alcance === alcancePropio) {
+    condiciones.push({ solicitadaPorUsuarioId: datos.usuarioId });
+  } else if (datos.rol === RolUsuario.GUARDIA) {
     condiciones.push({ guardiaAsignadoId: datos.usuarioId });
   } else if (!rolesCentral.includes(datos.rol)) {
     condiciones.push({ solicitadaPorUsuarioId: datos.usuarioId });
