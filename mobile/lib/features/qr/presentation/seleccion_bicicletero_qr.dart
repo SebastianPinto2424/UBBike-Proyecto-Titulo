@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicletero_app.dart';
 import 'package:ubbike/shared/utilidades/cercania_bicicletero.dart';
-import 'package:ubbike/shared/widgets/botones_accion.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 import 'package:ubbike/shared/widgets/estilos_formulario.dart';
 
@@ -59,16 +58,68 @@ class AvisoBicicleteroCercano extends StatelessWidget {
                       ),
                 ),
                 const SizedBox(height: 10),
-                BotonesAccion.confirmacion(
-                  textoCancelar: 'Ahora no',
-                  textoConfirmar: 'Aceptar',
-                  onCancelar: onDescartar,
-                  onConfirmar: onAceptar,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _BotonContorno(
+                        texto: 'Ahora no',
+                        color: ColoresUbb.rojoInstitucional,
+                        onPressed: onDescartar,
+                      ),
+                      _BotonContorno(
+                        texto: 'Aceptar',
+                        color: ColoresUbb.azulApp,
+                        onPressed: onAceptar,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BotonContorno extends StatelessWidget {
+  const _BotonContorno({
+    required this.texto,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String texto;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 104,
+      height: 38,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: color.withValues(alpha: 0.7)),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minimumSize: Size.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: onPressed,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            texto,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
       ),
     );
   }
