@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { ErrorHttp } from '../../comun/errores/error-http';
 import { liberarBicicleteroGuardia } from '../acceso/asignaciones/asignacion-guardia.servicio';
 import * as usuarioRepositorio from './usuario.repositorio';
