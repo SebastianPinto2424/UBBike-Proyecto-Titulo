@@ -1,4 +1,5 @@
 import { ErrorHttp } from '../../../comun/errores/error-http';
+import { alcancePropio } from '../../../comun/utilidades/esquemas-comunes';
 import { registrarAuditoria } from '../../auditoria/auditoria.servicio';
 import {
   crearNotificacion,
@@ -123,7 +124,7 @@ export const actualizarEstadoSolicitudGuardia = async (
             cierreDeCentral ? notaLimpia : null
           ),
           tipo: TipoNotificacion.SOLICITUD_GUARDIA,
-          datos: { solicitudId: solicitud.id, estado }
+          datos: { solicitudId: solicitud.id, estado, alcance: alcancePropio }
         },
         db,
         efectos
