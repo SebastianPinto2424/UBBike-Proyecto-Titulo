@@ -180,6 +180,7 @@ class SeccionBicicletaManual extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _soloLecturaSi(
@@ -238,6 +239,7 @@ class SeccionBicicletaManual extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _soloLecturaSi(
