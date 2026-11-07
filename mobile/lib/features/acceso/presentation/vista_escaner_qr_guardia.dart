@@ -26,9 +26,9 @@ class VistaEscanerQrGuardia extends ConsumerStatefulWidget {
 
 class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   EscanerQrVm get vm => ref.read(escanerQrVmProvider);
-  final formKeyQrValidado = GlobalKey<FormState>();
-  final comentarioController = TextEditingController();
-  late MobileScannerController _scannerController;
+  final claveFormularioQrValidado = GlobalKey<FormState>();
+  final controladorComentario = TextEditingController();
+  late MobileScannerController _controladorEscaner;
   int _sesionEscaner = 0;
   String? codigoDetectado;
   QrValidadoApp? qrLeido;
@@ -40,14 +40,14 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   @override
   void initState() {
     super.initState();
-    _scannerController = _crearControladorEscaner();
+    _controladorEscaner = _crearControladorEscaner();
   }
 
   @override
   void dispose() {
-    comentarioController.dispose();
+    controladorComentario.dispose();
     unawaited(
-        _scannerController.stop().whenComplete(_scannerController.dispose));
+        _controladorEscaner.stop().whenComplete(_controladorEscaner.dispose));
     super.dispose();
   }
 
@@ -97,7 +97,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
     setState(() {
       codigoDetectado = null;
       qrLeido = null;
-      comentarioController.clear();
+      controladorComentario.clear();
       escaneando = true;
       preparandoEscaner = true;
       _sesionEscaner += 1;
@@ -109,8 +109,8 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
     }
 
     try {
-      await _scannerController.start();
-      final error = _scannerController.value.error;
+      await _controladorEscaner.start();
+      final error = _controladorEscaner.value.error;
       if (error != null) {
         await _manejarErrorEscaner(error);
         return;
@@ -141,7 +141,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
       qrLeido = null;
       escaneando = false;
       preparandoEscaner = false;
-      comentarioController.clear();
+      controladorComentario.clear();
     });
   }
 
@@ -160,7 +160,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
 
   Future<void> _detenerCamaraSilencioso() async {
     try {
-      await _scannerController.stop();
+      await _controladorEscaner.stop();
     } catch (_) {}
   }
 
@@ -215,9 +215,9 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
         children: [
           const SizedBox(height: 8),
           FormularioQrValidado(
-            formKey: formKeyQrValidado,
+            claveFormulario: claveFormularioQrValidado,
             qr: qr,
-            comentarioController: comentarioController,
+            controladorComentario: controladorComentario,
             onConfirmar: () => _confirmarQr(qr),
             onDenegar: () => _mostrarDenegacion(context, qr),
             onLeerOtro: () => _escanearNuevamente(qr),
@@ -252,9 +252,9 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
                 codigoDetectado: codigoDetectado != null &&
                     codigoDetectado!.trim().isNotEmpty,
                 qrValidado: false,
-                controller: _scannerController,
+                controller: _controladorEscaner,
                 sesionEscaner: _sesionEscaner,
-                onDetect: _onDeteccion,
+                onDeteccion: _onDeteccion,
                 onReintentar: _reintentarEscaner,
               ),
             ),
@@ -302,7 +302,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
       if (mounted) {
         setState(() {
           qrLeido = qr;
-          comentarioController.clear();
+          controladorComentario.clear();
         });
       }
     } on ExcepcionApi catch (error) {
@@ -322,7 +322,8 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   }
 
   Future<void> _confirmarQr(QrValidadoApp qr) async {
-    if (formKeyQrValidado.currentState?.validate() != true || confirmando) {
+    if (claveFormularioQrValidado.currentState?.validate() != true ||
+        confirmando) {
       return;
     }
 
@@ -330,7 +331,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
     try {
       final movimiento = await vm.confirmarQr(
         qr.token,
-        comentario: comentarioController.text.trim(),
+        comentario: controladorComentario.text.trim(),
       );
       if (mounted) {
         _limpiarLectura();
