@@ -33,6 +33,7 @@ import 'package:ubbike/app/principal/aviso_notificacion.dart';
 import 'package:ubbike/app/principal/destino_inicial.dart';
 import 'package:ubbike/app/principal/destinos_por_rol.dart';
 import 'package:ubbike/app/principal/puente_tiempo_real.dart';
+import 'package:ubbike/app/principal/seccion_personal.dart';
 import 'package:ubbike/app/principal/vista_soporte.dart';
 import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
@@ -52,6 +53,8 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
   int tabSoporte = 0;
   int tabBicicletas = 0;
   int navegacionesBicicletas = 0;
+  int navegacionesSoporte = 0;
+  int navegacionesIngreso = 0;
   RolUsuario? rolPaginas;
   Set<int> indicesVisitados = {0};
   late final ControladorNotificaciones controladorNotificaciones;
@@ -69,8 +72,9 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
   void _abrirIngresoGuardia(ModoIngresoGuardia modo) {
     setState(() {
       modoIngresoGuardia = modo;
-      indice = 2;
-      indicesVisitados.add(2);
+      navegacionesIngreso++;
+      indice = indiceValidar;
+      indicesVisitados.add(indiceValidar);
     });
   }
 
@@ -162,19 +166,11 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     final sesion = ref.read(sesionProvider).value;
     final rol =
         sesion is SesionActiva ? sesion.usuario.rol : RolUsuario.estudiante;
-    final tipo = data['tipo']?.toString();
-
-    switch (tipo) {
-      case 'SOLICITUD_GUARDIA':
-        _abrirDestinoSolicitudGuardia(rol);
-        break;
-      case 'INCIDENCIA':
-        _abrirDestinoIncidencia(rol);
-        break;
-      case 'MOVIMIENTO':
-        _abrirDestinoMovimiento(rol);
-        break;
-    }
+    _navegarPorTipo(
+      data['tipo']?.toString(),
+      rol,
+      propia: data['alcance'] == 'PROPIO',
+    );
 
     FcmServicio.instancia.notificacionTocada.value = null;
     controladorNotificaciones.actualizar();
@@ -216,61 +212,44 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     NotificacionApp notificacion,
     RolUsuario rol,
   ) {
-    switch (notificacion.tipo) {
+    _navegarPorTipo(
+      notificacion.tipo,
+      rol,
+      propia: notificacion.datos['alcance'] == 'PROPIO',
+    );
+  }
+
+  void _navegarPorTipo(String? tipo, RolUsuario rol, {required bool propia}) {
+    switch (tipo) {
       case 'SOLICITUD_GUARDIA':
-        _abrirDestinoSolicitudGuardia(rol);
-        return;
+        _abrirDestinoSoporte(rol, pestana: 0, propia: propia);
       case 'INCIDENCIA':
-        _abrirDestinoIncidencia(rol);
-        return;
+        _abrirDestinoSoporte(rol, pestana: 1, propia: propia);
       case 'MOVIMIENTO':
         _abrirDestinoMovimiento(rol);
-        return;
     }
   }
 
-  void _abrirDestinoSolicitudGuardia(RolUsuario rol) {
+  void _abrirDestinoSoporte(
+    RolUsuario rol, {
+    required int pestana,
+    bool propia = false,
+  }) {
+    if (propia && usaDestinoMiCuenta(rol)) {
+      _seleccionarIndice(indicePerfil);
+      abrirAtencionPersonal(context, pestana: pestana);
+      return;
+    }
+    if (pestana == 1 && !rol.esUsuarioRegular) {
+      ref.read(filtrosIncidenciasProvider.notifier).state =
+          const FiltrosIncidencias(estado: 'ABIERTAS');
+    }
     setState(() {
-      tabSoporte = 0;
-      if (rol == RolUsuario.guardia) {
-        indice = 3;
-      } else if (rol == RolUsuario.adminCentral) {
-        indice = 3;
-      } else if (rol == RolUsuario.administrador) {
-        indice = 4;
-      } else {
-        indice = 3;
-      }
+      tabSoporte = pestana;
+      navegacionesSoporte++;
+      indice = indiceSoportePorRol(rol);
       indicesVisitados.add(indice);
     });
-    if (rol == RolUsuario.administrador) {
-      abrirSeccionGestion(
-        context,
-        titulo: 'Atención',
-        pantalla: const VistaSoporteAdministrador(initialIndex: 0),
-      );
-    }
-  }
-
-  void _abrirDestinoIncidencia(RolUsuario rol) {
-    ref.read(filtrosIncidenciasProvider.notifier).state =
-        const FiltrosIncidencias(estado: 'ABIERTAS');
-    setState(() {
-      tabSoporte = 1;
-      if (rol == RolUsuario.administrador) {
-        indice = 4;
-      } else {
-        indice = 3;
-      }
-      indicesVisitados.add(indice);
-    });
-    if (rol == RolUsuario.administrador) {
-      abrirSeccionGestion(
-        context,
-        titulo: 'Atención',
-        pantalla: const VistaSoporteAdministrador(initialIndex: 1),
-      );
-    }
   }
 
   void _abrirDestinoMovimiento(RolUsuario rol) {
@@ -278,7 +257,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       if (rol == RolUsuario.guardia || rol == RolUsuario.adminCentral) {
         indice = 1;
       } else if (rol == RolUsuario.administrador) {
-        indice = 4;
+        indice = indiceGestionAdministrador;
       } else {
         tabBicicletas = 1;
         navegacionesBicicletas++;
@@ -305,7 +284,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
   }
 
   void _abrirGestionAdmin(String titulo, Widget pantalla) {
-    _seleccionarIndice(4);
+    _seleccionarIndice(indiceGestionAdministrador);
     abrirSeccionGestion(context, titulo: titulo, pantalla: pantalla);
   }
 
@@ -331,6 +310,7 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     ref.listen(sesionProvider, (_, siguiente) {
       _sincronizarTiempoRealConSesion(siguiente.value);
     });
+    ref.watch(filtrosIncidenciasProvider.notifier);
 
     final sesion = ref.watch(sesionProvider).value;
     final rol =
@@ -341,7 +321,8 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     if (rolPaginas != rol) {
       final retomarIncidencia = ref.read(incidenciaPendienteAlIniciarProvider);
       rolPaginas = rol;
-      indice = retomarIncidencia ? 3 : 0;
+      tabBicicletas = 0;
+      indice = retomarIncidencia ? indiceSoportePorRol(rol) : 0;
       if (retomarIncidencia) tabSoporte = 1;
       indicesVisitados = {0, indice};
     }
@@ -404,18 +385,19 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
     if (rol == RolUsuario.guardia) {
       return [
         VistaInicioGuardia(
-          onOpenIngreso: _abrirIngresoGuardia,
+          onAbrirIngreso: _abrirIngresoGuardia,
         ),
         const VistaMovimientosCentral(),
         VistaIngresoGuardia(
+          key: ValueKey('ingreso-guardia-$navegacionesIngreso'),
           modoInicial: modoIngresoGuardia,
           onIrAHistorial: () => _seleccionarIndice(1),
         ),
         VistaSoporteGuardia(
-          key: ValueKey('soporte-guardia-$tabSoporte'),
+          key: ValueKey('soporte-guardia-$tabSoporte-$navegacionesSoporte'),
           initialIndex: tabSoporte,
         ),
-        const VistaPerfil(rol: RolUsuario.guardia),
+        _perfilConSeccionPersonal(rol),
       ];
     }
 
@@ -424,34 +406,29 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
         VistaTableroCentral(
           onAbrirMovimientos: () => _seleccionarIndice(1),
           onAbrirGuardias: () => _seleccionarIndice(2),
-          onAbrirSolicitudes: () =>
-              _abrirDestinoSolicitudGuardia(RolUsuario.adminCentral),
-          onAbrirIncidencias: () =>
-              _abrirDestinoIncidencia(RolUsuario.adminCentral),
+          onAbrirSolicitudes: () => _abrirDestinoSoporte(rol, pestana: 0),
+          onAbrirIncidencias: () => _abrirDestinoSoporte(rol, pestana: 1),
         ),
         const VistaMovimientosCentral(),
         const VistaGuardias(),
         VistaSoporteCentral(
-          key: ValueKey('soporte-central-$tabSoporte'),
+          key: ValueKey('soporte-central-$tabSoporte-$navegacionesSoporte'),
           initialIndex: tabSoporte,
         ),
-        const VistaPerfil(rol: RolUsuario.adminCentral),
+        _perfilConSeccionPersonal(rol),
       ];
     }
 
     if (rol == RolUsuario.administrador) {
       return [
         VistaTableroAdministrador(
-          onAbrirMovimientos: () =>
-              _abrirDestinoMovimiento(RolUsuario.administrador),
+          onAbrirMovimientos: () => _abrirDestinoMovimiento(rol),
           onAbrirGuardias: () => _abrirGestionAdmin(
             'Guardias',
             const VistaGuardias(),
           ),
-          onAbrirSolicitudes: () =>
-              _abrirDestinoSolicitudGuardia(RolUsuario.administrador),
-          onAbrirIncidencias: () =>
-              _abrirDestinoIncidencia(RolUsuario.administrador),
+          onAbrirSolicitudes: () => _abrirDestinoSoporte(rol, pestana: 0),
+          onAbrirIncidencias: () => _abrirDestinoSoporte(rol, pestana: 1),
           onAbrirUsuarios: () => _abrirGestionAdmin(
             'Usuarios y permisos',
             const VistaGestionUsuarios(),
@@ -461,20 +438,16 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
             const VistaGestionBicicleteros(),
           ),
         ),
-        VistaBicicletas(
-          key: ValueKey(
-            'bicicletas-admin-$tabBicicletas-$navegacionesBicicletas',
-          ),
-          initialIndex: tabBicicletas,
-          vistaMovimientos: const VistaMovimientosUsuario(),
-        ),
-        VistaQrAdmin(onVerHistorial: _abrirHistorialPropio),
-        VistaSoporteUsuario(
-          key: ValueKey('soporte-admin-propio-$tabSoporte'),
+        VistaSoporteAdministrador(
+          key: ValueKey('soporte-admin-$tabSoporte-$navegacionesSoporte'),
           initialIndex: tabSoporte,
         ),
+        VistaIngresoGuardia(
+          key: ValueKey('ingreso-admin-$navegacionesIngreso'),
+          modoInicial: modoIngresoGuardia,
+        ),
         const VistaMenuGestionAdmin(),
-        const VistaPerfil(rol: RolUsuario.administrador),
+        _perfilConSeccionPersonal(rol),
       ];
     }
 
@@ -489,10 +462,14 @@ class _PantallaPrincipalState extends ConsumerState<PantallaPrincipal>
       ),
       VistaQrUsuario(onVerHistorial: _abrirHistorialPropio),
       VistaSoporteUsuario(
-        key: ValueKey('soporte-usuario-$tabSoporte'),
+        key: ValueKey('soporte-usuario-$tabSoporte-$navegacionesSoporte'),
         initialIndex: tabSoporte,
       ),
       VistaPerfil(rol: rol),
     ];
+  }
+
+  Widget _perfilConSeccionPersonal(RolUsuario rol) {
+    return VistaSeccionPersonal(rol: rol);
   }
 }
