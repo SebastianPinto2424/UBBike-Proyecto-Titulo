@@ -253,7 +253,7 @@ void main() {
   });
 
   testWidgets(
-      'la sugerencia de bicicletero cercano usa botones del mismo tamaño',
+      'la sugerencia de bicicletero cercano usa botones compactos con contorno',
       (tester) async {
     final elecciones = <String>[];
     await _montar(
@@ -277,12 +277,23 @@ void main() {
       ),
     );
 
+    final ahoraNo = find.widgetWithText(OutlinedButton, 'Ahora no');
+    final aceptar = find.widgetWithText(OutlinedButton, 'Aceptar');
+    expect(tester.getSize(ahoraNo), tester.getSize(aceptar));
+    expect(tester.getSize(ahoraNo).width, lessThan(140));
+    expect(find.byType(ElevatedButton), findsNothing);
+    Color? contorno(Finder boton) => tester
+        .widget<OutlinedButton>(boton)
+        .style
+        ?.side
+        ?.resolve(<WidgetState>{})?.color;
     expect(
-      tester.getSize(find.widgetWithText(ElevatedButton, 'Ahora no')),
-      tester.getSize(find.widgetWithText(ElevatedButton, 'Aceptar')),
+        contorno(ahoraNo), ColoresUbb.rojoInstitucional.withValues(alpha: 0.7));
+    expect(contorno(aceptar), ColoresUbb.azulApp.withValues(alpha: 0.7));
+    expect(
+      tester.getTopRight(aceptar).dx,
+      greaterThan(tester.getTopRight(ahoraNo).dx),
     );
-    expect(_fondo(tester, 'Ahora no'), ColoresUbb.rojoInstitucional);
-    expect(_fondo(tester, 'Aceptar'), ColoresUbb.azulApp);
 
     await tester.tap(find.text('Ahora no'));
     await tester.tap(find.text('Aceptar'));
