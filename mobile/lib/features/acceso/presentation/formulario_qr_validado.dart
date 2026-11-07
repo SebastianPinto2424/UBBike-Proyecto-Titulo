@@ -107,22 +107,14 @@ class FormularioQrValidado extends StatelessWidget {
                 valor: qr.usuarioCorreo,
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _CampoLecturaQr(
-                      label: 'RUT',
-                      valor: qr.usuarioRut ?? 'Sin RUT',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _CampoLecturaQr(
-                      label: 'Bicicletero',
-                      valor: qr.bicicleteroNombre ?? 'Bicicletero de tu turno',
-                    ),
-                  ),
-                ],
+              _CampoLecturaQr(
+                label: 'RUT',
+                valor: qr.usuarioRut ?? 'Sin RUT',
+              ),
+              const SizedBox(height: 10),
+              _CampoLecturaQr(
+                label: 'Bicicletero',
+                valor: qr.bicicleteroNombre ?? 'Bicicletero de tu turno',
               ),
               const SizedBox(height: 16),
               const _TituloFormularioQr(
@@ -136,6 +128,7 @@ class FormularioQrValidado extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _CampoLecturaQr(
@@ -154,6 +147,7 @@ class FormularioQrValidado extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _CampoLecturaQr(
