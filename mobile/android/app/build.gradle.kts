@@ -51,10 +51,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (archivoFirma.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (archivoFirma.exists()) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
