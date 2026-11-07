@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -181,6 +182,28 @@ void main() {
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('al abrir y cerrar el rechazo el cursor no vuelve al comentario',
+      (tester) async {
+    await _montar(tester);
+    await _leerQr(tester, 'qr-123');
+    final comentario =
+        find.widgetWithText(TextFormField, 'Comentario opcional del guardia');
+    await tester.ensureVisible(comentario);
+    await tester.pumpAndSettle();
+    await tester.enterText(comentario, 'Trae candado');
+    expect(tester.testTextInput.hasAnyClients, isTrue);
+
+    await tocarTexto(tester, 'Rechazar ingreso');
+    expect(find.text('La bicicleta no coincide'), findsOneWidget);
+    expect(tester.testTextInput.hasAnyClients, isFalse);
+
+    await tocarTexto(tester, 'Cancelar');
+
+    expect(find.text('La bicicleta no coincide'), findsNothing);
+    expect(tester.testTextInput.hasAnyClients, isFalse);
+    expect(find.text('Trae candado'), findsOneWidget);
   });
 
   testWidgets('leer otro libera el QR anterior', (tester) async {
