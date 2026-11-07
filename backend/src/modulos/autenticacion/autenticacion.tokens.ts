@@ -38,12 +38,12 @@ export const resolverRolRegistrable = (correo: string): RolUsuario => {
   throw new ErrorHttp(400, 'Debes usar un correo institucional UBB válido');
 };
 
-const claveRefreshToken = (usuarioId: string, tokenHash: string) =>
+const claveTokenRenovacion = (usuarioId: string, tokenHash: string) =>
   `refresh:${usuarioId}:${tokenHash}`;
 
-export const crearRefreshToken = (): string => crypto.randomBytes(48).toString('base64url');
+export const crearTokenRenovacion = (): string => crypto.randomBytes(48).toString('base64url');
 
-export const guardarRefreshToken = async (
+export const guardarTokenRenovacion = async (
   usuarioId: string,
   token: string,
   versionSesion = 0
@@ -55,13 +55,13 @@ export const guardarRefreshToken = async (
   }
 
   const hash = hashearToken(token);
-  const clave = claveRefreshToken(usuarioId, hash);
-  const ttlSegundos = entorno.jwt.refreshExpiracionDias * 24 * 60 * 60;
+  const clave = claveTokenRenovacion(usuarioId, hash);
+  const ttlSegundos = entorno.jwt.expiracionRenovacionDias * 24 * 60 * 60;
 
   await redis.set(clave, `v:${versionSesion}`, { EX: ttlSegundos });
 };
 
-export const rotarRefreshToken = async (
+export const rotarTokenRenovacion = async (
   usuarioId: string,
   anterior: string,
   siguiente: string,
@@ -78,16 +78,16 @@ export const rotarRefreshToken = async (
   `,
     {
       keys: [
-        claveRefreshToken(usuarioId, hashearToken(anterior)),
-        claveRefreshToken(usuarioId, hashearToken(siguiente))
+        claveTokenRenovacion(usuarioId, hashearToken(anterior)),
+        claveTokenRenovacion(usuarioId, hashearToken(siguiente))
       ],
-      arguments: [`v:${versionSesion}`, String(entorno.jwt.refreshExpiracionDias * 86400)]
+      arguments: [`v:${versionSesion}`, String(entorno.jwt.expiracionRenovacionDias * 86400)]
     }
   );
   return resultado === 1;
 };
 
-export const revocarRefreshToken = async (usuarioId: string, token: string): Promise<void> => {
+export const revocarTokenRenovacion = async (usuarioId: string, token: string): Promise<void> => {
   const redis = await obtenerClienteRedis();
 
   if (!redis) {
@@ -95,11 +95,11 @@ export const revocarRefreshToken = async (usuarioId: string, token: string): Pro
   }
 
   const hash = hashearToken(token);
-  const clave = claveRefreshToken(usuarioId, hash);
+  const clave = claveTokenRenovacion(usuarioId, hash);
   await redis.del(clave);
 };
 
-export const revocarTodosLosRefreshTokens = async (usuarioId: string): Promise<void> => {
+export const revocarTodosLosTokensRenovacion = async (usuarioId: string): Promise<void> => {
   const redis = await obtenerClienteRedis();
 
   if (!redis) {
