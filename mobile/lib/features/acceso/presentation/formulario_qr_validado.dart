@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/acceso/data/acceso_modelos.dart';
 import 'package:ubbike/features/acceso/presentation/botones_decision_movimiento.dart';
+import 'package:ubbike/shared/widgets/campo_solo_lectura.dart';
 import 'package:ubbike/shared/widgets/chip_estado.dart';
 import 'package:ubbike/shared/widgets/selector_foto.dart';
 import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
@@ -260,14 +261,12 @@ class _CampoLecturaQr extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      key: ValueKey('$label-$valor'),
-      initialValue: valor,
-      readOnly: true,
-      decoration: InputDecoration(
+    return CampoSoloLectura(
+      decoracion: InputDecoration(
         labelText: label,
         isDense: true,
       ),
+      valor: valor,
     );
   }
 }
