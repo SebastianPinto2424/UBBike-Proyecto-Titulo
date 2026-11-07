@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { ErrorHttp } from '../../comun/errores/error-http';
 import { crearEnlaceCorreo } from '../enlaces/enlace.servicio';
 import { registrarAuditoria } from '../auditoria/auditoria.servicio';
