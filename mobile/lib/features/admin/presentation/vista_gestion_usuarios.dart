@@ -23,20 +23,20 @@ class VistaGestionUsuarios extends ConsumerStatefulWidget {
 }
 
 class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
-  final busquedaController = TextEditingController();
+  final controladorBusqueda = TextEditingController();
 
   GestionUsuariosVm get vm => ref.read(gestionUsuariosVmProvider.notifier);
 
   @override
   void initState() {
     super.initState();
-    busquedaController.addListener(_alCambiarTextoBusqueda);
+    controladorBusqueda.addListener(_alCambiarTextoBusqueda);
   }
 
   @override
   void dispose() {
-    busquedaController.removeListener(_alCambiarTextoBusqueda);
-    busquedaController.dispose();
+    controladorBusqueda.removeListener(_alCambiarTextoBusqueda);
+    controladorBusqueda.dispose();
     super.dispose();
   }
 
@@ -47,12 +47,12 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
   }
 
   void _limpiarFiltros() {
-    busquedaController.clear();
+    controladorBusqueda.clear();
     vm.limpiarFiltros();
   }
 
   void _limpiarBusqueda() {
-    busquedaController.clear();
+    controladorBusqueda.clear();
     vm.limpiarBusqueda();
   }
 
@@ -194,7 +194,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
         _EncabezadoAdminUsuarios(onCrear: _crearUsuario),
         const SizedBox(height: 12),
         FiltrosUsuariosAdmin(
-          busquedaController: busquedaController,
+          controladorBusqueda: controladorBusqueda,
           total: usuarios.length,
           cargando: cargando,
           tieneFiltros: tieneFiltros,
@@ -225,7 +225,7 @@ class _VistaGestionUsuariosState extends ConsumerState<VistaGestionUsuarios> {
   }
 
   List<FiltroActivo> _filtrosActivos(FiltrosGestionUsuarios filtros) {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return [
       if (filtros.rol != null)
         FiltroActivo(
