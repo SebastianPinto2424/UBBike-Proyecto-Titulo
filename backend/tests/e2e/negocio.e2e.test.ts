@@ -1,7 +1,7 @@
 import request from 'supertest';
 import type { Response } from 'supertest';
 import { randomUUID } from 'node:crypto';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import {
   activarBicicleta,
   eliminarBicicleta
@@ -30,8 +30,8 @@ import { actualizarEstadoSolicitudGuardia } from '../../src/modulos/acceso/solic
 import { cerrarSesion } from '../../src/modulos/autenticacion/autenticacion.servicio';
 import { actualizarBicicletero } from '../../src/modulos/bicicleteros/bicicletero.servicio';
 import {
-  guardarRefreshToken,
-  rotarRefreshToken,
+  guardarTokenRenovacion,
+  rotarTokenRenovacion,
   crearTokenSesion
 } from '../../src/modulos/autenticacion/autenticacion.tokens';
 import {
@@ -137,36 +137,36 @@ describe('servicios reales y API sobre PostgreSQL/Redis aislados', () => {
       where: { id: persona.id },
       data: { contrasenaHash: await bcrypt.hash(contrasena, 4) }
     });
-    const login = await request(aplicacion)
+    const inicioSesion = await request(aplicacion)
       .post('/autenticacion/login')
       .send({ correo: persona.correo, contrasena });
-    expect(login.status).toBe(200);
+    expect(inicioSesion.status).toBe(200);
     const perfil = await request(aplicacion)
       .get('/autenticacion/yo')
-      .set('Authorization', `Bearer ${login.body.token}`);
+      .set('Authorization', `Bearer ${inicioSesion.body.token}`);
     expect(perfil.status).toBe(200);
     expect(perfil.body.usuario.id).toBe(persona.id);
-    const refresh = await request(aplicacion)
+    const renovacion = await request(aplicacion)
       .post('/autenticacion/refresh')
-      .send({ usuarioId: persona.id, refreshToken: login.body.refreshToken });
-    expect(refresh.status).toBe(200);
-    const logout = await request(aplicacion)
+      .send({ usuarioId: persona.id, refreshToken: inicioSesion.body.refreshToken });
+    expect(renovacion.status).toBe(200);
+    const cierreSesion = await request(aplicacion)
       .post('/autenticacion/logout')
-      .set('Authorization', `Bearer ${refresh.body.token}`)
-      .send({ refreshToken: refresh.body.refreshToken });
-    expect(logout.status).toBe(200);
+      .set('Authorization', `Bearer ${renovacion.body.token}`)
+      .send({ refreshToken: renovacion.body.refreshToken });
+    expect(cierreSesion.status).toBe(200);
     expect(
       (
         await request(aplicacion)
           .get('/autenticacion/yo')
-          .set('Authorization', `Bearer ${refresh.body.token}`)
+          .set('Authorization', `Bearer ${renovacion.body.token}`)
       ).status
     ).toBe(401);
     expect(
       (
         await request(aplicacion)
           .post('/autenticacion/refresh')
-          .send({ usuarioId: persona.id, refreshToken: refresh.body.refreshToken })
+          .send({ usuarioId: persona.id, refreshToken: renovacion.body.refreshToken })
       ).status
     ).toBe(401);
   });
@@ -519,11 +519,11 @@ describe('servicios reales y API sobre PostgreSQL/Redis aislados', () => {
       throw new Error('Configura TEST_REDIS_URL aislado para esta prueba');
     const id = randomUUID();
     const token = randomUUID();
-    await guardarRefreshToken(id, token, 2);
-    expect(await rotarRefreshToken(id, token, 'incorrecto', 3)).toBe(false);
+    await guardarTokenRenovacion(id, token, 2);
+    expect(await rotarTokenRenovacion(id, token, 'incorrecto', 3)).toBe(false);
     const resultados = await Promise.all([
-      rotarRefreshToken(id, token, randomUUID(), 2),
-      rotarRefreshToken(id, token, randomUUID(), 2)
+      rotarTokenRenovacion(id, token, randomUUID(), 2),
+      rotarTokenRenovacion(id, token, randomUUID(), 2)
     ]);
     expect(resultados.filter(Boolean)).toHaveLength(1);
   });
