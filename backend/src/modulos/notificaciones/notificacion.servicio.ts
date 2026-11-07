@@ -46,7 +46,7 @@ export const ejecutarEfectosDiferidos = (efectos: EfectosDiferidos) => {
 };
 
 const LIMITE_MAX = 50;
-const LIMITE_DEFAULT = 20;
+const LIMITE_PREDETERMINADO = 20;
 const tiposVisiblesApp: TipoNotificacion[] = [
   TipoNotificacion.SOLICITUD_GUARDIA,
   TipoNotificacion.INCIDENCIA
@@ -153,7 +153,7 @@ export const listarNotificacionesUsuario = async (
   usuarioId: string,
   filtros: FiltrosNotificaciones = {}
 ) => {
-  const limite = limitarPagina(filtros.limite, LIMITE_DEFAULT, LIMITE_MAX);
+  const limite = limitarPagina(filtros.limite, LIMITE_PREDETERMINADO, LIMITE_MAX);
   validarCursor(filtros.cursor);
 
   const notificaciones = await notificacionRepositorio.listarDeUsuario({
