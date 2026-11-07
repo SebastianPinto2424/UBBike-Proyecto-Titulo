@@ -230,6 +230,22 @@ describe('crearSolicitudGuardia', () => {
     ).rejects.toMatchObject({ statusCode: 409 });
     expect(repo.actualizar).not.toHaveBeenCalled();
   });
+
+  it('el guardia no pide atencion en el bicicletero que gestiona', async () => {
+    repo.buscarBicicletero.mockResolvedValue(bicicletero as never);
+    repo.buscarSolicitudAbierta.mockResolvedValue(null);
+    repo.buscarAsignacionActivaConGuardia.mockResolvedValue({ guardia } as never);
+
+    await expect(
+      crearSolicitudGuardia({ usuarioId: 'g1', bicicleteroId: 'r1', tipo })
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      message:
+        'No puedes pedir atención en el bicicletero que gestionas. Si necesitas apoyo, avisa a central.'
+    });
+    expect(repo.crear).not.toHaveBeenCalled();
+    expect(crearNotificacion).not.toHaveBeenCalled();
+  });
 });
 
 describe('listarSolicitudesGuardia', () => {
@@ -252,6 +268,20 @@ describe('listarSolicitudesGuardia', () => {
 
     await listarSolicitudesGuardia({ usuarioId: 'a1', rol: RolUsuario.ADMIN_CENTRAL });
     expect(repo.listar).toHaveBeenLastCalledWith({ where: {}, limite: undefined });
+  });
+
+  it('el alcance propio muestra al personal solo las solicitudes que hizo', async () => {
+    for (const [usuarioId, rol] of [
+      ['g1', RolUsuario.GUARDIA],
+      ['a1', RolUsuario.ADMIN_CENTRAL],
+      ['a2', RolUsuario.ADMINISTRADOR]
+    ]) {
+      await listarSolicitudesGuardia({ usuarioId, rol, alcance: 'PROPIO' });
+      expect(repo.listar).toHaveBeenLastCalledWith({
+        where: { AND: [{ solicitadaPorUsuarioId: usuarioId }] },
+        limite: undefined
+      });
+    }
   });
 
   it('filtra por estado, busca por texto y acota el limite', async () => {
@@ -435,13 +465,17 @@ describe('actualizarEstadoSolicitudGuardia', () => {
       expect.objectContaining({
         usuarioId: 'u1',
         titulo: 'Guardia en camino',
-        mensaje: 'El guardia va en camino a Biblioteca.'
+        mensaje: 'El guardia va en camino a Biblioteca.',
+        datos: expect.objectContaining({ alcance: 'PROPIO' })
       }),
       {},
       expect.any(Array)
     );
     expect(notificarUsuariosPorRol).toHaveBeenCalledWith(
-      expect.objectContaining({ titulo: 'Guardia en camino' }),
+      expect.objectContaining({
+        titulo: 'Guardia en camino',
+        datos: expect.not.objectContaining({ alcance: 'PROPIO' })
+      }),
       {},
       expect.any(Array)
     );
