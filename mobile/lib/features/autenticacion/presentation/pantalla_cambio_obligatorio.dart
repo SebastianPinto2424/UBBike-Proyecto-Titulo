@@ -17,10 +17,10 @@ class PantallaCambioObligatorio extends ConsumerStatefulWidget {
 
 class _PantallaCambioObligatorioState
     extends ConsumerState<PantallaCambioObligatorio> {
-  final formKey = GlobalKey<FormState>();
-  final actualController = TextEditingController();
-  final nuevaController = TextEditingController();
-  final confirmarController = TextEditingController();
+  final claveFormulario = GlobalKey<FormState>();
+  final controladorActual = TextEditingController();
+  final controladorNueva = TextEditingController();
+  final controladorConfirmar = TextEditingController();
   bool verActual = false;
   bool verNueva = false;
   bool verConfirmacion = false;
@@ -28,22 +28,22 @@ class _PantallaCambioObligatorioState
 
   @override
   void dispose() {
-    actualController.dispose();
-    nuevaController.dispose();
-    confirmarController.dispose();
+    controladorActual.dispose();
+    controladorNueva.dispose();
+    controladorConfirmar.dispose();
     super.dispose();
   }
 
   Future<void> _guardar() async {
-    if (formKey.currentState?.validate() != true) {
+    if (claveFormulario.currentState?.validate() != true) {
       return;
     }
 
     setState(() => guardando = true);
     try {
       await ref.read(autenticacionVmProvider).cambiarContrasenaSesion(
-            contrasenaActual: actualController.text,
-            contrasenaNueva: nuevaController.text,
+            contrasenaActual: controladorActual.text,
+            contrasenaNueva: controladorNueva.text,
           );
 
       if (mounted) {
@@ -98,7 +98,7 @@ class _PantallaCambioObligatorioState
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Form(
-                    key: formKey,
+                    key: claveFormulario,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -134,7 +134,7 @@ class _PantallaCambioObligatorioState
                         ),
                         const SizedBox(height: 20),
                         TextFormField(
-                          controller: actualController,
+                          controller: controladorActual,
                           obscureText: !verActual,
                           autocorrect: false,
                           enableSuggestions: false,
@@ -156,7 +156,7 @@ class _PantallaCambioObligatorioState
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
-                          controller: nuevaController,
+                          controller: controladorNueva,
                           obscureText: !verNueva,
                           autocorrect: false,
                           enableSuggestions: false,
@@ -176,7 +176,7 @@ class _PantallaCambioObligatorioState
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
-                          controller: confirmarController,
+                          controller: controladorConfirmar,
                           obscureText: !verConfirmacion,
                           autocorrect: false,
                           enableSuggestions: false,
@@ -195,7 +195,7 @@ class _PantallaCambioObligatorioState
                               ),
                             ),
                           ),
-                          validator: (valor) => valor != nuevaController.text
+                          validator: (valor) => valor != controladorNueva.text
                               ? 'Las contraseñas no coinciden.'
                               : null,
                         ),
