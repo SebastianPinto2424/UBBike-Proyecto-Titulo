@@ -56,6 +56,22 @@ describe('POST /autenticacion/login', () => {
       .post('/autenticacion/login')
       .send({ correo: 'noexiste@alumnos.ubiobio.cl', contrasena: 'cualquier' });
     expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: 'Credenciales inválidas',
+      codigo: 'CREDENCIALES_INVALIDAS'
+    });
+  });
+
+  it('responde 400 si el cuerpo JSON está malformado', async () => {
+    const res = await request(aplicacion)
+      .post('/autenticacion/login')
+      .set('Content-Type', 'application/json')
+      .send('{correo:sin-comillas}');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      message: 'El cuerpo JSON no es válido.'
+    });
   });
 });
 
@@ -77,6 +93,30 @@ describe('POST /autenticacion/reenviar-verificacion', () => {
       .send({ correo: 'no-es-correo' });
 
     expect(res.status).toBe(400);
+  });
+});
+
+describe('límites pensados para la red compartida del campus', () => {
+  const pedirRecuperacion = (correo: string) =>
+    request(aplicacion).post('/autenticacion/solicitar-cambio-contrasena').send({ correo });
+
+  it('muchas personas pueden recuperar su contraseña desde la misma red', async () => {
+    const estados: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      estados.push((await pedirRecuperacion(`persona${i}.campus@alumnos.ubiobio.cl`)).status);
+    }
+
+    expect(estados).not.toContain(429);
+  });
+
+  it('una misma cuenta sí queda limitada si insiste', async () => {
+    const estados: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      estados.push((await pedirRecuperacion('insistente.campus@alumnos.ubiobio.cl')).status);
+    }
+
+    expect(estados.slice(0, 5)).not.toContain(429);
+    expect(estados[5]).toBe(429);
   });
 });
 
@@ -114,13 +154,13 @@ describe('GET /health', () => {
 describe('origen de las peticiones', () => {
   it('rechaza con 403 a un sitio web ajeno, tambien en la API', async () => {
     const salud = await request(aplicacion).get('/health').set('Origin', 'https://sitio-ajeno.com');
-    const login = await request(aplicacion)
+    const inicioSesion = await request(aplicacion)
       .post('/autenticacion/login')
       .set('Origin', 'https://sitio-ajeno.com')
       .send({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'cualquier' });
 
     expect(salud.status).toBe(403);
-    expect(login.status).toBe(403);
+    expect(inicioSesion.status).toBe(403);
     expect(salud.headers['access-control-allow-origin']).toBeUndefined();
   });
 
