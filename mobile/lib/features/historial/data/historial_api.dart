@@ -21,6 +21,7 @@ class HistorialApi {
     String? origen,
     int? limite,
     int? pagina,
+    bool propios = false,
   }) {
     final parametros = <String>[];
 
@@ -46,6 +47,7 @@ class HistorialApi {
     agregar('bicicleteroId', bicicleteroId);
     agregar('guardiaId', guardiaId);
     agregar('origen', origen);
+    agregar('alcance', propios ? 'PROPIO' : null);
     if (limite != null && limite > 0) {
       parametros.add('limit=$limite');
     }
@@ -100,6 +102,7 @@ class HistorialApi {
     String? origen,
     int? limite,
     int pagina = 1,
+    bool propios = false,
   }) async {
     final query = _crearQuery(
       filtro: filtro,
@@ -113,6 +116,7 @@ class HistorialApi {
       origen: origen,
       limite: limite,
       pagina: pagina,
+      propios: propios,
     );
 
     return PaginaMovimientosApp.desdeJson(
