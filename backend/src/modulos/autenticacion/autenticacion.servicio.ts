@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { liberarBicicleteroGuardia } from '../acceso/asignaciones/asignacion-guardia.servicio';
 import { ErrorHttp } from '../../comun/errores/error-http';
 import { registrarAuditoria } from '../auditoria/auditoria.servicio';
@@ -7,12 +7,12 @@ import { cerrarSesionesTiempoReal } from '../../tiempo-real/tiempo-real';
 import { mapearUsuarioPublico } from '../usuarios/usuario.mapeador';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import {
-  crearRefreshToken,
+  crearTokenRenovacion,
   crearTokenSesion,
-  guardarRefreshToken,
-  revocarRefreshToken,
-  revocarTodosLosRefreshTokens,
-  rotarRefreshToken
+  guardarTokenRenovacion,
+  revocarTokenRenovacion,
+  revocarTodosLosTokensRenovacion,
+  rotarTokenRenovacion
 } from './autenticacion.tokens';
 import * as autenticacionRepositorio from './autenticacion.repositorio';
 
@@ -21,29 +21,49 @@ type DatosInicioSesion = {
   contrasena: string;
 };
 
+const hashComparacionSinUsuario = '$2a$12$dn6irJbqCmX5pOWiucMhW.zaebh1UejzRoC9yDxz5JRvPeLBfdaWO';
+
+const errorCredencialesInvalidas = () =>
+  new ErrorHttp(401, 'Credenciales inválidas', 'CREDENCIALES_INVALIDAS');
+
 const cerrarOtrasSesiones = async (usuarioId: string) => {
   const actualizado = await autenticacionRepositorio.actualizar(usuarioId, {
     versionSesion: { increment: 1 }
   });
-  await revocarTodosLosRefreshTokens(usuarioId);
+  await revocarTodosLosTokensRenovacion(usuarioId);
   await olvidarDispositivosDeUsuario(usuarioId);
   cerrarSesionesTiempoReal(usuarioId);
   return actualizado.versionSesion;
 };
 
 export const iniciarSesion = async (datos: DatosInicioSesion) => {
-  const usuario = await autenticacionRepositorio.buscarPorCorreo(datos.correo.toLowerCase());
+  const correo = datos.correo.toLowerCase();
+  const usuario = await autenticacionRepositorio.buscarPorCorreo(correo);
+  const contrasenaCoincide = await bcrypt.compare(
+    datos.contrasena,
+    usuario?.contrasenaHash ?? hashComparacionSinUsuario
+  );
 
-  if (!usuario) {
-    await registrarAuditoria({
-      accion: 'LOGIN_FALLIDO',
-      entidad: 'usuarios',
-      datos: {
-        correo: datos.correo.toLowerCase(),
-        motivo: 'usuario_no_encontrado'
-      }
-    });
-    throw new ErrorHttp(401, 'Credenciales inválidas');
+  if (!usuario || !contrasenaCoincide) {
+    await registrarAuditoria(
+      usuario
+        ? {
+            actorUsuarioId: usuario.id,
+            accion: 'LOGIN_FALLIDO',
+            entidad: 'usuarios',
+            entidadId: usuario.id,
+            datos: { motivo: 'contrasena_incorrecta' }
+          }
+        : {
+            accion: 'LOGIN_FALLIDO',
+            entidad: 'usuarios',
+            datos: {
+              correo,
+              motivo: 'usuario_no_encontrado'
+            }
+          }
+    );
+    throw errorCredencialesInvalidas();
   }
 
   const bloquear = async (motivo: string, error: ErrorHttp) => {
@@ -62,19 +82,6 @@ export const iniciarSesion = async (datos: DatosInicioSesion) => {
       'registro_parcial',
       new ErrorHttp(403, 'Debes completar tu registro antes de iniciar sesión')
     );
-  }
-
-  const contrasenaCoincide = await bcrypt.compare(datos.contrasena, usuario.contrasenaHash);
-
-  if (!contrasenaCoincide) {
-    await registrarAuditoria({
-      actorUsuarioId: usuario.id,
-      accion: 'LOGIN_FALLIDO',
-      entidad: 'usuarios',
-      entidadId: usuario.id,
-      datos: { motivo: 'contrasena_incorrecta' }
-    });
-    throw new ErrorHttp(401, 'Credenciales inválidas');
   }
 
   if (!usuario.cuentaActiva) {
@@ -101,13 +108,13 @@ export const iniciarSesion = async (datos: DatosInicioSesion) => {
 
   const versionSesion = await cerrarOtrasSesiones(usuario.id);
   const token = crearTokenSesion(usuario.id, usuario.rol, versionSesion);
-  const refreshToken = crearRefreshToken();
-  await guardarRefreshToken(usuario.id, refreshToken, versionSesion);
+  const tokenRenovacion = crearTokenRenovacion();
+  await guardarTokenRenovacion(usuario.id, tokenRenovacion, versionSesion);
 
   return {
     usuario: mapearUsuarioPublico(usuario),
     token,
-    refreshToken
+    refreshToken: tokenRenovacion
   };
 };
 
@@ -121,46 +128,46 @@ export const obtenerUsuarioActual = async (usuarioId: string) => {
   return mapearUsuarioPublico(usuario);
 };
 
-export const refrescarToken = async (usuarioId: string, refreshTokenRecibido: string) => {
+export const refrescarToken = async (usuarioId: string, tokenRenovacionRecibido: string) => {
   const usuario = await autenticacionRepositorio.buscarPorId(usuarioId);
 
   if (!usuario || !usuario.cuentaActiva || !usuario.correoVerificado) {
     throw new ErrorHttp(401, 'Sesión inválida');
   }
 
-  const nuevoRefreshToken = crearRefreshToken();
-  const valido = await rotarRefreshToken(
+  const nuevoTokenRenovacion = crearTokenRenovacion();
+  const valido = await rotarTokenRenovacion(
     usuarioId,
-    refreshTokenRecibido,
-    nuevoRefreshToken,
+    tokenRenovacionRecibido,
+    nuevoTokenRenovacion,
     usuario.versionSesion
   );
 
   if (!valido) {
-    throw new ErrorHttp(401, 'Refresh token inválido o expirado. Inicia sesión nuevamente.');
+    throw new ErrorHttp(401, 'Token de renovación inválido o expirado. Inicia sesión nuevamente.');
   }
 
   const nuevoToken = crearTokenSesion(usuario.id, usuario.rol, usuario.versionSesion);
 
   return {
     token: nuevoToken,
-    refreshToken: nuevoRefreshToken
+    refreshToken: nuevoTokenRenovacion
   };
 };
 
 export const cerrarSesion = async (
   usuarioId: string,
-  refreshTokenRecibido?: string,
+  tokenRenovacionRecibido?: string,
   rol?: string
 ) => {
   if (rol === RolUsuario.GUARDIA) {
     await liberarBicicleteroGuardia(usuarioId);
   }
 
-  if (refreshTokenRecibido) {
-    await revocarRefreshToken(usuarioId, refreshTokenRecibido);
+  if (tokenRenovacionRecibido) {
+    await revocarTokenRenovacion(usuarioId, tokenRenovacionRecibido);
   } else {
-    await revocarTodosLosRefreshTokens(usuarioId);
+    await revocarTodosLosTokensRenovacion(usuarioId);
   }
 
   await autenticacionRepositorio.actualizar(usuarioId, {
