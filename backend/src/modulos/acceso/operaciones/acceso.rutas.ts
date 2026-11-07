@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { middlewareAutenticacion } from '../../../comun/middlewares/autenticacion.middleware';
 import { autorizarRoles } from '../../../comun/middlewares/autorizar-roles.middleware';
 import { validarConsulta, validarCuerpo } from '../../../comun/middlewares/validacion.middleware';
-import { RolUsuario } from '../../usuarios/rol-usuario';
+import { rolesQueValidanAccesos } from '../../usuarios/permisos-rol';
 import {
   buscarManual,
   confirmarAccesoQr,
@@ -19,9 +19,7 @@ import {
 const rutasAcceso = Router();
 
 rutasAcceso.use(middlewareAutenticacion);
-rutasAcceso.use(
-  autorizarRoles(RolUsuario.GUARDIA, RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR)
-);
+rutasAcceso.use(autorizarRoles(...rolesQueValidanAccesos));
 
 rutasAcceso.post('/qr/confirmar', validarCuerpo(esquemaConfirmarQr), confirmarAccesoQr);
 rutasAcceso.post('/qr/denegar', validarCuerpo(esquemaDenegarQr), denegarAccesoQr);
