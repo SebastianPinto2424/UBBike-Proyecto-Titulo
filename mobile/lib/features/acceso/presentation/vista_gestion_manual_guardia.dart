@@ -80,13 +80,15 @@ class _VistaGestionManualGuardiaState
       if (dataUrl == null || !mounted) {
         return;
       }
-      setState(() {
-        fotoBicicletaManual = dataUrl;
-        errorFotoBicicletaManual = null;
-      });
+      _ponerFoto(dataUrl);
       context.mostrarInfo('Recuperamos la foto que tomaste antes.');
     } catch (_) {}
   }
+
+  void _ponerFoto(String? dataUrl) => setState(() {
+        fotoBicicletaManual = dataUrl;
+        errorFotoBicicletaManual = null;
+      });
 
   @override
   void dispose() {
@@ -165,10 +167,7 @@ class _VistaGestionManualGuardiaState
                     onUsarNoRegistrada: _usarBicicletaNoRegistrada,
                     onCampoEditado: _detacharBicicletaSiEditada,
                     onElegirFoto: _seleccionarFotoBicicletaManual,
-                    onQuitarFoto: () => setState(() {
-                      fotoBicicletaManual = null;
-                      errorFotoBicicletaManual = null;
-                    }),
+                    onQuitarFoto: () => _ponerFoto(null),
                   ),
                   const SizedBox(height: 12),
                   AccionesGestionManual(
@@ -338,10 +337,7 @@ class _VistaGestionManualGuardiaState
         context.mostrarError(foto.error ?? 'No se pudo cargar la foto.');
         return;
       }
-      setState(() {
-        fotoBicicletaManual = dataUrl;
-        errorFotoBicicletaManual = null;
-      });
+      _ponerFoto(dataUrl);
     } catch (_) {
       if (mounted) {
         context.mostrarError('No se pudo cargar la foto.');
