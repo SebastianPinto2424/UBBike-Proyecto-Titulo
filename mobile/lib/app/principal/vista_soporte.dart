@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:ubbike/shared/widgets/vista_con_pestanas.dart';
-import 'package:ubbike/features/qr/presentation/vista_qr_usuario.dart';
 import 'package:ubbike/features/acceso/presentation/vista_guardias_en_turno.dart';
 import 'package:ubbike/features/acceso/presentation/vista_solicitar_guardia.dart';
-import 'package:ubbike/features/acceso/presentation/vista_escaner_qr_guardia.dart';
-import 'package:ubbike/features/acceso/presentation/vista_gestion_manual_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/vista_alertas_guardia.dart';
 import 'package:ubbike/features/historial/presentation/vista_operaciones_guardias_central.dart';
 import 'package:ubbike/features/acceso/presentation/vista_solicitudes_central.dart';
@@ -30,6 +27,7 @@ class VistaSoporteUsuario extends StatelessWidget {
           mostrarReportante: false,
           puedeGestionar: false,
           permitirBicicletaPropia: true,
+          soloPropias: true,
         ),
       ],
     );
@@ -127,28 +125,6 @@ class VistaSoporteAdministrador extends StatelessWidget {
           puedeGestionar: true,
           gestionCentral: true,
         ),
-      ],
-    );
-  }
-}
-
-class VistaQrAdmin extends StatelessWidget {
-  const VistaQrAdmin({super.key, this.onVerHistorial});
-
-  final VoidCallback? onVerHistorial;
-
-  @override
-  Widget build(BuildContext context) {
-    return VistaConPestanas(
-      pestanas: [
-        pestanaCompacta(Icons.qr_code_2, 'Generar'),
-        pestanaCompacta(Icons.qr_code_scanner, 'Validar'),
-        pestanaCompacta(Icons.edit_note_outlined, 'Manual'),
-      ],
-      vistas: [
-        VistaQrUsuario(onVerHistorial: onVerHistorial),
-        const VistaEscanerQrGuardia(),
-        const VistaGestionManualGuardia(),
       ],
     );
   }
