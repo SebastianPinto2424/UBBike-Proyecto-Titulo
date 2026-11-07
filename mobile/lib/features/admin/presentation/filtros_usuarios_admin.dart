@@ -8,7 +8,7 @@ import 'package:ubbike/shared/widgets/filtros_widgets.dart';
 class FiltrosUsuariosAdmin extends StatelessWidget {
   const FiltrosUsuariosAdmin({
     super.key,
-    required this.busquedaController,
+    required this.controladorBusqueda,
     required this.total,
     required this.cargando,
     required this.tieneFiltros,
@@ -24,7 +24,7 @@ class FiltrosUsuariosAdmin extends StatelessWidget {
     required this.onLimpiar,
   });
 
-  final TextEditingController busquedaController;
+  final TextEditingController controladorBusqueda;
   final int total;
   final bool cargando;
   final bool tieneFiltros;
@@ -71,14 +71,14 @@ class FiltrosUsuariosAdmin extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: busquedaController,
+              controller: controladorBusqueda,
               autocorrect: false,
               textInputAction: TextInputAction.search,
               onChanged: onBuscar,
               decoration: InputDecoration(
                 labelText: 'Nombre, correo o RUT',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: busquedaController.text.isEmpty
+                suffixIcon: controladorBusqueda.text.isEmpty
                     ? null
                     : IconButton(
                         tooltip: 'Limpiar búsqueda',
