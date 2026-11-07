@@ -187,7 +187,6 @@ class FormularioQrValidado extends StatelessWidget {
                   labelText: 'Comentario opcional del guardia',
                   hintText: 'Ej: Usuario posee U-Lock',
                   alignLabelWithHint: true,
-                  prefixIcon: Icon(Icons.sticky_note_2_outlined),
                 ),
                 validator: _validarComentarioQrGuardia,
               ),
