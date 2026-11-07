@@ -17,10 +17,10 @@ import 'package:ubbike/features/acceso/presentation/selector_bicicletero_guardia
 class VistaInicioGuardia extends ConsumerStatefulWidget {
   const VistaInicioGuardia({
     super.key,
-    this.onOpenIngreso,
+    this.onAbrirIngreso,
   });
 
-  final ValueChanged<ModoIngresoGuardia>? onOpenIngreso;
+  final ValueChanged<ModoIngresoGuardia>? onAbrirIngreso;
 
   @override
   ConsumerState<VistaInicioGuardia> createState() => _VistaInicioGuardiaState();
@@ -168,7 +168,7 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia>
                             'Lee el código del usuario para confirmar o denegar ingreso/retiro.',
                         color: ColoresUbb.exito,
                         onTap: () =>
-                            widget.onOpenIngreso?.call(ModoIngresoGuardia.qr),
+                            widget.onAbrirIngreso?.call(ModoIngresoGuardia.qr),
                       ),
                       const SizedBox(height: 10),
                       TarjetaAccion(
@@ -177,7 +177,7 @@ class _VistaInicioGuardiaState extends ConsumerState<VistaInicioGuardia>
                         detalle:
                             'Registra ingreso o retiro utilizando correo institucional o RUT.',
                         color: ColoresUbb.azulApp,
-                        onTap: () => widget.onOpenIngreso
+                        onTap: () => widget.onAbrirIngreso
                             ?.call(ModoIngresoGuardia.manual),
                       ),
                       const SizedBox(height: 18),
