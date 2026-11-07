@@ -32,7 +32,7 @@ class VistaGestionManualGuardia extends ConsumerStatefulWidget {
 class _VistaGestionManualGuardiaState
     extends ConsumerState<VistaGestionManualGuardia> {
   GestionManualVm get vm => ref.read(gestionManualVmProvider);
-  final formKeyGestionManual = GlobalKey<FormState>();
+  final claveFormularioGestionManual = GlobalKey<FormState>();
 
   final campos = CamposGestionManual();
   final _capturaFotos = CapturaFotos();
@@ -130,7 +130,7 @@ class _VistaGestionManualGuardiaState
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Form(
-              key: formKeyGestionManual,
+              key: claveFormularioGestionManual,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -404,7 +404,7 @@ class _VistaGestionManualGuardiaState
           .mostrarError('Espera a que termine la búsqueda de coincidencias.');
       return false;
     }
-    if (formKeyGestionManual.currentState?.validate() != true) {
+    if (claveFormularioGestionManual.currentState?.validate() != true) {
       return false;
     }
     if (crearBicicletaNueva && fotoBicicletaManual == null) {
