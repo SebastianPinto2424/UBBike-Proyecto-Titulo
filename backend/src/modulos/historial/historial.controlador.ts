@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { ErrorHttp } from '../../comun/errores/error-http';
 import { SolicitudAutenticada } from '../../comun/middlewares/autenticacion.middleware';
 import { controladorAsync } from '../../comun/utilidades/controlador-async';
+import type { AlcanceConsulta } from '../../comun/utilidades/esquemas-comunes';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import {
   listarMovimientos,
@@ -22,6 +23,7 @@ const crearFiltrosHistorial = (req: SolicitudAutenticada, limite: number, pagina
   bicicleteroId: req.query.bicicleteroId?.toString(),
   guardiaId: req.query.guardiaId?.toString(),
   origen: req.query.origen as 'QR' | 'MANUAL' | 'TODOS' | undefined,
+  alcance: req.query.alcance as AlcanceConsulta | undefined,
   limite,
   pagina
 });
