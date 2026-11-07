@@ -6,6 +6,7 @@ import 'package:ubbike/features/acceso/presentation/gestion_manual_widgets.dart'
 import 'package:ubbike/features/acceso/presentation/validaciones_gestion_manual.dart';
 import 'package:ubbike/shared/utilidades/identidad.dart';
 import 'package:ubbike/shared/utilidades/revision_ortografica.dart';
+import 'package:ubbike/shared/widgets/campo_solo_lectura.dart';
 
 class SeccionUsuarioManual extends StatelessWidget {
   const SeccionUsuarioManual({
@@ -77,28 +78,31 @@ class SeccionUsuarioManual extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        TextFormField(
-          controller: campos.nombre,
-          focusNode: campos.focoNombre,
-          readOnly: usuarioEncontrado,
-          textCapitalization: TextCapitalization.words,
-          decoration: decoracionCampoGestionManual(
-            labelText: 'Nombre',
-            hintText:
-                usuarioEncontrado ? null : 'Nombre y apellido de la persona',
-            helperText: !usuarioEncontrado
-                ? ayudaSiActivo(
-                    campos.focoNombre,
-                    'Nombre real para identificar a la persona.',
-                  )
-                : null,
+        if (usuarioEncontrado)
+          CampoSoloLectura(
+            decoracion: decoracionCampoGestionManual(labelText: 'Nombre'),
+            controlador: campos.nombre,
+            textoVacio: 'Sin nombre',
+          )
+        else
+          TextFormField(
+            controller: campos.nombre,
+            focusNode: campos.focoNombre,
+            textCapitalization: TextCapitalization.words,
+            decoration: decoracionCampoGestionManual(
+              labelText: 'Nombre',
+              hintText: 'Nombre y apellido de la persona',
+              helperText: ayudaSiActivo(
+                campos.focoNombre,
+                'Nombre real para identificar a la persona.',
+              ),
+            ),
+            onChanged: (_) => onNombreEditado(),
+            validator: (valor) => validarNombreGestionManual(
+              valor,
+              requerido: requiereDatosNuevos,
+            ),
           ),
-          onChanged: (_) => onNombreEditado(),
-          validator: (valor) => validarNombreGestionManual(
-            valor,
-            requerido: requiereDatosNuevos,
-          ),
-        ),
         EstadoBusquedaManual(
           buscando: buscando,
           error: errorBusqueda,
