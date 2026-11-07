@@ -27,6 +27,7 @@ class VistaIncidencias extends ConsumerStatefulWidget {
     this.permitirBicicletaPropia = false,
     this.gestionGuardia = false,
     this.gestionCentral = false,
+    this.soloPropias = false,
   });
 
   final bool mostrarReportante;
@@ -34,15 +35,24 @@ class VistaIncidencias extends ConsumerStatefulWidget {
   final bool permitirBicicletaPropia;
   final bool gestionGuardia;
   final bool gestionCentral;
+  final bool soloPropias;
 
   @override
   ConsumerState<VistaIncidencias> createState() => _VistaIncidenciasState();
 }
 
 class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
-  final busquedaController = TextEditingController();
+  final controladorBusqueda = TextEditingController();
 
-  IncidenciasVm get vm => ref.read(incidenciasVmProvider.notifier);
+  AutoDisposeAsyncNotifierProvider<IncidenciasVm, List<IncidenciaApp>>
+      get _vmProvider => widget.soloPropias
+          ? incidenciasPropiasVmProvider
+          : incidenciasVmProvider;
+  AutoDisposeStateProvider<FiltrosIncidencias> get _filtrosProvider =>
+      widget.soloPropias
+          ? filtrosIncidenciasPropiasProvider
+          : filtrosIncidenciasProvider;
+  IncidenciasVm get vm => ref.read(_vmProvider.notifier);
 
   ({bool gestionGuardia, bool permitirBicicletaPropia}) get _argsFormulario => (
         gestionGuardia: widget.gestionGuardia,
@@ -59,7 +69,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
 
   @override
   void dispose() {
-    busquedaController.dispose();
+    controladorBusqueda.dispose();
     super.dispose();
   }
 
@@ -84,11 +94,11 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
 
   void _programarBusqueda() {
     setState(() {});
-    vm.buscar(busquedaController.text);
+    vm.buscar(controladorBusqueda.text);
   }
 
   void _limpiarFiltros() {
-    busquedaController.clear();
+    controladorBusqueda.clear();
     vm.limpiarFiltros();
   }
 
@@ -224,8 +234,8 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
         vm.recargar();
       }
     });
-    final estadoIncidencias = ref.watch(incidenciasVmProvider);
-    final filtros = ref.watch(filtrosIncidenciasProvider);
+    final estadoIncidencias = ref.watch(_vmProvider);
+    final filtros = ref.watch(_filtrosProvider);
     final datosFormulario =
         ref.watch(datosFormularioIncidenciaProvider(_argsFormulario));
 
@@ -237,7 +247,7 @@ class _VistaIncidenciasState extends ConsumerState<VistaIncidencias> {
           PanelFiltrosIncidencias(
             estado: filtros.estado,
             tipo: filtros.tipo,
-            busquedaController: busquedaController,
+            controladorBusqueda: controladorBusqueda,
             onLimpiar: _limpiarFiltros,
             onEstado: vm.cambiarEstado,
             onTipo: vm.cambiarTipo,
