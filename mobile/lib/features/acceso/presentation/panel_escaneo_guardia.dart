@@ -28,7 +28,7 @@ class ContenidoPanelEscaneoGuardia extends StatelessWidget {
     required this.qrValidado,
     required this.controller,
     required this.sesionEscaner,
-    required this.onDetect,
+    required this.onDeteccion,
     required this.onReintentar,
   });
 
@@ -38,7 +38,7 @@ class ContenidoPanelEscaneoGuardia extends StatelessWidget {
   final bool qrValidado;
   final MobileScannerController controller;
   final int sesionEscaner;
-  final void Function(BarcodeCapture captura) onDetect;
+  final void Function(BarcodeCapture captura) onDeteccion;
   final VoidCallback onReintentar;
 
   @override
@@ -49,7 +49,7 @@ class ContenidoPanelEscaneoGuardia extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: MobileScanner(
           controller: controller,
-          onDetect: onDetect,
+          onDetect: onDeteccion,
           placeholderBuilder: (context, child) =>
               const _EstadoCamaraQr(mensaje: 'Activando cámara...'),
           errorBuilder: (context, error, child) => _ErrorEscanerQr(
