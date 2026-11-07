@@ -5,10 +5,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ubbike/app/principal/seccion_personal.dart';
 import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/providers/conexion_provider.dart';
 import 'package:ubbike/core/tema/tema_ubb.dart';
-import 'package:ubbike/features/perfil/presentation/pantalla_principal_perfil.dart';
 import 'package:ubbike/features/inicio/presentation/vista_tablero_administrador.dart';
 import 'package:ubbike/features/inicio/presentation/vista_tablero_central.dart';
 import 'package:ubbike/features/inicio/application/tablero_administrador_vm.dart';
@@ -138,6 +138,7 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         final key = GlobalKey();
         final onError = FlutterError.onError;
+        addTearDown(() => FlutterError.onError = onError);
         FlutterError.onError = (details) {
           debugPrint(details.toString());
           onError?.call(details);
@@ -158,17 +159,29 @@ void main() {
                   child: Scaffold(
                       appBar: AppBar(title: Text(perfil ? 'Perfil' : 'Inicio')),
                       body: perfil
-                          ? const VistaPerfil(rol: RolUsuario.administrador)
+                          ? const VistaSeccionPersonal(
+                              rol: RolUsuario.administrador,
+                            )
                           : VistaTableroAdministrador(
                               onAbrirIncidencias: () {},
                               onAbrirUsuarios: () {}))),
             )));
         await tester.pumpAndSettle();
-        FlutterError.onError = onError;
         expect(tester.takeException(), isNull);
         if (perfil) {
+          expect(find.text('Mi bicicleta'), findsOneWidget);
+          expect(find.text('Mis bicicletas'), findsOneWidget);
+          expect(find.text('Atención e incidencias'), findsOneWidget);
+          await tester.tap(
+            find.descendant(
+              of: find.byType(TabBar),
+              matching: find.text('Perfil'),
+            ),
+          );
+          await tester.pumpAndSettle();
           expect(find.text('Datos de la cuenta'), findsOneWidget);
           expect(find.text('Seguridad'), findsOneWidget);
+          expect(tester.takeException(), isNull);
         } else {
           expect(find.text('321 abiertas'), findsOneWidget);
           expect(find.text('Requiere atención'), findsNothing);
