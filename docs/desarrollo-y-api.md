@@ -88,7 +88,9 @@ Convenciones de interfaz:
 13. Guardia y central reciben alertas y notificaciones dentro de la aplicacion.
 14. Central y administrador revisan historial, tablero, solicitudes y operaciones por guardia.
 15. Administrador puede gestionar usuarios, roles, estado de cuenta y verificacion de correo.
-16. Separacion de funciones: nadie valida, rechaza ni registra a mano movimientos de su propia bicicleta, ni siquiera el administrador. El servidor lo controla con `impedirAutovalidacion` (`acceso.reglas.ts`) al escanear el QR, al confirmarlo o denegarlo y en la busqueda y el registro manual, y responde 403.
+16. Separacion de funciones: nadie valida, rechaza ni registra a mano movimientos de su propia bicicleta, ni siquiera el administrador. El servidor lo controla con `impedirAutovalidacion` (`acceso.reglas.ts`) al escanear el QR, al confirmarlo o denegarlo, en la busqueda y el registro manual y otra vez en `registrarMovimiento`, el punto unico donde se guarda cada movimiento, y responde 403.
+17. Roles jerarquicos (RBAC): guardia, central y administrador tambien son usuarios. Registran sus bicicletas, generan su QR, ven sus propios movimientos, piden atencion y reportan incidencias. En la app lo hacen desde Mi cuenta > Mi bicicleta; la barra de cada rol muestra solo su trabajo, con cinco destinos como maximo y Validar al centro para guardia y administrador. Los roles autorizados estan en `usuarios/permisos-rol.ts` (`rolesConFuncionesDeUsuario` y `rolesQueValidanAccesos`). Validan accesos solo guardia y administrador; central supervisa sin validar. Como cada bicicletero tiene un solo guardia, la bicicleta del guardia la valida otro guardia tras el cambio de turno o el administrador.
+18. Nadie atiende lo propio: el guardia no puede pedir atencion en el bicicletero que gestiona (403) ni recibe su propia solicitud al tomar un bicicletero, y nadie cambia el estado de una incidencia que reporto (la del administrador la revisa central y viceversa). Como usuario, cualquiera reporta en cualquier bicicletero con su bicicleta o sin bicicleta; asociar la bicicleta de otra persona queda para el personal (el guardia solo en su bicicletero).
 
 ## Endpoints principales
 
@@ -303,6 +305,12 @@ Cada solicitud cerrada guarda quien la cerro (`cerrada_por_usuario_id`) y el mot
 `CENTRAL`) para que la app muestre "Cancelada por el solicitante" o "Cerrada por
 central".
 
+`GET /solicitudes-guardia` y `GET /incidencias` aceptan `alcance=PROPIO`, que limita
+la lista a lo que pidio o reporto quien consulta, sea cual sea su rol. Sin ese filtro el
+guardia ve lo de su bicicletero y central y administracion todo. Los avisos que le
+llegan a quien pidio o reporto llevan `alcance: "PROPIO"` en sus datos, y la app los
+abre en Mi cuenta > Mi bicicleta > Atencion e incidencias en vez de la lista de trabajo.
+
 La app recibe estos cambios por Socket.IO (`core/servicios/tiempo_real_servicio.dart`).
 El socket reintenta sin limite (espera de 1 a 5 s); si el servidor lo corta o lo
 rechaza, por ejemplo al vencer el token de 2 h, la app renueva la sesion y se vuelve a
@@ -326,6 +334,7 @@ PATCH /incidencias/:id/estado
 ADMINISTRADOR (nunca al guardia ni a quien ejecuta la accion), y se envia correo
 de respaldo. Al crear, quien reporta solo recibe el registro en sus notificaciones,
 sin push. Cerrar una incidencia exige una respuesta, que se envia al reportante.
+Nadie de administracion cambia el estado de una incidencia que reporto (403).
 
 Historial y reportes:
 
@@ -336,9 +345,14 @@ GET /historial/opciones
 GET /historial/exportar-excel
 ```
 
+El alcance depende del rol: estudiantes y funcionarios ven sus movimientos, el guardia
+los que valido y central y administrador todos. Con `alcance=PROPIO` cualquier rol ve
+solo los movimientos de sus bicicletas; la seccion personal de la app lo usa siempre.
+Este filtro solo reduce lo visible, nunca lo amplia.
+
 La exportacion esta restringida a ADMIN_CENTRAL y ADMINISTRADOR, y respeta los
 mismos filtros de la consulta (`q`, `periodo`, `desde`, `hasta`, `tipo`, `estado`,
-`bicicleteroId`, `guardiaId`, `origen`).
+`bicicleteroId`, `guardiaId`, `origen`, `alcance`).
 
 Devuelve un `.xlsx` real generado con ExcelJS
 (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`), con
