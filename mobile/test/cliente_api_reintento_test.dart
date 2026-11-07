@@ -31,7 +31,7 @@ void main() {
     test('un corte puntual no llega a la pantalla', () async {
       final cliente = _ClienteInestable(
           fallos: 1, error: http.ClientException('conexión perdida'));
-      final api = ClienteApi(httpClient: cliente);
+      final api = ClienteApi(cliente: cliente);
 
       final respuesta = await api.get('/historial');
 
@@ -42,7 +42,7 @@ void main() {
     test('reintenta hasta dos veces antes de rendirse', () async {
       final cliente = _ClienteInestable(
           fallos: 2, error: http.ClientException('conexión perdida'));
-      final api = ClienteApi(httpClient: cliente);
+      final api = ClienteApi(cliente: cliente);
 
       await api.get('/historial');
 
@@ -52,7 +52,7 @@ void main() {
     test('si el corte persiste informa el error', () async {
       final cliente =
           _ClienteInestable(fallos: 99, error: http.ClientException('sin red'));
-      final api = ClienteApi(httpClient: cliente);
+      final api = ClienteApi(cliente: cliente);
 
       await expectLater(
           api.get('/historial'),
@@ -64,7 +64,7 @@ void main() {
     test('tambien reintenta cuando la peticion expira', () async {
       final cliente = _ClienteInestable(
           fallos: 1, error: TimeoutException('demoró demasiado'));
-      final api = ClienteApi(httpClient: cliente);
+      final api = ClienteApi(cliente: cliente);
 
       await api.get('/historial');
 
@@ -77,7 +77,7 @@ void main() {
         intentos++;
         return http.Response(jsonEncode({'message': 'Dato inválido'}), 400);
       });
-      final api = ClienteApi(httpClient: cliente);
+      final api = ClienteApi(cliente: cliente);
 
       await expectLater(api.get('/historial'), throwsA(isA<ExcepcionApi>()));
       expect(intentos, 1);
@@ -86,7 +86,7 @@ void main() {
     test('las escrituras nunca se reintentan solas', () async {
       final cliente = _ClienteInestable(
           fallos: 1, error: http.ClientException('conexión perdida'));
-      final api = ClienteApi(httpClient: cliente);
+      final api = ClienteApi(cliente: cliente);
 
       await expectLater(
           api.post('/incidencias'),
