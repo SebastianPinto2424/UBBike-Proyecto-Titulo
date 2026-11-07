@@ -117,7 +117,7 @@ export const esquemaCambioContrasenaSesion = Joi.object({
   contrasenaNueva: esquemaContrasena
 });
 
-export const esquemaRefreshToken = Joi.object({
+export const esquemaTokenRenovacion = Joi.object({
   usuarioId: Joi.string().uuid().required(),
   refreshToken: esquemaTokenEnlace.required()
 });
