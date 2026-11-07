@@ -9,9 +9,20 @@ class IncidenciaRepositorio {
 
   final IncidenciaApi _api;
 
-  Future<PaginaCursor<IncidenciaApp>> listarPagina(
-          {String? estado, String? tipo, String? q, String? cursor}) =>
-      _api.listarPagina(estado: estado, tipo: tipo, q: q, cursor: cursor);
+  Future<PaginaCursor<IncidenciaApp>> listarPagina({
+    String? estado,
+    String? tipo,
+    String? q,
+    String? cursor,
+    bool propias = false,
+  }) =>
+      _api.listarPagina(
+        estado: estado,
+        tipo: tipo,
+        q: q,
+        cursor: cursor,
+        propias: propias,
+      );
 
   Future<List<IncidenciaApp>> listar({
     String? estado,
