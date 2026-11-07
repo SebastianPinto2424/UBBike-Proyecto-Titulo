@@ -38,7 +38,7 @@ jest.mock('../../src/modulos/auditoria/auditoria.servicio', () => ({
   registrarAuditoria: jest.fn().mockResolvedValue(undefined)
 }));
 
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { olvidarDispositivosDeUsuario } from '../../src/modulos/notificaciones/notificacion.servicio';
 import { cerrarSesionesTiempoReal } from '../../src/tiempo-real/tiempo-real';
@@ -175,10 +175,16 @@ describe('registrarUsuario', () => {
 describe('iniciarSesion', () => {
   it('lanza 401 si el usuario no existe', async () => {
     prismaSimulado.usuario.findUnique.mockResolvedValue(null);
+    const comparar = jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
     await expect(
       iniciarSesion({ correo: 'noexiste@alumnos.ubiobio.cl', contrasena: 'cualquier' })
-    ).rejects.toMatchObject({ statusCode: 401 });
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: 'Credenciales inválidas',
+      codigo: 'CREDENCIALES_INVALIDAS'
+    });
+    expect(comparar).toHaveBeenCalledWith('cualquier', expect.stringMatching(/^\$2[aby]\$12\$/));
   });
 
   it('lanza 403 si la cuenta esta desactivada y la contraseña es correcta', async () => {
@@ -219,7 +225,11 @@ describe('iniciarSesion', () => {
 
     await expect(
       iniciarSesion({ correo: 'juan@alumnos.ubiobio.cl', contrasena: 'cualquier' })
-    ).rejects.toMatchObject({ statusCode: 401, message: 'Credenciales inválidas' });
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: 'Credenciales inválidas',
+      codigo: 'CREDENCIALES_INVALIDAS'
+    });
   });
 });
 
