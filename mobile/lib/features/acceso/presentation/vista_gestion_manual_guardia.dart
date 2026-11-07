@@ -16,6 +16,7 @@ import 'package:ubbike/features/acceso/presentation/secciones_gestion_manual.dar
 import 'package:ubbike/features/acceso/presentation/hoja_denegacion_qr.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
 import 'package:ubbike/shared/servicios/captura_fotos.dart';
+import 'package:ubbike/shared/utilidades/foco.dart';
 import 'package:ubbike/shared/utilidades/utilidades_sesion.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
@@ -387,6 +388,7 @@ class _VistaGestionManualGuardiaState
   }
 
   bool _validarFormularioGestionManual() {
+    soltarFoco();
     final crearBicicletaNueva = bicicletaSeleccionadaId == null;
     final requiereBicicletero =
         rolSesionActual(context) != RolUsuario.guardia &&
@@ -474,6 +476,7 @@ class _VistaGestionManualGuardiaState
   }
 
   void _limpiarFormularioGestionManual() {
+    soltarFoco();
     temporizadorBusqueda?.cancel();
     actualizandoCampos = true;
     campos.limpiarTodo();
