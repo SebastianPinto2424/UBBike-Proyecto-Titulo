@@ -1,6 +1,6 @@
 import '../apoyo/configurar-entorno';
 
-jest.mock('bcryptjs', () => ({
+jest.mock('bcrypt', () => ({
   hash: jest.fn(async (texto: string) => `hash:${texto}`),
   compare: jest.fn(async (texto: string, hash: string) => hash === `hash:${texto}`)
 }));
@@ -21,9 +21,9 @@ jest.mock('../../src/modulos/autenticacion/autenticacion.repositorio', () => ({
 
 jest.mock('../../src/modulos/autenticacion/autenticacion.tokens', () => ({
   ...jest.requireActual('../../src/modulos/autenticacion/autenticacion.tokens'),
-  revocarRefreshToken: jest.fn().mockResolvedValue(undefined),
-  revocarTodosLosRefreshTokens: jest.fn().mockResolvedValue(undefined),
-  rotarRefreshToken: jest.fn()
+  revocarTokenRenovacion: jest.fn().mockResolvedValue(undefined),
+  revocarTodosLosTokensRenovacion: jest.fn().mockResolvedValue(undefined),
+  rotarTokenRenovacion: jest.fn()
 }));
 
 jest.mock('../../src/modulos/correos/cuenta.plantillas', () => {
@@ -85,9 +85,9 @@ import {
 import { revisarEnlaceCuenta } from '../../src/modulos/autenticacion/enlace-cuenta.servicio';
 import {
   hashearToken,
-  revocarRefreshToken,
-  revocarTodosLosRefreshTokens,
-  rotarRefreshToken
+  revocarTokenRenovacion,
+  revocarTodosLosTokensRenovacion,
+  rotarTokenRenovacion
 } from '../../src/modulos/autenticacion/autenticacion.tokens';
 import {
   crearCorreoCambioContrasena,
@@ -284,7 +284,7 @@ describe('cambiarContrasena', () => {
 
     expect(repo.buscarPorTokenCambioContrasena).toHaveBeenCalledWith(hashearToken('token'));
     expect(repo.actualizarContrasena).toHaveBeenCalledWith('u1', 'hash:Nueva#Clave2026');
-    expect(revocarTodosLosRefreshTokens).toHaveBeenCalledWith('u1');
+    expect(revocarTodosLosTokensRenovacion).toHaveBeenCalledWith('u1');
     expect(cerrarSesionesTiempoReal).toHaveBeenCalledWith('u1', 'CONTRASENA_ACTUALIZADA');
     expect(crearCorreoContrasenaActualizada).toHaveBeenCalledWith('Ana Rojas');
     expect(crearCorreoCuentaActivada).not.toHaveBeenCalled();
@@ -341,7 +341,7 @@ describe('cambiarContrasenaSesion', () => {
       debeCambiarContrasena: false,
       versionSesion: { increment: 1 }
     });
-    expect(revocarTodosLosRefreshTokens).toHaveBeenCalledWith('u1');
+    expect(revocarTodosLosTokensRenovacion).toHaveBeenCalledWith('u1');
     expect(registrarAuditoria).toHaveBeenCalledWith(
       expect.objectContaining({ accion: 'CONTRASENA_CAMBIADA_SESION' })
     );
@@ -367,23 +367,23 @@ describe('refrescarToken', () => {
     repo.buscarPorId.mockResolvedValue(usuario);
 
     await expect(refrescarToken('u1', 'refresh')).rejects.toMatchObject({ statusCode: 401 });
-    expect(rotarRefreshToken).not.toHaveBeenCalled();
+    expect(rotarTokenRenovacion).not.toHaveBeenCalled();
   });
 
   it('rechaza un refresh token ya usado o vencido', async () => {
     repo.buscarPorId.mockResolvedValue(crearUsuario());
-    (rotarRefreshToken as jest.Mock).mockResolvedValue(false);
+    (rotarTokenRenovacion as jest.Mock).mockResolvedValue(false);
 
     await expect(refrescarToken('u1', 'refresh')).rejects.toMatchObject({ statusCode: 401 });
   });
 
   it('rota el refresh token y firma un token con la version de sesion vigente', async () => {
     repo.buscarPorId.mockResolvedValue(crearUsuario());
-    (rotarRefreshToken as jest.Mock).mockResolvedValue(true);
+    (rotarTokenRenovacion as jest.Mock).mockResolvedValue(true);
 
     const { token, refreshToken } = await refrescarToken('u1', 'refresh-anterior');
 
-    expect(rotarRefreshToken).toHaveBeenCalledWith('u1', 'refresh-anterior', refreshToken, 3);
+    expect(rotarTokenRenovacion).toHaveBeenCalledWith('u1', 'refresh-anterior', refreshToken, 3);
     expect(refreshToken).not.toBe('refresh-anterior');
     expect(jwt.verify(token, entorno.jwt.secreto)).toMatchObject({
       usuarioId: 'u1',
@@ -397,8 +397,8 @@ describe('cerrarSesion', () => {
   it('con refresh token revoca solo ese dispositivo', async () => {
     await cerrarSesion('u1', 'refresh');
 
-    expect(revocarRefreshToken).toHaveBeenCalledWith('u1', 'refresh');
-    expect(revocarTodosLosRefreshTokens).not.toHaveBeenCalled();
+    expect(revocarTokenRenovacion).toHaveBeenCalledWith('u1', 'refresh');
+    expect(revocarTodosLosTokensRenovacion).not.toHaveBeenCalled();
     expect(olvidarDispositivosDeUsuario).toHaveBeenCalledWith('u1');
     expect(repo.actualizar).toHaveBeenCalledWith('u1', { versionSesion: { increment: 1 } });
   });
@@ -406,7 +406,7 @@ describe('cerrarSesion', () => {
   it('sin refresh token revoca todas las sesiones', async () => {
     const resultado = await cerrarSesion('u1');
 
-    expect(revocarTodosLosRefreshTokens).toHaveBeenCalledWith('u1');
+    expect(revocarTodosLosTokensRenovacion).toHaveBeenCalledWith('u1');
     expect(registrarAuditoria).toHaveBeenCalledWith(expect.objectContaining({ accion: 'LOGOUT' }));
     expect(resultado.message).toBe('Sesión cerrada correctamente');
     expect(liberarBicicleteroGuardia).not.toHaveBeenCalled();
