@@ -51,6 +51,37 @@ void main() {
     expect(find.text('Registrar bicicleta'), findsOneWidget);
   });
 
+  testWidgets('el QR propio aparece como pestaña solo si se entrega',
+      (tester) async {
+    List<String?> pestanas() => tester
+        .widgetList<Text>(
+          find.descendant(of: find.byType(TabBar), matching: find.byType(Text)),
+        )
+        .map((texto) => texto.data)
+        .toList();
+
+    await _montar(tester, []);
+    expect(pestanas(), ['Bicicletas', 'Movimientos']);
+
+    await montarConApi(
+      tester,
+      const VistaBicicletas(
+        vistaQr: Text('qr propio'),
+        vistaMovimientos: Text('movimientos'),
+      ),
+      rutas: {
+        'GET /bicicletas': {'bicicletas': []},
+      },
+    );
+    expect(pestanas(), ['Bicicletas', 'QR', 'Movimientos']);
+
+    await tocar(
+      tester,
+      find.descendant(of: find.byType(TabBar), matching: find.text('QR')),
+    );
+    expect(find.text('qr propio'), findsOneWidget);
+  });
+
   testWidgets('si el backend falla ofrece reintentar', (tester) async {
     await montarConApi(
       tester,
