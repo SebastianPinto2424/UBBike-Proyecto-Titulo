@@ -18,19 +18,19 @@ class HojaRecuperacion extends StatefulWidget {
 }
 
 class _HojaRecuperacionState extends State<HojaRecuperacion> {
-  final formKeyRecuperacion = GlobalKey<FormState>();
-  late final TextEditingController correoRecuperacionController;
+  final claveFormularioRecuperacion = GlobalKey<FormState>();
+  late final TextEditingController controladorCorreoRecuperacion;
 
   @override
   void initState() {
     super.initState();
-    correoRecuperacionController =
+    controladorCorreoRecuperacion =
         TextEditingController(text: widget.correoInicial);
   }
 
   @override
   void dispose() {
-    correoRecuperacionController.dispose();
+    controladorCorreoRecuperacion.dispose();
     super.dispose();
   }
 
@@ -46,7 +46,7 @@ class _HojaRecuperacionState extends State<HojaRecuperacion> {
       child: SingleChildScrollView(
         child: AutofillGroup(
           child: Form(
-            key: formKeyRecuperacion,
+            key: claveFormularioRecuperacion,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,7 +63,7 @@ class _HojaRecuperacionState extends State<HojaRecuperacion> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: correoRecuperacionController,
+                  controller: controladorCorreoRecuperacion,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   enableSuggestions: false,
@@ -79,10 +79,11 @@ class _HojaRecuperacionState extends State<HojaRecuperacion> {
                 ElevatedButton.icon(
                   style: estiloBotonAutenticacion(),
                   onPressed: () {
-                    if (formKeyRecuperacion.currentState?.validate() != true) {
+                    if (claveFormularioRecuperacion.currentState?.validate() !=
+                        true) {
                       return;
                     }
-                    final correo = correoRecuperacionController.text.trim();
+                    final correo = controladorCorreoRecuperacion.text.trim();
                     Navigator.pop(context);
                     widget.onEnviar(correo);
                   },
