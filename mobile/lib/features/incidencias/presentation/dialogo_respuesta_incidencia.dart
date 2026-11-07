@@ -24,27 +24,27 @@ class DialogoRespuestaGestion extends StatefulWidget {
 }
 
 class _DialogoRespuestaGestionState extends State<DialogoRespuestaGestion> {
-  final formKeyRespuestaGestion = GlobalKey<FormState>();
-  late final TextEditingController controller;
+  final claveFormularioRespuestaGestion = GlobalKey<FormState>();
+  late final TextEditingController controlador;
 
   @override
   void initState() {
     super.initState();
-    controller = TextEditingController(text: widget.respuestaInicial);
+    controlador = TextEditingController(text: widget.respuestaInicial);
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    controlador.dispose();
     super.dispose();
   }
 
   void _guardar() {
-    if (formKeyRespuestaGestion.currentState?.validate() != true) {
+    if (claveFormularioRespuestaGestion.currentState?.validate() != true) {
       return;
     }
 
-    final texto = controller.text.trim();
+    final texto = controlador.text.trim();
     Navigator.of(context).pop(texto);
   }
 
@@ -61,13 +61,13 @@ class _DialogoRespuestaGestionState extends State<DialogoRespuestaGestion> {
           ? 'Descartar incidencia'
           : 'Marcar incidencia como resuelta',
       contenido: Form(
-        key: formKeyRespuestaGestion,
+        key: claveFormularioRespuestaGestion,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextFormField(
-              controller: controller,
+              controller: controlador,
               spellCheckConfiguration: revisionOrtografica(),
               textCapitalization: TextCapitalization.sentences,
               minLines: 3,
