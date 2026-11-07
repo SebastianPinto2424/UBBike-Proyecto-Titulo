@@ -35,20 +35,20 @@ class HojaDenegacion extends StatefulWidget {
 }
 
 class _HojaDenegacionState extends State<HojaDenegacion> {
-  final formKeyDenegacion = GlobalKey<FormState>();
-  final detalleController = TextEditingController();
+  final claveFormularioDenegacion = GlobalKey<FormState>();
+  final controladorDetalle = TextEditingController();
   MotivoRechazo? seleccionado;
   bool enviando = false;
   String? error;
 
   @override
   void dispose() {
-    detalleController.dispose();
+    controladorDetalle.dispose();
     super.dispose();
   }
 
   String _motivoParaEnviar(MotivoRechazo motivo) {
-    final detalle = detalleController.text.trim();
+    final detalle = controladorDetalle.text.trim();
     return detalle.isEmpty ? motivo.titulo : '${motivo.titulo}. $detalle';
   }
 
@@ -61,7 +61,7 @@ class _HojaDenegacionState extends State<HojaDenegacion> {
       setState(() => error = 'Selecciona el motivo del rechazo.');
       return;
     }
-    if (formKeyDenegacion.currentState?.validate() != true) {
+    if (claveFormularioDenegacion.currentState?.validate() != true) {
       return;
     }
     setState(() {
@@ -95,7 +95,7 @@ class _HojaDenegacionState extends State<HojaDenegacion> {
       ),
       child: SingleChildScrollView(
         child: Form(
-          key: formKeyDenegacion,
+          key: claveFormularioDenegacion,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,7 +131,7 @@ class _HojaDenegacionState extends State<HojaDenegacion> {
               ],
               const SizedBox(height: 4),
               TextFormField(
-                controller: detalleController,
+                controller: controladorDetalle,
                 spellCheckConfiguration: revisionOrtografica(),
                 textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
