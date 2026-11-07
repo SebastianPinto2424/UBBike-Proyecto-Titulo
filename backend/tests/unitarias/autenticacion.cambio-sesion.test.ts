@@ -1,7 +1,7 @@
 import '../apoyo/configurar-entorno';
 import '../apoyo/prisma-simulado';
 import { prismaSimulado } from '../apoyo/prisma-simulado';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 jest.mock('../../src/configuracion/redis', () => ({
   obtenerClienteRedis: jest.fn().mockResolvedValue(null)
