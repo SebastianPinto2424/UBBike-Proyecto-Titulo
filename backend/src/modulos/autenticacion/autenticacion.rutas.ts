@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { middlewareAutenticacionSinExigirCambio } from '../../comun/middlewares/autenticacion.middleware';
 import {
   ajustarMaximo,
-  limitarIntentos
+  limitarIntentos,
+  porCampoDelCuerpo,
+  porHuellaDelCampo,
+  porUsuarioAutenticado,
+  quinceMinutos
 } from '../../comun/middlewares/limitador-intentos.middleware';
 import { validarCuerpo } from '../../comun/middlewares/validacion.middleware';
 import {
@@ -23,7 +27,7 @@ import {
   esquemaCambioContrasenaSesion,
   esquemaCompletarRegistro,
   esquemaInicioSesion,
-  esquemaRefreshToken,
+  esquemaTokenRenovacion,
   esquemaReenviarVerificacion,
   esquemaRegistro,
   esquemaSolicitudCambioContrasena,
@@ -32,12 +36,17 @@ import {
 
 const rutasAutenticacion = Router();
 
+const limitarRed = (maximo: number, mensaje: string) =>
+  limitarIntentos({ ventanaMs: quinceMinutos, maximo: ajustarMaximo(maximo), mensaje });
+
 rutasAutenticacion.post(
   ['/registro', '/register'],
+  limitarRed(300, 'Demasiados registros desde esta red. Intenta más tarde.'),
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
-    maximo: ajustarMaximo(20),
-    mensaje: 'Demasiados registros desde este origen. Intenta más tarde.'
+    ventanaMs: quinceMinutos,
+    maximo: ajustarMaximo(10),
+    mensaje: 'Demasiados intentos de registro con este correo. Intenta más tarde.',
+    clave: porCampoDelCuerpo('registro', 'correo')
   }),
   validarCuerpo(esquemaRegistro),
   registrar
@@ -46,14 +55,11 @@ rutasAutenticacion.post(
 rutasAutenticacion.post(
   '/login',
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
+    ventanaMs: quinceMinutos,
     maximo: ajustarMaximo(10),
     mensaje: 'Demasiados intentos fallidos para esta cuenta. Intenta más tarde.',
     contarSoloFallos: true,
-    clave: (req) =>
-      `login:${String(req.body?.correo ?? '')
-        .trim()
-        .toLowerCase()}`
+    clave: porCampoDelCuerpo('login', 'correo')
   }),
   validarCuerpo(esquemaInicioSesion),
   iniciarSesion
@@ -74,10 +80,12 @@ rutasAutenticacion.post(
 
 rutasAutenticacion.post(
   '/reenviar-verificacion',
+  limitarRed(100, 'Demasiadas solicitudes de reenvío desde esta red. Intenta más tarde.'),
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
+    ventanaMs: quinceMinutos,
     maximo: ajustarMaximo(5),
-    mensaje: 'Demasiadas solicitudes de reenvío. Intenta más tarde.'
+    mensaje: 'Demasiadas solicitudes de reenvío. Intenta más tarde.',
+    clave: porCampoDelCuerpo('reenvio', 'correo')
   }),
   validarCuerpo(esquemaReenviarVerificacion),
   reenviarVerificacion
@@ -91,10 +99,15 @@ rutasAutenticacion.post(
 
 rutasAutenticacion.post(
   '/solicitar-cambio-contrasena',
+  limitarRed(
+    100,
+    'Demasiadas solicitudes de cambio de contraseña desde esta red. Intenta más tarde.'
+  ),
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
+    ventanaMs: quinceMinutos,
     maximo: ajustarMaximo(5),
-    mensaje: 'Demasiadas solicitudes de cambio de contraseña. Intenta más tarde.'
+    mensaje: 'Demasiadas solicitudes de cambio de contraseña. Intenta más tarde.',
+    clave: porCampoDelCuerpo('recuperacion', 'correo')
   }),
   validarCuerpo(esquemaSolicitudCambioContrasena),
   solicitarCambioContrasena
@@ -103,10 +116,11 @@ rutasAutenticacion.post(
 rutasAutenticacion.post(
   '/cambiar-contrasena',
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
+    ventanaMs: quinceMinutos,
     maximo: ajustarMaximo(10),
     mensaje: 'Demasiados intentos de cambio de contraseña. Intenta más tarde.',
-    contarSoloFallos: true
+    contarSoloFallos: true,
+    clave: porHuellaDelCampo('cambio', 'token')
   }),
   validarCuerpo(esquemaCambioContrasena),
   cambiarContrasena
@@ -115,13 +129,13 @@ rutasAutenticacion.post(
 rutasAutenticacion.post(
   '/refresh',
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
+    ventanaMs: quinceMinutos,
     maximo: ajustarMaximo(30),
-    mensaje: 'Demasiadas solicitudes de refresh. Intenta más tarde.',
-
-    contarSoloFallos: true
+    mensaje: 'Demasiadas solicitudes de renovación de sesión. Intenta más tarde.',
+    contarSoloFallos: true,
+    clave: porCampoDelCuerpo('renovacion', 'usuarioId')
   }),
-  validarCuerpo(esquemaRefreshToken),
+  validarCuerpo(esquemaTokenRenovacion),
   refrescarToken
 );
 
@@ -129,10 +143,11 @@ rutasAutenticacion.post(
   '/cambiar-contrasena-sesion',
   middlewareAutenticacionSinExigirCambio,
   limitarIntentos({
-    ventanaMs: 15 * 60 * 1000,
+    ventanaMs: quinceMinutos,
     maximo: ajustarMaximo(10),
     mensaje: 'Demasiados intentos de cambio de contraseña. Intenta más tarde.',
-    contarSoloFallos: true
+    contarSoloFallos: true,
+    clave: porUsuarioAutenticado('cambio-sesion')
   }),
   validarCuerpo(esquemaCambioContrasenaSesion),
   cambiarContrasenaSesion
