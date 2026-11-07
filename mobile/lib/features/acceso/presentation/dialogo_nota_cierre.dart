@@ -13,27 +13,27 @@ class DialogoNotaCierre extends StatefulWidget {
 }
 
 class _DialogoNotaCierreState extends State<DialogoNotaCierre> {
-  final formKeyNotaCierre = GlobalKey<FormState>();
-  late final TextEditingController controller;
+  final claveFormularioNotaCierre = GlobalKey<FormState>();
+  late final TextEditingController controlador;
 
   @override
   void initState() {
     super.initState();
-    controller = TextEditingController();
+    controlador = TextEditingController();
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    controlador.dispose();
     super.dispose();
   }
 
   void _confirmar() {
-    if (formKeyNotaCierre.currentState?.validate() != true) {
+    if (claveFormularioNotaCierre.currentState?.validate() != true) {
       return;
     }
 
-    Navigator.of(context).pop(controller.text.trim());
+    Navigator.of(context).pop(controlador.text.trim());
   }
 
   @override
@@ -43,9 +43,9 @@ class _DialogoNotaCierreState extends State<DialogoNotaCierre> {
       colorIcono: ColoresUbb.rojoInstitucional,
       titulo: 'Cerrar solicitud sin resolver',
       contenido: Form(
-        key: formKeyNotaCierre,
+        key: claveFormularioNotaCierre,
         child: TextFormField(
-          controller: controller,
+          controller: controlador,
           spellCheckConfiguration: revisionOrtografica(),
           textCapitalization: TextCapitalization.sentences,
           minLines: 3,
