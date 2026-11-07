@@ -1,6 +1,24 @@
+import { createHash } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { entorno } from '../../configuracion/entorno';
 import { obtenerClienteRedis } from '../../configuracion/redis';
+import type { SolicitudAutenticada } from './autenticacion.middleware';
+
+export const quinceMinutos = 15 * 60 * 1000;
+
+export const porCampoDelCuerpo = (prefijo: string, campo: string) => (req: Request) =>
+  `${prefijo}:${String(req.body?.[campo] ?? '')
+    .trim()
+    .toLowerCase()}`;
+
+export const porHuellaDelCampo = (prefijo: string, campo: string) => (req: Request) =>
+  `${prefijo}:${createHash('sha256')
+    .update(String(req.body?.[campo] ?? ''))
+    .digest('hex')
+    .slice(0, 32)}`;
+
+export const porUsuarioAutenticado = (prefijo: string) => (req: Request) =>
+  `${prefijo}:${(req as SolicitudAutenticada).usuario?.usuarioId ?? ''}`;
 
 type OpcionesLimitador = {
   ventanaMs: number;
