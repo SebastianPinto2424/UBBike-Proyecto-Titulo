@@ -3,25 +3,35 @@ import { middlewareAutenticacion } from '../../comun/middlewares/autenticacion.m
 import { autorizarRoles } from '../../comun/middlewares/autorizar-roles.middleware';
 import { validarCuerpo, validarParametros } from '../../comun/middlewares/validacion.middleware';
 import { esquemaParametroId } from '../../comun/utilidades/esquemas-comunes';
-import { RolUsuario } from '../usuarios/rol-usuario';
+import { rolesConFuncionesDeUsuario, rolesQueValidanAccesos } from '../usuarios/permisos-rol';
 import { consultarEstado, generar, liberar, validar } from './qr.controlador';
 import { esquemaGenerarQr, esquemaValidarQr } from './qr.validacion';
 
 const rutasQr = Router();
 
 rutasQr.use(middlewareAutenticacion);
-rutasQr.post('/generar', validarCuerpo(esquemaGenerarQr), generar);
-rutasQr.get('/:id/estado', validarParametros(esquemaParametroId), consultarEstado);
+rutasQr.post(
+  '/generar',
+  autorizarRoles(...rolesConFuncionesDeUsuario),
+  validarCuerpo(esquemaGenerarQr),
+  generar
+);
+rutasQr.get(
+  '/:id/estado',
+  autorizarRoles(...rolesConFuncionesDeUsuario),
+  validarParametros(esquemaParametroId),
+  consultarEstado
+);
 rutasQr.post(
   '/validar',
-  autorizarRoles(RolUsuario.GUARDIA, RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR),
+  autorizarRoles(...rolesQueValidanAccesos),
   validarCuerpo(esquemaValidarQr),
   validar
 );
 
 rutasQr.post(
   '/liberar',
-  autorizarRoles(RolUsuario.GUARDIA, RolUsuario.ADMIN_CENTRAL, RolUsuario.ADMINISTRADOR),
+  autorizarRoles(...rolesQueValidanAccesos),
   validarCuerpo(esquemaValidarQr),
   liberar
 );
