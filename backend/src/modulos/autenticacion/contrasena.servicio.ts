@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { ErrorHttp } from '../../comun/errores/error-http';
 import { crearEnlaceCorreo } from '../enlaces/enlace.servicio';
 import { registrarAuditoria } from '../auditoria/auditoria.servicio';
@@ -13,7 +13,7 @@ import { TipoNotificacion } from '../notificaciones/tipo-notificacion';
 import {
   crearTokenSeguro,
   hashearToken,
-  revocarTodosLosRefreshTokens
+  revocarTodosLosTokensRenovacion
 } from './autenticacion.tokens';
 import * as autenticacionRepositorio from './autenticacion.repositorio';
 import { emitirCambioUsuarios } from '../usuarios/usuario.eventos';
@@ -83,7 +83,7 @@ export const cambiarContrasena = async (token: string, contrasena: string) => {
     usuario.id,
     await bcrypt.hash(contrasena, 12)
   );
-  await revocarTodosLosRefreshTokens(usuario.id);
+  await revocarTodosLosTokensRenovacion(usuario.id);
   cerrarSesionesTiempoReal(usuario.id, 'CONTRASENA_ACTUALIZADA');
   if (esPrimeraActivacion) {
     emitirCambioUsuarios();
@@ -152,7 +152,7 @@ export const cambiarContrasenaSesion = async (
     }
   });
 
-  await revocarTodosLosRefreshTokens(usuario.id);
+  await revocarTodosLosTokensRenovacion(usuario.id);
   if (usuario.debeCambiarContrasena) {
     emitirCambioUsuarios();
   }
