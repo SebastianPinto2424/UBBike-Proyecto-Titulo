@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/bicicleta_app.dart';
+import 'package:ubbike/shared/widgets/campo_solo_lectura.dart';
 
 const _alturaCampoGestionManual = 56.0;
 
@@ -51,50 +52,23 @@ class DetalleBicicletaRegistrada extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _CampoDetalleBicicletaRegistrada(
-          etiqueta: 'Bicicleta',
+        CampoSoloLectura(
+          decoracion: decoracionCampoGestionManual(labelText: 'Bicicleta'),
           valor: bicicleta.descripcion,
         ),
         const SizedBox(height: 10),
-        _CampoDetalleBicicletaRegistrada(
-          etiqueta: 'Estado',
+        CampoSoloLectura(
+          decoracion: decoracionCampoGestionManual(labelText: 'Estado'),
           valor: estado,
         ),
         const SizedBox(height: 10),
-        _CampoDetalleBicicletaRegistrada(
-          etiqueta: 'Bicicletero actual',
+        CampoSoloLectura(
+          decoracion: decoracionCampoGestionManual(
+            labelText: 'Bicicletero actual',
+          ),
           valor: bicicletero,
         ),
       ],
-    );
-  }
-}
-
-class _CampoDetalleBicicletaRegistrada extends StatelessWidget {
-  const _CampoDetalleBicicletaRegistrada({
-    required this.etiqueta,
-    required this.valor,
-  });
-
-  final String etiqueta;
-  final String valor;
-
-  @override
-  Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: decoracionCampoGestionManual(
-        labelText: etiqueta,
-      ),
-      child: Text(
-        valor,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        softWrap: true,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: ColoresUbb.azulNoche,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
     );
   }
 }
