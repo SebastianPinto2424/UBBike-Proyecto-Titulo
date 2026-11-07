@@ -22,7 +22,7 @@ class FormularioIncidencia extends StatelessWidget {
     required this.bicicleteroSeleccionado,
     required this.bicicletaSeleccionada,
     required this.tipoSeleccionado,
-    required this.descripcionController,
+    required this.controladorDescripcion,
     required this.fotos,
     required this.onCamara,
     required this.onGaleria,
@@ -42,7 +42,7 @@ class FormularioIncidencia extends StatelessWidget {
   final BicicleteroApp? bicicleteroSeleccionado;
   final BicicletaApp? bicicletaSeleccionada;
   final String tipoSeleccionado;
-  final TextEditingController descripcionController;
+  final TextEditingController controladorDescripcion;
   final List<String> fotos;
   final VoidCallback onCamara;
   final VoidCallback onGaleria;
@@ -188,7 +188,7 @@ class FormularioIncidencia extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           TextFormField(
-            controller: descripcionController,
+            controller: controladorDescripcion,
             spellCheckConfiguration: revisionOrtografica(),
             textCapitalization: TextCapitalization.sentences,
             minLines: 3,
