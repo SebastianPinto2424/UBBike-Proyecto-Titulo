@@ -18,6 +18,7 @@ import {
   salaUsuario
 } from '../../../tiempo-real/tiempo-real';
 import * as accesoRepositorio from './acceso.repositorio';
+import { impedirAutovalidacion } from './acceso.reglas';
 
 type UsuarioOperacion = Prisma.UsuarioGetPayload<Record<string, never>>;
 type BicicleteroOperacion = Prisma.BicicleteroGetPayload<Record<string, never>>;
@@ -98,6 +99,7 @@ export const registrarMovimiento = async ({
   comentario?: string | null;
   db: ClientePrisma;
 }) => {
+  impedirAutovalidacion(usuario.id, guardiaId);
   const comentarioGuardia = comentario?.trim() || null;
   const movimiento = await accesoRepositorio.crearMovimiento(
     {
