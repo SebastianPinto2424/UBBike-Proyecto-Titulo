@@ -2,7 +2,7 @@ import type { ClientePrisma } from '../../configuracion/prisma';
 import type { Bicicletero } from '../../generated/prisma/client';
 import * as bicicleteroRepositorio from './bicicletero.repositorio';
 
-export type StatsBicicletero = {
+export type EstadisticasBicicletero = {
   id: string;
   nombre: string;
   ubicacion: string;
@@ -31,10 +31,10 @@ export const contarOcupadosBicicletero = async (
   db?: ClientePrisma
 ): Promise<number> => bicicleteroRepositorio.contarOcupados(bicicleteroId, db);
 
-export const construirStatsBicicletero = (
+export const construirEstadisticasBicicletero = (
   bicicletero: Bicicletero,
   ocupados: number
-): StatsBicicletero => {
+): EstadisticasBicicletero => {
   const capacidad = Math.max(bicicletero.capacidad, 1);
 
   return {
