@@ -185,8 +185,8 @@ void main() {
     testWidgets('los demás errores se muestran como siempre', (tester) async {
       await _montarInicioSesion(tester, {
         'POST /autenticacion/login': const RespuestaFalsa(
-          401,
-          {'message': 'Credenciales inválidas'},
+          403,
+          {'message': 'La cuenta está desactivada'},
         ),
       });
 
@@ -195,8 +195,9 @@ void main() {
       await tester.enterText(_campo('Contraseña'), _clave);
       await tocarTexto(tester, 'Ingresar');
 
-      expect(find.text('Credenciales inválidas'), findsOneWidget);
+      expect(find.text('La cuenta está desactivada'), findsOneWidget);
       expect(find.text('Confirma tu correo'), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
     });
   });
 
@@ -241,12 +242,14 @@ void main() {
   });
 
   group('ingreso', () {
-    testWidgets('credenciales incorrectas muestran el error', (tester) async {
+    testWidgets(
+        'credenciales incorrectas muestran el diálogo y conservan el correo',
+        (tester) async {
       final api = await _montarInicioSesion(tester, {
-        'POST /autenticacion/login': const RespuestaFalsa(
-          401,
-          {'message': 'Credenciales inválidas'},
-        ),
+        'POST /autenticacion/login': const RespuestaFalsa(401, {
+          'message': 'Credenciales inválidas',
+          'codigo': 'CREDENCIALES_INVALIDAS',
+        }),
       });
 
       await tester.enterText(
@@ -256,7 +259,49 @@ void main() {
 
       expect(api.cuerpoDe('POST /autenticacion/login')['correo'],
           'ana@alumnos.ubiobio.cl');
-      expect(find.textContaining('Credenciales'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('No pudimos iniciar sesión'), findsOneWidget);
+      expect(
+        find.text(
+          'El correo o la contraseña ingresados no son válidos. '
+          'Revisa tus datos e inténtalo nuevamente. Si aún no tienes una '
+          'cuenta, regístrate para comenzar a usar UBBike.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Revisar datos'), findsOneWidget);
+      expect(find.text('Crear cuenta'), findsOneWidget);
+
+      await tocar(tester, find.byKey(const Key('revisar-credenciales')));
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(
+        tester
+            .widget<TextFormField>(_campo('Correo electrónico'))
+            .controller
+            ?.text,
+        ' Ana@Alumnos.UBiobio.cl ',
+      );
+    });
+
+    testWidgets('crear cuenta desde el diálogo abre el registro',
+        (tester) async {
+      await _montarInicioSesion(tester, {
+        'POST /autenticacion/login': const RespuestaFalsa(
+          401,
+          {'message': 'Credenciales inválidas'},
+        ),
+      });
+
+      await tester.enterText(
+          _campo('Correo electrónico'), 'nueva@alumnos.ubiobio.cl');
+      await tester.enterText(_campo('Contraseña'), 'Equivocada#2026');
+      await tocarTexto(tester, 'Ingresar');
+      await tocar(
+          tester, find.byKey(const Key('crear-cuenta-desde-credenciales')));
+
+      expect(find.byType(PantallaRegistro), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
     });
   });
 
@@ -283,7 +328,7 @@ void main() {
         },
       });
       autenticacion =
-          AutenticacionApi(cliente: ClienteApi(httpClient: api.cliente));
+          AutenticacionApi(cliente: ClienteApi(cliente: api.cliente));
     });
 
     test('inicia sesión y entrega los tokens y el usuario', () async {
