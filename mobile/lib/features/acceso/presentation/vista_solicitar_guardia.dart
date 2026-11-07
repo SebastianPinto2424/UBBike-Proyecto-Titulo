@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/features/acceso/application/solicitudes_guardia_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/shared/modelos/solicitud_guardia_modelos.dart';
@@ -62,7 +63,7 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia>
 
   Future<List<SolicitudGuardiaApp>> _cargarSolicitudes() async {
     try {
-      final solicitudes = await vm.listarSolicitudes();
+      final solicitudes = await vm.listarSolicitudes(propias: true);
       ultimasSolicitudes = solicitudes;
       ultimaRecargaFallida = false;
       _actualizarSolicitudEnCancelacion(solicitudes);
@@ -179,7 +180,13 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia>
     if (!mounted) {
       return;
     }
-    if (bicicleteros.isEmpty) {
+    final sesion = ref.read(sesionProvider).valueOrNull;
+    final miId = sesion is SesionActiva ? sesion.usuario.id : null;
+    final disponibles = bicicleteros
+        .where((bicicletero) =>
+            miId == null || bicicletero.guardiaActivoId != miId)
+        .toList();
+    if (disponibles.isEmpty) {
       context.mostrarError('No hay bicicleteros disponibles por ahora.');
       return;
     }
@@ -190,7 +197,7 @@ class _VistaSolicitarGuardiaState extends ConsumerState<VistaSolicitarGuardia>
       showDragHandle: true,
       useSafeArea: true,
       builder: (_) => HojaSolicitarAtencion(
-        bicicleteros: bicicleteros,
+        bicicleteros: disponibles,
         onEnviar: _crearSolicitud,
       ),
     );
