@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import {
+  esquemaAlcanceConsulta,
   esquemaIdentificador,
   esquemaLimitePagina,
   esquemaTextoBusqueda
@@ -22,6 +23,7 @@ export const esquemaConsultaHistorial = Joi.object({
   origen: Joi.string().valid('QR', 'MANUAL', 'TODOS'),
   bicicleteroId: esquemaIdentificador,
   guardiaId: esquemaIdentificador,
+  alcance: esquemaAlcanceConsulta,
   limit: esquemaLimitePagina.max(100000),
   page: Joi.number().integer().min(1).messages({
     'number.base': 'La página debe ser un entero positivo',
