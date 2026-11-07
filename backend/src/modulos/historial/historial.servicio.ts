@@ -1,4 +1,5 @@
 import { ErrorHttp } from '../../comun/errores/error-http';
+import { alcancePropio, type AlcanceConsulta } from '../../comun/utilidades/esquemas-comunes';
 import { Prisma } from '../../generated/prisma/client';
 import { listarBicicleteros } from '../bicicleteros/bicicletero.servicio';
 import { RolUsuario } from '../usuarios/rol-usuario';
@@ -17,6 +18,7 @@ type FiltrosHistorial = {
   bicicleteroId?: string;
   guardiaId?: string;
   origen?: 'QR' | 'MANUAL' | 'TODOS';
+  alcance?: AlcanceConsulta;
   pagina?: number;
   limite?: number;
 };
@@ -101,10 +103,12 @@ const mapearMovimiento = (movimiento: MovimientoCompleto) => ({
   }
 });
 
-const construirWhereMovimientos = (filtros: FiltrosHistorial) => {
+const construirFiltroMovimientos = (filtros: FiltrosHistorial) => {
   const condiciones: Prisma.MovimientoWhereInput[] = [];
 
-  if (filtros.rol === RolUsuario.GUARDIA) {
+  if (filtros.alcance === alcancePropio) {
+    condiciones.push({ usuarioId: filtros.usuarioId });
+  } else if (filtros.rol === RolUsuario.GUARDIA) {
     condiciones.push({ validadoPorGuardiaId: filtros.usuarioId });
   } else if (!puedeVerTodo(filtros.rol)) {
     condiciones.push({ usuarioId: filtros.usuarioId });
@@ -172,7 +176,7 @@ export const listarMovimientos = async (filtros: FiltrosHistorial) => {
   const limite = Math.min(limiteRaw, LIMITE_MAX_HISTORIAL);
   const pagina = filtros.pagina && filtros.pagina > 0 ? filtros.pagina : 1;
   const saltar = (pagina - 1) * limite;
-  const where = construirWhereMovimientos(filtros);
+  const where = construirFiltroMovimientos(filtros);
   const [movimientos, total] = await Promise.all([
     historialRepositorio.buscarMovimientos(where, limite, saltar),
     historialRepositorio.contarMovimientos(where)
@@ -190,7 +194,7 @@ export const listarMovimientos = async (filtros: FiltrosHistorial) => {
 };
 
 export const listarMovimientosParaExportar = async (filtros: FiltrosHistorial) => {
-  const where = construirWhereMovimientos(filtros);
+  const where = construirFiltroMovimientos(filtros);
   const limite = Math.min(filtros.limite ?? LIMITE_MAX_HISTORIAL, LIMITE_MAX_HISTORIAL);
 
   return historialRepositorio.buscarMovimientosExportacion(where, limite);
@@ -201,7 +205,7 @@ export const resumenHistorial = async (filtros: FiltrosHistorial) => {
     throw new ErrorHttp(403, 'No tienes permisos para ver el resumen central');
   }
 
-  const where = construirWhereMovimientos(filtros);
+  const where = construirFiltroMovimientos(filtros);
 
   const contarCon = (extra: Prisma.MovimientoWhereInput) =>
     historialRepositorio.contarMovimientos({ AND: [where, extra] });
