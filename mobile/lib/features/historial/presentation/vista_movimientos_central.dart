@@ -42,7 +42,7 @@ class _VistaMovimientosCentralState
   int totalMovimientos = 0;
   List<MovimientoApp> acumulados = const [];
 
-  final filtroController = TextEditingController();
+  final controladorFiltro = TextEditingController();
   Timer? temporizadorBusqueda;
   String periodo = 'SEMANA';
   String tipoMovimiento = 'TODOS';
@@ -80,13 +80,13 @@ class _VistaMovimientosCentralState
   @override
   void dispose() {
     temporizadorBusqueda?.cancel();
-    filtroController.dispose();
+    controladorFiltro.dispose();
     super.dispose();
   }
 
   Future<List<MovimientoApp>> _obtenerPrimeraPagina() async {
     final pagina = await vm.listarPagina(
-      filtro: filtroController.text,
+      filtro: controladorFiltro.text,
       periodo: periodo,
       desde: fechaDesde,
       hasta: fechaHasta,
@@ -113,7 +113,7 @@ class _VistaMovimientosCentralState
     setState(() => cargandoMas = true);
     try {
       final siguiente = await vm.listarPagina(
-        filtro: filtroController.text,
+        filtro: controladorFiltro.text,
         periodo: periodo,
         desde: fechaDesde,
         hasta: fechaHasta,
@@ -176,7 +176,7 @@ class _VistaMovimientosCentralState
   }
 
   List<FiltroActivo> _filtrosActivos() {
-    final busqueda = filtroController.text.trim();
+    final busqueda = controladorFiltro.text.trim();
     return [
       if (periodo != 'SEMANA')
         FiltroActivo(
@@ -227,7 +227,7 @@ class _VistaMovimientosCentralState
           etiqueta: 'Busca: $busqueda',
           onQuitar: () {
             temporizadorBusqueda?.cancel();
-            filtroController.clear();
+            controladorFiltro.clear();
             _recargar();
           },
         ),
@@ -235,7 +235,7 @@ class _VistaMovimientosCentralState
   }
 
   String _resumenFiltros() {
-    final busqueda = filtroController.text.trim();
+    final busqueda = controladorFiltro.text.trim();
     final partes = [
       etiquetaPeriodoFiltro(periodo),
       if (fechaDesde != null || fechaHasta != null) _textoRangoFechas(),
@@ -257,7 +257,7 @@ class _VistaMovimientosCentralState
 
   void _limpiarFiltros() {
     temporizadorBusqueda?.cancel();
-    filtroController.clear();
+    controladorFiltro.clear();
     periodo = 'SEMANA';
     tipoMovimiento = 'TODOS';
     estadoMovimiento = 'TODOS';
@@ -327,7 +327,7 @@ class _VistaMovimientosCentralState
         resumenFiltros: _resumenFiltros(),
         accion: accion,
         filtros: (
-          filtro: filtroController.text,
+          filtro: controladorFiltro.text,
           periodo: periodo,
           desde: fechaDesde,
           hasta: fechaHasta,
@@ -358,21 +358,21 @@ class _VistaMovimientosCentralState
             const TituloApartado(titulo: 'Historial'),
             const SizedBox(height: 10),
             TextField(
-              controller: filtroController,
+              controller: controladorFiltro,
               textInputAction: TextInputAction.search,
               onChanged: (_) => _programarBusqueda(),
               onSubmitted: (_) => _recargar(),
               decoration: InputDecoration(
                 labelText: 'Buscar por bicicleta, bicicletero o guardia',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: filtroController.text.isEmpty
+                suffixIcon: controladorFiltro.text.isEmpty
                     ? null
                     : IconButton(
                         tooltip: 'Limpiar búsqueda',
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           temporizadorBusqueda?.cancel();
-                          filtroController.clear();
+                          controladorFiltro.clear();
                           _recargar();
                         },
                       ),
