@@ -28,7 +28,7 @@ class VistaSolicitudesCentral extends ConsumerStatefulWidget {
 class _VistaSolicitudesCentralState
     extends ConsumerState<VistaSolicitudesCentral> with AutoRefrescoMixin {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
-  final busquedaController = TextEditingController();
+  final controladorBusqueda = TextEditingController();
   Timer? temporizadorBusqueda;
   String estadoFiltro = 'TODOS';
   late Future<List<SolicitudGuardiaApp>> futuroSolicitudes;
@@ -53,14 +53,14 @@ class _VistaSolicitudesCentralState
   @override
   void dispose() {
     temporizadorBusqueda?.cancel();
-    busquedaController.dispose();
+    controladorBusqueda.dispose();
     super.dispose();
   }
 
   Future<List<SolicitudGuardiaApp>> _cargarSolicitudes() {
     return vm.listarSolicitudes(
       estado: estadoFiltro,
-      q: busquedaController.text,
+      q: controladorBusqueda.text,
       limite: 300,
     );
   }
@@ -83,7 +83,7 @@ class _VistaSolicitudesCentralState
 
   void _limpiarFiltros() {
     temporizadorBusqueda?.cancel();
-    busquedaController.clear();
+    controladorBusqueda.clear();
     setState(() {
       estadoFiltro = 'TODOS';
       futuroSolicitudes = _cargarSolicitudes();
@@ -121,7 +121,7 @@ class _VistaSolicitudesCentralState
   }
 
   List<FiltroActivo> _filtrosActivos() {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return [
       if (estadoFiltro != 'TODOS')
         FiltroActivo(
@@ -138,7 +138,7 @@ class _VistaSolicitudesCentralState
           etiqueta: 'Busca: $busqueda',
           onQuitar: () {
             temporizadorBusqueda?.cancel();
-            busquedaController.clear();
+            controladorBusqueda.clear();
             _recargar();
           },
         ),
@@ -166,21 +166,21 @@ class _VistaSolicitudesCentralState
               const TituloApartado(titulo: 'Solicitudes'),
               const SizedBox(height: 10),
               TextField(
-                controller: busquedaController,
+                controller: controladorBusqueda,
                 textInputAction: TextInputAction.search,
                 onChanged: (_) => _programarBusqueda(),
                 onSubmitted: (_) => _recargar(),
                 decoration: InputDecoration(
                   labelText: 'Buscar por bicicletero, solicitante o guardia',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: busquedaController.text.isEmpty
+                  suffixIcon: controladorBusqueda.text.isEmpty
                       ? null
                       : IconButton(
                           tooltip: 'Limpiar búsqueda',
                           icon: const Icon(Icons.close),
                           onPressed: () {
                             temporizadorBusqueda?.cancel();
-                            busquedaController.clear();
+                            controladorBusqueda.clear();
                             _recargar();
                           },
                         ),
@@ -260,7 +260,7 @@ class _VistaSolicitudesCentralState
 
     if (solicitudes.isEmpty) {
       final sinFiltros =
-          busquedaController.text.trim().isEmpty && estadoFiltro == 'TODOS';
+          controladorBusqueda.text.trim().isEmpty && estadoFiltro == 'TODOS';
       return SliverEspacioRestante(
         child: EstadoLista(
           icono: Icons.campaign_outlined,
