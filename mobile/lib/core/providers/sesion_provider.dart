@@ -92,7 +92,7 @@ class SesionNotifier extends AsyncNotifier<EstadoSesion> {
     if (token == null) return const SesionVacia();
     try {
       final api = ClienteApi(
-        httpClient: ref.read(sesionHttpProvider),
+        cliente: ref.read(sesionHttpProvider),
         obtenerToken: () => epoca == _epoca ? token : null,
         obtenerRefreshToken: () => epoca == _epoca ? refresh : null,
         obtenerUsuarioId: () => epoca == _epoca ? id : null,
@@ -165,7 +165,7 @@ class SesionNotifier extends AsyncNotifier<EstadoSesion> {
     if (actual is! SesionActiva) return;
     final epoca = _epoca;
     final api = ClienteApi(
-      httpClient: ref.read(sesionHttpProvider),
+      cliente: ref.read(sesionHttpProvider),
       obtenerToken: () =>
           switch (state.valueOrNull) { SesionActiva s => s.token, _ => null },
       obtenerRefreshToken: () => switch (state.valueOrNull) {
@@ -194,15 +194,15 @@ class SesionNotifier extends AsyncNotifier<EstadoSesion> {
 
   Future<void> cerrar() async {
     final actual = state.valueOrNull;
-    final httpClient = ref.read(sesionHttpProvider);
+    final clienteSesion = ref.read(sesionHttpProvider);
     await olvidar();
     if (actual is! SesionActiva) return;
     try {
       await SesionApi(
           cliente: ClienteApi(
-        httpClient: httpClient,
+        cliente: clienteSesion,
         obtenerToken: () => actual.token,
-        timeout: const Duration(seconds: 5),
+        tiempoLimite: const Duration(seconds: 5),
       )).cerrarSesion(refreshToken: actual.refreshToken);
     } catch (_) {}
   }
