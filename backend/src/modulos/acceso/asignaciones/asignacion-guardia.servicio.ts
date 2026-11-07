@@ -9,7 +9,7 @@ import {
 } from '../../../tiempo-real/tiempo-real';
 import { registrarAuditoria } from '../../auditoria/auditoria.servicio';
 import {
-  construirStatsBicicletero,
+  construirEstadisticasBicicletero,
   contarOcupadosBicicletero
 } from '../../bicicleteros/bicicletero.ocupacion';
 import {
@@ -28,7 +28,7 @@ import * as asignacionGuardiaRepositorio from './asignacion-guardia.repositorio'
 
 const mapearBicicletero = async (bicicletero: Bicicletero) => {
   const ocupados = await contarOcupadosBicicletero(bicicletero.id);
-  return construirStatsBicicletero(bicicletero, ocupados);
+  return construirEstadisticasBicicletero(bicicletero, ocupados);
 };
 
 const mapearAsignacion = async (asignacion: AsignacionGuardia & { bicicletero: Bicicletero }) => ({
