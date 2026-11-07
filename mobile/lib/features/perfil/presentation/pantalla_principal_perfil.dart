@@ -16,7 +16,10 @@ import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 import 'package:ubbike/shared/widgets/estado_widgets.dart';
 
 class VistaPerfil extends ConsumerStatefulWidget {
-  const VistaPerfil({super.key, required this.rol});
+  const VistaPerfil({
+    super.key,
+    required this.rol,
+  });
   final RolUsuario rol;
   @override
   ConsumerState<VistaPerfil> createState() => _VistaPerfilState();
