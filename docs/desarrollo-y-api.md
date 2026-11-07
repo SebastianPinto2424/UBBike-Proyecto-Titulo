@@ -68,6 +68,7 @@ Convenciones de interfaz:
 - Los mensajes de error nunca muestran detalles tecnicos: sin conexion, `ClienteApi` responde "No pudimos conectar con el servidor..." y ante un error 5xx o una respuesta que no es JSON, "El servidor no responde en este momento...".
 - Los campos de texto libre (motivos, comentarios, descripciones, nombre y referencia del bicicletero) activan la revision ortografica del teclado del sistema con `revisionOrtografica()`, que subraya las palabras mal escritas y ofrece sugerencias. Los campos de correo, RUT, contrasenas, marcas, modelos y numeros de serie no la usan para no marcar como error nombres propios ni codigos.
 - Las validaciones de cada formulario usan los mismos limites que el esquema Joi del endpoint correspondiente.
+- Los datos que se muestran pero no se pueden editar usan `CampoSoloLectura` (`shared/widgets/campo_solo_lectura.dart`): texto oscuro y legible sobre un fondo suave, sin recibir foco al tocarlo. No llevan un candado por campo; cuando un grupo completo esta bloqueado, una sola linea con candado explica por que. No se usan campos deshabilitados en gris para datos que hay que leer, porque el gris es para lo que no esta disponible. Asi se ven los datos del QR que revisa el guardia y, en la gestion manual, el nombre de la persona encontrada y la bicicleta registrada de un retiro, con un aviso que explica por que no se cambian.
 
 ## Flujo funcional del MVP
 
