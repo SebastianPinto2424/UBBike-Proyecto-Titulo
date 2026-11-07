@@ -31,7 +31,7 @@ class VistaOperacionesGuardiasCentral extends ConsumerStatefulWidget {
 class _VistaOperacionesGuardiasCentralState
     extends ConsumerState<VistaOperacionesGuardiasCentral> {
   MovimientosCentralVm get vm => ref.read(movimientosCentralVmProvider);
-  final busquedaController = TextEditingController();
+  final controladorBusqueda = TextEditingController();
   Timer? temporizadorBusqueda;
   String periodo = 'DIA';
   String estadoMovimiento = 'TODOS';
@@ -56,7 +56,7 @@ class _VistaOperacionesGuardiasCentralState
   @override
   void dispose() {
     temporizadorBusqueda?.cancel();
-    busquedaController.dispose();
+    controladorBusqueda.dispose();
     super.dispose();
   }
 
@@ -74,7 +74,7 @@ class _VistaOperacionesGuardiasCentralState
   }
 
   Future<List<MovimientoApp>> _obtenerMovimientos() {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return vm.listar(
       filtro: busqueda.isEmpty ? null : busqueda,
       periodo: periodo,
@@ -101,7 +101,7 @@ class _VistaOperacionesGuardiasCentralState
   }
 
   String _resumenFiltros() {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return [
       etiquetaPeriodoFiltro(periodo),
       bicicleteroSeleccionado?.nombre ?? 'Todos los bicicleteros',
@@ -112,7 +112,7 @@ class _VistaOperacionesGuardiasCentralState
   }
 
   List<FiltroActivo> _filtrosActivos() {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return [
       if (periodo != 'DIA')
         FiltroActivo(
@@ -160,7 +160,7 @@ class _VistaOperacionesGuardiasCentralState
           etiqueta: 'Busca: $busqueda',
           onQuitar: () {
             temporizadorBusqueda?.cancel();
-            busquedaController.clear();
+            controladorBusqueda.clear();
             _recargar();
           },
         ),
@@ -169,7 +169,7 @@ class _VistaOperacionesGuardiasCentralState
 
   void _limpiarFiltros() {
     temporizadorBusqueda?.cancel();
-    busquedaController.clear();
+    controladorBusqueda.clear();
     setState(() {
       periodo = 'DIA';
       estadoMovimiento = 'TODOS';
@@ -202,9 +202,9 @@ class _VistaOperacionesGuardiasCentralState
         resumenFiltros: _resumenFiltros(),
         accion: accion,
         filtros: (
-          filtro: busquedaController.text.trim().isEmpty
+          filtro: controladorBusqueda.text.trim().isEmpty
               ? null
-              : busquedaController.text.trim(),
+              : controladorBusqueda.text.trim(),
           periodo: periodo,
           desde: null,
           hasta: null,
@@ -232,21 +232,21 @@ class _VistaOperacionesGuardiasCentralState
             const TituloApartado(titulo: 'Operaciones por guardia'),
             const SizedBox(height: 10),
             TextField(
-              controller: busquedaController,
+              controller: controladorBusqueda,
               textInputAction: TextInputAction.search,
               onChanged: (_) => _programarBusqueda(),
               onSubmitted: (_) => _recargar(),
               decoration: InputDecoration(
                 labelText: 'Buscar por guardia, bicicleta o bicicletero',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: busquedaController.text.isEmpty
+                suffixIcon: controladorBusqueda.text.isEmpty
                     ? null
                     : IconButton(
                         tooltip: 'Limpiar búsqueda',
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           temporizadorBusqueda?.cancel();
-                          busquedaController.clear();
+                          controladorBusqueda.clear();
                           _recargar();
                         },
                       ),
