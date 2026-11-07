@@ -42,7 +42,7 @@ const separarLista = (valor: string | undefined, valorPorDefecto: string[]): str
     .filter(Boolean);
 };
 
-const convertirTrustProxy = (valor: string | undefined): boolean | number | string => {
+const convertirConfianzaProxy = (valor: string | undefined): boolean | number | string => {
   if (!valor || ['false', '0', 'no'].includes(valor.toLowerCase())) {
     return false;
   }
@@ -145,7 +145,7 @@ export const entorno = {
     expiracion: process.env.JWT_EXPIRES_IN ?? '2h',
     emisor: process.env.JWT_ISSUER ?? 'ubbike-api',
     audiencia: process.env.JWT_AUDIENCE ?? 'ubbike-app',
-    refreshExpiracionDias: convertirNumero(process.env.REFRESH_TOKEN_EXPIRES_DAYS, 30)
+    expiracionRenovacionDias: convertirNumero(process.env.REFRESH_TOKEN_EXPIRES_DAYS, 30)
   },
   qr: {
     duracionSegundos: convertirNumero(process.env.QR_DURATION_SECONDS, 15)
@@ -160,7 +160,7 @@ export const entorno = {
     origenes: separarLista(process.env.CORS_ORIGINS, [])
   },
   servidor: {
-    trustProxy: convertirTrustProxy(process.env.TRUST_PROXY)
+    confianzaProxy: convertirConfianzaProxy(process.env.TRUST_PROXY)
   },
   redis: {
     url: process.env.REDIS_URL,
