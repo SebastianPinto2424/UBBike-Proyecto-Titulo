@@ -1,6 +1,6 @@
 import '../apoyo/configurar-entorno';
 
-jest.mock('bcryptjs', () => ({ hash: jest.fn(async () => 'hash') }));
+jest.mock('bcrypt', () => ({ hash: jest.fn(async () => 'hash') }));
 
 jest.mock('../../src/comun/utilidades/bloqueos', () => ({
   bloquearClave: jest.fn().mockResolvedValue(undefined),
