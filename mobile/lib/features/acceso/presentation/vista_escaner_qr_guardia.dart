@@ -12,6 +12,7 @@ import 'package:ubbike/features/acceso/presentation/dialogo_resultado_movimiento
 import 'package:ubbike/features/acceso/presentation/formulario_qr_validado.dart';
 import 'package:ubbike/features/acceso/presentation/panel_escaneo_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/hoja_denegacion_qr.dart';
+import 'package:ubbike/shared/utilidades/foco.dart';
 import 'package:ubbike/shared/widgets/snackbar_semantico.dart';
 
 class VistaEscanerQrGuardia extends ConsumerStatefulWidget {
@@ -322,6 +323,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   }
 
   Future<void> _confirmarQr(QrValidadoApp qr) async {
+    soltarFoco();
     if (claveFormularioQrValidado.currentState?.validate() != true ||
         confirmando) {
       return;
@@ -367,6 +369,7 @@ class _VistaEscanerQrGuardiaState extends ConsumerState<VistaEscanerQrGuardia> {
   }
 
   void _mostrarDenegacion(BuildContext context, QrValidadoApp qr) {
+    soltarFoco();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
