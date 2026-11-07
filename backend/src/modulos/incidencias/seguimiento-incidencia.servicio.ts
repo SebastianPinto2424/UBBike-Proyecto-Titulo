@@ -1,4 +1,5 @@
 import { ErrorHttp } from '../../comun/errores/error-http';
+import { alcancePropio } from '../../comun/utilidades/esquemas-comunes';
 import { registrarAuditoria } from '../auditoria/auditoria.servicio';
 import {
   crearNotificacion,
@@ -21,7 +22,8 @@ import * as incidenciaRepositorio from './incidencia.repositorio';
 import {
   rolesCentral,
   estadosCerradosIncidencia,
-  calcularSegundosParaRecordatorioIncidencia
+  calcularSegundosParaRecordatorioIncidencia,
+  impedirGestionPropia
 } from './incidencia.reglas';
 import {
   etiquetaEstadoIncidencia,
@@ -59,6 +61,8 @@ export const actualizarEstadoIncidencia = async (datos: DatosActualizarIncidenci
       throw new ErrorHttp(404, 'Incidencia no encontrada');
     }
 
+    impedirGestionPropia(incidencia.reportadaPorUsuarioId, datos.usuarioId);
+
     if (estadosCerradosIncidencia.includes(incidencia.estado)) {
       throw new ErrorHttp(409, 'La incidencia ya está cerrada');
     }
@@ -83,23 +87,19 @@ export const actualizarEstadoIncidencia = async (datos: DatosActualizarIncidenci
       db
     );
 
-    const notificarReportante = incidencia.reportadaPorUsuarioId !== datos.usuarioId;
+    await crearNotificacion(
+      {
+        usuarioId: incidencia.reportadaPorUsuarioId,
+        titulo: 'Incidencia actualizada',
+        mensaje: `El estado del reporte en ${incidencia.bicicletero.nombre} cambió a ${etiquetaEstadoIncidencia(datos.estado)}.`,
+        tipo: TipoNotificacion.INCIDENCIA,
+        datos: { incidenciaId: incidencia.id, estado: datos.estado, alcance: alcancePropio }
+      },
+      db,
+      efectos
+    );
 
-    if (notificarReportante) {
-      await crearNotificacion(
-        {
-          usuarioId: incidencia.reportadaPorUsuarioId,
-          titulo: 'Incidencia actualizada',
-          mensaje: `El estado del reporte en ${incidencia.bicicletero.nombre} cambió a ${etiquetaEstadoIncidencia(datos.estado)}.`,
-          tipo: TipoNotificacion.INCIDENCIA,
-          datos: { incidenciaId: incidencia.id, estado: datos.estado }
-        },
-        db,
-        efectos
-      );
-    }
-
-    if (notificarReportante && cerrada && respuesta) {
+    if (cerrada && respuesta) {
       const correo = crearCorreoIncidenciaResuelta({
         nombre: incidencia.reportadaPorUsuario.nombre,
         tipo: etiquetaTipoIncidencia(incidencia.tipo),
