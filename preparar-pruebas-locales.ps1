@@ -169,16 +169,16 @@ if ($SinApk) {
     exit 0
 }
 
-Write-Host "Compilando APK release con API_BASE_URL=$apiBaseUrl ..." -ForegroundColor Cyan
+Write-Host "Compilando APK de pruebas con API_BASE_URL=$apiBaseUrl ..." -ForegroundColor Cyan
 Set-Location (Join-Path $raiz 'mobile')
 $dartDefine = "API_BASE_URL=$apiBaseUrl"
-flutter build apk --release --dart-define=$dartDefine
+flutter build apk --profile --dart-define=$dartDefine
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'Fallo la compilacion del APK.' -ForegroundColor Red
     exit 1
 }
 
-$apk = Join-Path $raiz 'mobile\build\app\outputs\flutter-apk\app-release.apk'
+$apk = Join-Path $raiz 'mobile\build\app\outputs\flutter-apk\app-profile.apk'
 $directorioApks = Join-Path ([Environment]::GetFolderPath('Desktop')) 'apks-pruebas'
 New-Item -ItemType Directory -Path $directorioApks -Force | Out-Null
 $destino = Join-Path $directorioApks 'ubbike-taller.apk'
