@@ -54,7 +54,7 @@ Para probar desde celulares reales, el PC y los celulares deben estar en la mism
 .\preparar-pruebas-locales.ps1
 ```
 
-El script detecta la IP local, actualiza `.env`, levanta Docker, verifica el backend y genera una APK release que queda en la carpeta `apks-pruebas` del Escritorio.
+El script detecta la IP local, actualiza `.env`, levanta Docker, verifica el backend y genera una APK de pruebas en modo profile que queda en la carpeta `apks-pruebas` del Escritorio. Esta variante permite HTTP solo para probar en la red local; la APK de produccion se compila en modo release y exige HTTPS.
 
 Antes de instalar la APK conviene comprobar desde el celular que `http://IP_DEL_PC:3000/salud` responde. Si no responde, hay que ejecutar el script una vez como administrador o habilitar el puerto TCP 3000 en el Firewall de Windows. Esta APK es solo para pruebas locales por HTTP; la APK de produccion se compila apuntando a HTTPS.
 
