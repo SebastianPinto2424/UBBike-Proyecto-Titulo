@@ -98,7 +98,7 @@ describe('proxy de confianza', () => {
   ])('TRUST_PROXY=%s se interpreta como %p', (valor, esperado) => {
     const entorno = cargarEntorno({ TRUST_PROXY: valor });
 
-    expect(entorno.servidor.trustProxy).toBe(esperado);
+    expect(entorno.servidor.confianzaProxy).toBe(esperado);
   });
 });
 
