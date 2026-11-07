@@ -36,6 +36,22 @@ describe('middlewareErrores', () => {
     });
   });
 
+  it('mapea un cuerpo JSON malformado a 400 sin exponer detalles internos', () => {
+    const res = crearRes();
+    const error = Object.assign(new SyntaxError('Unexpected token'), {
+      status: 400,
+      type: 'entity.parse.failed',
+      body: '{correo:sin-comillas}'
+    });
+
+    middlewareErrores(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'El cuerpo JSON no es válido.'
+    });
+  });
+
   it('mapea P2002 (restricción única) a 409', () => {
     const res = crearRes();
     const error = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
