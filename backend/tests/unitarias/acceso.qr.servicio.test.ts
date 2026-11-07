@@ -130,3 +130,11 @@ it('no avisa si el QR ya habia sido usado', async () => {
   await expect(confirmarQr(datosBase)).rejects.toMatchObject({ statusCode: 409 });
   expect(qr.notificarEstadoQr).not.toHaveBeenCalled();
 });
+
+it('nunca registra un movimiento validado por el dueño de la bicicleta', async () => {
+  await expect(confirmarQr({ ...datosBase, guardiaId: 'user-1' })).rejects.toMatchObject({
+    statusCode: 403
+  });
+  expect(repositorio.crearMovimiento).not.toHaveBeenCalled();
+  expect(qr.notificarEstadoQr).not.toHaveBeenCalled();
+});
