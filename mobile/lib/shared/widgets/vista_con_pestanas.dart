@@ -27,6 +27,7 @@ class VistaConPestanas extends StatelessWidget {
             child: TabBar(
               tabs: pestanas,
               padding: const EdgeInsets.all(4),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
               labelColor: Colors.white,
               unselectedLabelColor: ColoresUbb.textoSecundario,
               indicator: BoxDecoration(
