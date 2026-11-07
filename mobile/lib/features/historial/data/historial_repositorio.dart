@@ -48,6 +48,7 @@ class HistorialRepositorio {
     String? origen,
     int? limite,
     int pagina = 1,
+    bool propios = false,
   }) =>
       _api.listarPagina(
         filtro: filtro,
@@ -61,6 +62,7 @@ class HistorialRepositorio {
         origen: origen,
         limite: limite,
         pagina: pagina,
+        propios: propios,
       );
 
   Future<ResumenHistorialApp> resumen({
