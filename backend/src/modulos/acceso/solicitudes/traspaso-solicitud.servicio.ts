@@ -1,3 +1,4 @@
+import { alcancePropio } from '../../../comun/utilidades/esquemas-comunes';
 import type { ClientePrisma } from '../../../configuracion/prisma';
 import { registrarAuditoria } from '../../auditoria/auditoria.servicio';
 import {
@@ -44,7 +45,7 @@ export const traspasarSolicitudesAlGuardia = async (
         titulo: 'Guardia notificado',
         mensaje: `Un guardia recibió tu solicitud en ${bicicletero.nombre}.`,
         tipo: TipoNotificacion.SOLICITUD_GUARDIA,
-        datos: { solicitudId: solicitud.id, bicicleteroId: bicicletero.id }
+        datos: { solicitudId: solicitud.id, bicicleteroId: bicicletero.id, alcance: alcancePropio }
       },
       db,
       efectos
@@ -118,7 +119,11 @@ export const devolverSolicitudesSinRespuesta = async (
           titulo: 'Solicitud pendiente',
           mensaje: `El guardia dejó ${bicicletero.nombre}. Tu solicitud sigue pendiente y avisamos a central.`,
           tipo: TipoNotificacion.SOLICITUD_GUARDIA,
-          datos: { solicitudId: solicitud.id, bicicleteroId: bicicletero.id }
+          datos: {
+            solicitudId: solicitud.id,
+            bicicleteroId: bicicletero.id,
+            alcance: alcancePropio
+          }
         },
         db,
         efectos
