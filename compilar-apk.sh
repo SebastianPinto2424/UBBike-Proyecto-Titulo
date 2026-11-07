@@ -16,7 +16,8 @@ if [[ ! -f "$RAIZ/mobile/android/app/google-services.json" ]]; then
 fi
 
 if [[ ! -f "$RAIZ/mobile/android/key.properties" ]]; then
-  echo "Aviso: no existe mobile/android/key.properties; la APK se firma con la llave de depuracion de este equipo." >&2
+  echo "Falta mobile/android/key.properties. La APK de produccion debe firmarse con una llave propia." >&2
+  exit 1
 fi
 
 if curl -fsS --max-time 15 "$URL/health" >/dev/null; then
