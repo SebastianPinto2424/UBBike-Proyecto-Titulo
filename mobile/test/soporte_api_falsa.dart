@@ -115,7 +115,7 @@ Future<ApiFalsa> montarConApi(
             .overrideWith(() => _SesionDePrueba(usuarioDePrueba(rol))),
         clienteApiProvider.overrideWithValue(
           ClienteApi(
-            httpClient: api.cliente,
+            cliente: api.cliente,
             obtenerToken: () => 'token-prueba',
           ),
         ),
