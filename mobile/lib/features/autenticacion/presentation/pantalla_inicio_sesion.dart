@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/servicios/excepcion_api.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 import 'package:ubbike/features/autenticacion/application/autenticacion_vm.dart';
+import 'package:ubbike/features/autenticacion/presentation/dialogo_credenciales_invalidas.dart';
 import 'package:ubbike/features/autenticacion/presentation/formulario_ingreso.dart';
 import 'package:ubbike/features/autenticacion/presentation/pantalla_registro.dart';
 import 'package:ubbike/features/autenticacion/presentation/hoja_recuperacion_contrasena.dart';
@@ -26,9 +29,9 @@ class PantallaInicioSesion extends ConsumerStatefulWidget {
 }
 
 class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
-  final formKeyIngreso = GlobalKey<FormState>();
-  final correoController = TextEditingController();
-  final contrasenaController = TextEditingController();
+  final claveFormularioIngreso = GlobalKey<FormState>();
+  final controladorCorreo = TextEditingController();
+  final controladorContrasena = TextEditingController();
   bool cargando = false;
   bool mostrarContrasena = false;
 
@@ -61,8 +64,8 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
 
   @override
   void dispose() {
-    correoController.dispose();
-    contrasenaController.dispose();
+    controladorCorreo.dispose();
+    controladorContrasena.dispose();
     super.dispose();
   }
 
@@ -114,10 +117,11 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
                               ),
                               child: AutofillGroup(
                                 child: Form(
-                                  key: formKeyIngreso,
+                                  key: claveFormularioIngreso,
                                   child: FormularioIngreso(
-                                    correoController: correoController,
-                                    contrasenaController: contrasenaController,
+                                    controladorCorreo: controladorCorreo,
+                                    controladorContrasena:
+                                        controladorContrasena,
                                     cargando: cargando,
                                     mostrarContrasena: mostrarContrasena,
                                     onAlternarContrasena: () {
@@ -127,14 +131,7 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
                                       );
                                     },
                                     onIngresar: _iniciarSesion,
-                                    onRegistro: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const PantallaRegistro(),
-                                        ),
-                                      );
-                                    },
+                                    onRegistro: _abrirRegistro,
                                     onRecuperar: () =>
                                         _mostrarRecuperacion(context),
                                   ),
@@ -159,16 +156,16 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
     if (cargando) {
       return;
     }
-    if (formKeyIngreso.currentState?.validate() != true) {
+    if (claveFormularioIngreso.currentState?.validate() != true) {
       return;
     }
 
-    _iniciarSesionAsincrona();
+    unawaited(_iniciarSesionAsincrona());
   }
 
   Future<void> _iniciarSesionAsincrona() async {
-    final correo = correoController.text.trim().toLowerCase();
-    final contrasena = contrasenaController.text;
+    final correo = controladorCorreo.text.trim().toLowerCase();
+    final contrasena = controladorContrasena.text;
 
     if (correo.isEmpty || contrasena.isEmpty) {
       context.mostrarError('Ingresa correo y contraseña');
@@ -192,6 +189,9 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
       if (mounted) {
         if (error.codigo == 'CORREO_NO_VERIFICADO') {
           _mostrarCorreoPendiente(correo);
+        } else if (error.codigo == 'CREDENCIALES_INVALIDAS' ||
+            error.statusCode == 401) {
+          unawaited(_mostrarCredencialesInvalidas());
         } else {
           context.mostrarError(error.mensaje);
         }
@@ -204,6 +204,25 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
       if (mounted) {
         setState(() => cargando = false);
       }
+    }
+  }
+
+  void _abrirRegistro() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const PantallaRegistro(),
+      ),
+    );
+  }
+
+  Future<void> _mostrarCredencialesInvalidas() async {
+    final crearCuenta = await showDialog<bool>(
+      context: context,
+      builder: (_) => const DialogoCredencialesInvalidas(),
+    );
+
+    if (crearCuenta == true && mounted) {
+      _abrirRegistro();
     }
   }
 
@@ -225,7 +244,7 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => HojaRecuperacion(
-        correoInicial: correoController.text.trim(),
+        correoInicial: controladorCorreo.text.trim(),
         onEnviar: _enviarRecuperacion,
       ),
     );
