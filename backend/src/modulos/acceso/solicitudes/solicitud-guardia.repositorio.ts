@@ -117,6 +117,7 @@ export const listarSinAtenderDeBicicletero = (
     where: {
       bicicleteroId: params.bicicleteroId,
       estado: { in: params.estados },
+      solicitadaPorUsuarioId: { not: params.guardiaId },
       OR: [{ guardiaAsignadoId: null }, { guardiaAsignadoId: { not: params.guardiaId } }]
     },
     select: { id: true, solicitadaPorUsuarioId: true },
