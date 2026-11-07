@@ -69,6 +69,7 @@ Convenciones de interfaz:
 - Los campos de texto libre (motivos, comentarios, descripciones, nombre y referencia del bicicletero) activan la revision ortografica del teclado del sistema con `revisionOrtografica()`, que subraya las palabras mal escritas y ofrece sugerencias. Los campos de correo, RUT, contrasenas, marcas, modelos y numeros de serie no la usan para no marcar como error nombres propios ni codigos.
 - Las validaciones de cada formulario usan los mismos limites que el esquema Joi del endpoint correspondiente.
 - Los datos que se muestran pero no se pueden editar usan `CampoSoloLectura` (`shared/widgets/campo_solo_lectura.dart`): texto oscuro y legible sobre un fondo suave, sin recibir foco al tocarlo. No llevan un candado por campo; cuando un grupo completo esta bloqueado, una sola linea con candado explica por que. No se usan campos deshabilitados en gris para datos que hay que leer, porque el gris es para lo que no esta disponible. Asi se ven los datos del QR que revisa el guardia y, en la gestion manual, el nombre de la persona encontrada y la bicicleta registrada de un retiro, con un aviso que explica por que no se cambian.
+- Al confirmar, rechazar o cancelar una accion, `soltarFoco()` (`shared/utilidades/foco.dart`) cierra el teclado y deja el formulario sin campo activo, asi el cursor no queda en el ultimo campo ni vuelve a el al cerrarse una hoja o un aviso. Cuando la accion siguiente es escribir, como "Registrar otra bicicleta", `enfocarAlDibujar()` pone el cursor en el primer campo.
 
 ## Flujo funcional del MVP
 
