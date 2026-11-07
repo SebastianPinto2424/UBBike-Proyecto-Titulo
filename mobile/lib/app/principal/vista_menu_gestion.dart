@@ -27,9 +27,7 @@ void abrirSeccionGestion(
 }
 
 class VistaMenuGestionAdmin extends StatelessWidget {
-  const VistaMenuGestionAdmin({super.key, this.initialSoporteIndex = 0});
-
-  final int initialSoporteIndex;
+  const VistaMenuGestionAdmin({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -77,18 +75,6 @@ class VistaMenuGestionAdmin extends StatelessWidget {
             context,
             titulo: 'Guardias',
             pantalla: const VistaGuardias(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TarjetaAccion(
-          icono: Icons.support_agent_outlined,
-          titulo: 'Atención',
-          detalle: 'Solicitudes de apoyo e incidencias.',
-          onTap: () => abrirSeccionGestion(
-            context,
-            titulo: 'Atención',
-            pantalla:
-                VistaSoporteAdministrador(initialIndex: initialSoporteIndex),
           ),
         ),
       ],
