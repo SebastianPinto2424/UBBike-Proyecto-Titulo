@@ -25,13 +25,13 @@ class ActividadPeriodoOperativo extends StatelessWidget {
               titulo: 'Operaciones por guardia',
               datos: resumen.operacionesPorGuardia,
               icono: Icons.security_outlined,
-              maxItems: 3,
+              maximoElementos: 3,
             );
             final bicicleteros = RankingResumenOperativo(
               titulo: 'Operaciones por bicicletero',
               datos: resumen.operacionesPorBicicletero,
               icono: Icons.location_on_outlined,
-              maxItems: 3,
+              maximoElementos: 3,
             );
 
             if (constraints.maxWidth >= 720) {
@@ -168,13 +168,13 @@ class RankingResumenOperativo extends StatelessWidget {
     required this.titulo,
     required this.datos,
     required this.icono,
-    this.maxItems = 5,
+    this.maximoElementos = 5,
   });
 
   final String titulo;
   final Map<String, int> datos;
   final IconData icono;
-  final int maxItems;
+  final int maximoElementos;
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +211,7 @@ class RankingResumenOperativo extends StatelessWidget {
                     ),
               )
             else
-              ...entradas.take(maxItems).map(
+              ...entradas.take(maximoElementos).map(
                     (entrada) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Column(
