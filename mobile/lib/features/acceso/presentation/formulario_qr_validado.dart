@@ -18,18 +18,18 @@ String? _validarComentarioQrGuardia(String? valor) {
 class FormularioQrValidado extends StatelessWidget {
   const FormularioQrValidado({
     super.key,
-    required this.formKey,
+    required this.claveFormulario,
     required this.qr,
-    required this.comentarioController,
+    required this.controladorComentario,
     required this.onConfirmar,
     required this.onDenegar,
     required this.onLeerOtro,
     this.procesando = false,
   });
 
-  final GlobalKey<FormState> formKey;
+  final GlobalKey<FormState> claveFormulario;
   final QrValidadoApp qr;
-  final TextEditingController comentarioController;
+  final TextEditingController controladorComentario;
   final VoidCallback onConfirmar;
   final VoidCallback onDenegar;
   final VoidCallback onLeerOtro;
@@ -45,7 +45,7 @@ class FormularioQrValidado extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Form(
-          key: formKey,
+          key: claveFormulario,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -184,7 +184,7 @@ class FormularioQrValidado extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               TextFormField(
-                controller: comentarioController,
+                controller: controladorComentario,
                 spellCheckConfiguration: revisionOrtografica(),
                 textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
