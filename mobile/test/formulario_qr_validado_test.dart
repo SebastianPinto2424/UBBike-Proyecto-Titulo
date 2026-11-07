@@ -26,9 +26,9 @@ Future<void> _montar(WidgetTester tester, QrValidadoApp qr,
       home: Scaffold(
         body: SingleChildScrollView(
           child: FormularioQrValidado(
-            formKey: GlobalKey<FormState>(),
+            claveFormulario: GlobalKey<FormState>(),
             qr: qr,
-            comentarioController: TextEditingController(),
+            controladorComentario: TextEditingController(),
             onConfirmar: onConfirmar ?? () {},
             onDenegar: onDenegar ?? () {},
             onLeerOtro: () {},
