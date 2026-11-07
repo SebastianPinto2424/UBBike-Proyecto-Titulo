@@ -38,7 +38,19 @@ final filtrosIncidenciasProvider =
   (ref) => const FiltrosIncidencias(),
 );
 
+final filtrosIncidenciasPropiasProvider =
+    StateProvider.autoDispose<FiltrosIncidencias>(
+  (ref) => const FiltrosIncidencias(),
+);
+
 class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
+  IncidenciasVm({this.propias = false});
+
+  final bool propias;
+
+  AutoDisposeStateProvider<FiltrosIncidencias> get _filtros =>
+      propias ? filtrosIncidenciasPropiasProvider : filtrosIncidenciasProvider;
+
   Timer? _debounceBusqueda;
   late RefrescoCoalescido _refresco;
   int _revision = 0;
@@ -49,7 +61,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
 
   @override
   Future<List<IncidenciaApp>> build() {
-    final filtros = ref.watch(filtrosIncidenciasProvider);
+    final filtros = ref.watch(_filtros);
     _revision++;
     _cursor = null;
     cargandoMas = false;
@@ -75,6 +87,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
           estado: filtros.estado,
           tipo: filtros.tipo,
           q: filtros.busqueda,
+          propias: propias,
         );
     final datos = [...pagina.datos];
     while (datos.length < conservar &&
@@ -84,7 +97,8 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
           estado: filtros.estado,
           tipo: filtros.tipo,
           q: filtros.busqueda,
-          cursor: pagina.cursor);
+          cursor: pagina.cursor,
+          propias: propias);
       datos.addAll(pagina.datos);
     }
     if (revision == _revision) {
@@ -100,7 +114,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     if (cargandoMas) return;
     final revision = _revision;
     try {
-      final datos = await _cargar(ref.read(filtrosIncidenciasProvider),
+      final datos = await _cargar(ref.read(_filtros),
           conservar: state.valueOrNull?.length ?? 0);
       if (revision == _revision) state = AsyncData(datos);
     } catch (error, stackTrace) {
@@ -118,7 +132,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
     final cursor = _cursor;
     if (cursor == null || cargandoMas || _refresco.enVuelo) return;
     final revision = _revision;
-    final filtros = ref.read(filtrosIncidenciasProvider);
+    final filtros = ref.read(_filtros);
     cargandoMas = true;
     state = AsyncData([...?state.valueOrNull]);
     try {
@@ -127,6 +141,7 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
             tipo: filtros.tipo,
             q: filtros.busqueda,
             cursor: cursor,
+            propias: propias,
           );
       if (revision != _revision) return;
       _cursor = pagina.cursor;
@@ -152,28 +167,25 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
   void buscar(String valor) {
     _debounceBusqueda?.cancel();
     _debounceBusqueda = Timer(const Duration(milliseconds: 350), () {
-      final filtros = ref.read(filtrosIncidenciasProvider);
-      ref.read(filtrosIncidenciasProvider.notifier).state =
+      final filtros = ref.read(_filtros);
+      ref.read(_filtros.notifier).state =
           filtros.copyWith(busqueda: valor.trim());
     });
   }
 
   void cambiarEstado(String valor) {
-    final filtros = ref.read(filtrosIncidenciasProvider);
-    ref.read(filtrosIncidenciasProvider.notifier).state =
-        filtros.copyWith(estado: valor);
+    final filtros = ref.read(_filtros);
+    ref.read(_filtros.notifier).state = filtros.copyWith(estado: valor);
   }
 
   void cambiarTipo(String valor) {
-    final filtros = ref.read(filtrosIncidenciasProvider);
-    ref.read(filtrosIncidenciasProvider.notifier).state =
-        filtros.copyWith(tipo: valor);
+    final filtros = ref.read(_filtros);
+    ref.read(_filtros.notifier).state = filtros.copyWith(tipo: valor);
   }
 
   void limpiarFiltros() {
     _debounceBusqueda?.cancel();
-    ref.read(filtrosIncidenciasProvider.notifier).state =
-        const FiltrosIncidencias();
+    ref.read(_filtros.notifier).state = const FiltrosIncidencias();
   }
 
   Future<void> crear({
@@ -217,6 +229,11 @@ class IncidenciasVm extends AutoDisposeAsyncNotifier<List<IncidenciaApp>> {
 final incidenciasVmProvider =
     AsyncNotifierProvider.autoDispose<IncidenciasVm, List<IncidenciaApp>>(
   IncidenciasVm.new,
+);
+
+final incidenciasPropiasVmProvider =
+    AsyncNotifierProvider.autoDispose<IncidenciasVm, List<IncidenciaApp>>(
+  () => IncidenciasVm(propias: true),
 );
 
 class DatosFormularioIncidencia {
