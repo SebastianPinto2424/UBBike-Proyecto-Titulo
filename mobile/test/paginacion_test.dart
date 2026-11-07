@@ -26,7 +26,7 @@ void main() {
       () async {
     final c = ProviderContainer(overrides: [
       clienteApiProvider
-          .overrideWithValue(ClienteApi(httpClient: MockClient((r) async {
+          .overrideWithValue(ClienteApi(cliente: MockClient((r) async {
         final segunda = r.url.queryParameters['cursor'] == '19';
         return http.Response(
             jsonEncode({
@@ -53,7 +53,7 @@ void main() {
   test('contador de notificaciones usa el total servidor, no la página visible',
       () async {
     var leidas = false;
-    final cliente = ClienteApi(httpClient: MockClient((r) async {
+    final cliente = ClienteApi(cliente: MockClient((r) async {
       if (r.method == 'PATCH') {
         leidas = true;
         return http.Response('{}', 200);
