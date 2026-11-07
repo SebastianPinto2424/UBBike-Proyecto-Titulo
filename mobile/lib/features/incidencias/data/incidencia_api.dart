@@ -29,9 +29,11 @@ class IncidenciaApi {
     String? bicicleteroId,
     String? q,
     int? limite,
+    bool propias = false,
   }) async {
     final parametros = <String, String>{
       if (cursor != null) 'cursor': cursor,
+      if (propias) 'alcance': 'PROPIO',
       if (estado != null && estado != 'TODOS') 'estado': estado,
       if (tipo != null && tipo != 'TODOS') 'tipo': tipo,
       if (bicicleteroId != null && bicicleteroId.isNotEmpty)
