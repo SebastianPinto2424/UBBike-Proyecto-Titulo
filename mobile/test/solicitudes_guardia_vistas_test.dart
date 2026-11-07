@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:ubbike/core/modelos/rol_usuario.dart';
+import 'package:ubbike/core/providers/sesion_provider.dart';
 import 'package:ubbike/core/providers/versiones_provider.dart';
 import 'package:ubbike/features/acceso/presentation/selector_bicicletero_guardia.dart';
 import 'package:ubbike/features/acceso/presentation/hoja_cancelar_solicitud.dart';
@@ -80,10 +81,41 @@ void main() {
         );
 
     testWidgets('sin solicitudes lo indica', (tester) async {
-      await montar(tester, {'solicitudes': []});
+      final api = await montar(tester, {'solicitudes': []});
 
       expect(find.text('Atención del guardia'), findsOneWidget);
       expect(find.text('Sin solicitudes recientes'), findsOneWidget);
+      expect(_consultas(api).map((consulta) => consulta['alcance']),
+          everyElement('PROPIO'));
+    });
+
+    testWidgets('el guardia no pide atención en el bicicletero que gestiona',
+        (tester) async {
+      await montarConApi(
+        tester,
+        const VistaSolicitarGuardia(),
+        rol: RolUsuario.guardia,
+        rutas: {
+          'GET /solicitudes-guardia': {'solicitudes': []},
+          'GET /bicicleteros': {
+            'bicicleteros': [
+              {
+                ..._rack('r1', 'Rack propio'),
+                'guardiaActivo': {'id': 'yo', 'nombre': 'Persona de Prueba'},
+              },
+              _rack('r2', 'Rack de otro sector'),
+            ],
+          },
+        },
+      );
+      await ProviderScope.containerOf(
+        tester.element(find.byType(VistaSolicitarGuardia)),
+      ).read(sesionProvider.future);
+
+      await tocarTexto(tester, 'Solicitar atención');
+
+      expect(find.text('Rack de otro sector'), findsWidgets);
+      expect(find.text('Rack propio'), findsNothing);
     });
 
     testWidgets('si los bicicleteros no cargaron, al tocar reintenta',
