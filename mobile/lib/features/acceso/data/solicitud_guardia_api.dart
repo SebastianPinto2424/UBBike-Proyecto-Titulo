@@ -94,11 +94,13 @@ class SolicitudGuardiaApi {
     String? estado,
     String? q,
     int? limite,
+    bool propias = false,
   }) async {
     final parametros = <String, String>{
       if (estado != null && estado != 'TODOS') 'estado': estado,
       if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
       if (limite != null && limite > 0) 'limite': limite.toString(),
+      if (propias) 'alcance': 'PROPIO',
     };
     final consulta =
         parametros.isEmpty ? '' : '?${Uri(queryParameters: parametros).query}';
