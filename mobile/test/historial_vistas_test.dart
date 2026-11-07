@@ -136,6 +136,15 @@ void main() {
       expect(_consultas(api).last['page'], '2');
       expect(find.text('Cargar más movimientos'), findsNothing);
     });
+
+    testWidgets('siempre pide solo los movimientos propios', (tester) async {
+      final api = await montar(tester, _porPagina);
+
+      await tocarTexto(tester, 'Cargar más movimientos');
+
+      expect(_consultas(api).map((consulta) => consulta['alcance']),
+          everyElement('PROPIO'));
+    });
   });
 
   group('historial de central', () {
@@ -175,6 +184,7 @@ void main() {
       final api = await montar(tester, _pagina([_movimiento('m1')]));
 
       expect(_consultas(api).first['periodo'], 'SEMANA');
+      expect(_consultas(api).first.containsKey('alcance'), isFalse);
     });
 
     testWidgets('buscar envía el texto al backend', (tester) async {
