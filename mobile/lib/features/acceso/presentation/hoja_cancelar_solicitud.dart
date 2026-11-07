@@ -33,8 +33,8 @@ class HojaCancelarSolicitud extends StatefulWidget {
 }
 
 class _HojaCancelarSolicitudState extends State<HojaCancelarSolicitud> {
-  final formKeyCancelarSolicitud = GlobalKey<FormState>();
-  final detalleController = TextEditingController();
+  final claveFormularioCancelarSolicitud = GlobalKey<FormState>();
+  final controladorDetalle = TextEditingController();
   String? motivo;
   bool enviando = false;
   String? error;
@@ -43,13 +43,13 @@ class _HojaCancelarSolicitudState extends State<HojaCancelarSolicitud> {
 
   @override
   void dispose() {
-    detalleController.dispose();
+    controladorDetalle.dispose();
     super.dispose();
   }
 
   Future<void> _enviar() async {
     final elegido = motivo;
-    if (formKeyCancelarSolicitud.currentState?.validate() != true ||
+    if (claveFormularioCancelarSolicitud.currentState?.validate() != true ||
         elegido == null ||
         enviando) {
       return;
@@ -60,7 +60,7 @@ class _HojaCancelarSolicitudState extends State<HojaCancelarSolicitud> {
       error = null;
     });
     final resultado = await widget.onCancelar(
-      otroMotivo ? detalleController.text.trim() : elegido,
+      otroMotivo ? controladorDetalle.text.trim() : elegido,
     );
 
     if (!mounted) {
@@ -145,7 +145,7 @@ class _HojaCancelarSolicitudState extends State<HojaCancelarSolicitud> {
     final enCamino = solicitud.estado == 'EN_CAMINO';
 
     return Form(
-      key: formKeyCancelarSolicitud,
+      key: claveFormularioCancelarSolicitud,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -193,7 +193,7 @@ class _HojaCancelarSolicitudState extends State<HojaCancelarSolicitud> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: TextFormField(
-                controller: detalleController,
+                controller: controladorDetalle,
                 spellCheckConfiguration: revisionOrtografica(),
                 textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
