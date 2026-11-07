@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { prisma } from './prisma';
 import { crearNotificacion } from '../modulos/notificaciones/notificacion.servicio';
 import { TipoNotificacion } from '../modulos/notificaciones/tipo-notificacion';
