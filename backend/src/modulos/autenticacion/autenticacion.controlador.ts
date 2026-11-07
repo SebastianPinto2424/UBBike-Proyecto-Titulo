@@ -73,8 +73,8 @@ export const cambiarContrasenaSesion = controladorAsync<SolicitudAutenticada>(as
 });
 
 export const refrescarToken = controladorAsync(async (req, res) => {
-  const { usuarioId, refreshToken } = req.body;
-  const resultado = await refrescarTokenServicio(usuarioId, refreshToken);
+  const { usuarioId, refreshToken: tokenRenovacion } = req.body;
+  const resultado = await refrescarTokenServicio(usuarioId, tokenRenovacion);
   return res.status(200).json(resultado);
 });
 
