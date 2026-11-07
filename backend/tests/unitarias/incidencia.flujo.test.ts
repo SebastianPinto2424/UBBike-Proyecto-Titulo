@@ -191,14 +191,36 @@ describe('crearIncidencia', () => {
     expect(eliminarArchivosFotosIncidencia).toHaveBeenCalledWith(['1.jpg']);
   });
 
-  it('un guardia solo reporta en su bicicletero asignado', async () => {
+  it('un guardia solo asocia bicicletas ajenas en su bicicletero asignado', async () => {
     repo.buscarBicicletero.mockResolvedValue(bicicletero as never);
     repo.buscarBicicleterosAsignados.mockResolvedValue([{ bicicleteroId: 'r2' }] as never);
+    repo.buscarBicicletaActiva.mockResolvedValue({ id: 'b2', usuarioId: 'u1' } as never);
 
     await expect(
-      crearIncidencia({ ...datos, usuarioId: 'g1', rol: RolUsuario.GUARDIA })
-    ).rejects.toMatchObject({ statusCode: 403 });
+      crearIncidencia({ ...datos, usuarioId: 'g1', rol: RolUsuario.GUARDIA, bicicletaId: 'b2' })
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      message: 'Solo puedes asociar bicicletas de otras personas en tu bicicletero asignado'
+    });
     expect(repo.crear).not.toHaveBeenCalled();
+  });
+
+  it('como usuario un guardia reporta en cualquier bicicletero con su bicicleta', async () => {
+    repo.buscarBicicletero.mockResolvedValue(bicicletero as never);
+    repo.buscarBicicleterosAsignados.mockResolvedValue([{ bicicleteroId: 'r2' }] as never);
+    repo.buscarBicicletaActiva.mockResolvedValue({ id: 'b7', usuarioId: 'g1' } as never);
+    repo.crear.mockResolvedValue(crearIncidenciaCompleta({ reportadaPorUsuarioId: 'g1' }));
+
+    await crearIncidencia({
+      ...datos,
+      usuarioId: 'g1',
+      rol: RolUsuario.GUARDIA,
+      bicicletaId: 'b7'
+    });
+    await crearIncidencia({ ...datos, usuarioId: 'g1', rol: RolUsuario.GUARDIA });
+
+    expect(repo.crear).toHaveBeenCalledTimes(2);
+    expect(repo.buscarBicicleterosAsignados).not.toHaveBeenCalled();
   });
 
   it('valida la bicicleta asociada', async () => {
@@ -286,6 +308,15 @@ describe('listarIncidencias', () => {
     await listarIncidencias({ usuarioId: 'g1', rol: RolUsuario.GUARDIA });
 
     expect(where()).toEqual({ AND: [{ OR: [{ reportadaPorUsuarioId: 'g1' }] }] });
+  });
+
+  it('el alcance propio muestra al personal solo lo que reporto', async () => {
+    await listarIncidencias({ usuarioId: 'g1', rol: RolUsuario.GUARDIA, alcance: 'PROPIO' });
+    expect(where()).toEqual({ AND: [{ reportadaPorUsuarioId: 'g1' }] });
+
+    await listarIncidencias({ usuarioId: 'a1', rol: RolUsuario.ADMINISTRADOR, alcance: 'PROPIO' });
+    expect(where()).toEqual({ AND: [{ reportadaPorUsuarioId: 'a1' }] });
+    expect(repo.buscarBicicleterosAsignados).not.toHaveBeenCalled();
   });
 
   it('central combina filtros y busqueda', async () => {
@@ -459,20 +490,23 @@ describe('actualizarEstadoIncidencia', () => {
     );
   });
 
-  it('si central reporto y cierra su propia incidencia no se avisa a si misma', async () => {
+  it('nadie de administracion gestiona una incidencia que reporto', async () => {
     repo.buscarPorId.mockResolvedValue(crearIncidenciaCompleta({ reportadaPorUsuarioId: 'a1' }));
-    repo.actualizar.mockResolvedValue(
-      crearIncidenciaCompleta({ estado: EstadoIncidencia.DESCARTADA })
-    );
 
-    await actualizarEstadoIncidencia({
-      usuarioId: 'a1',
-      rol: RolUsuario.ADMIN_CENTRAL,
-      incidenciaId: 'i1',
-      estado: EstadoIncidencia.DESCARTADA,
-      respuesta: 'Duplicada'
+    await expect(
+      actualizarEstadoIncidencia({
+        usuarioId: 'a1',
+        rol: RolUsuario.ADMIN_CENTRAL,
+        incidenciaId: 'i1',
+        estado: EstadoIncidencia.DESCARTADA,
+        respuesta: 'Duplicada'
+      })
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      message:
+        'No puedes gestionar una incidencia que reportaste. Debe revisarla otra persona de administración.'
     });
-
+    expect(repo.actualizar).not.toHaveBeenCalled();
     expect(crearNotificacion).not.toHaveBeenCalled();
     expect(enviarCorreo).not.toHaveBeenCalled();
   });
