@@ -61,11 +61,13 @@ class SolicitudesGuardiaVm {
     String? estado,
     String? q,
     int? limite,
+    bool propias = false,
   }) =>
       _ref.read(solicitudGuardiaRepositorioProvider).listarSolicitudes(
             estado: estado,
             q: q,
             limite: limite,
+            propias: propias,
           );
 
   Future<SolicitudGuardiaApp> actualizarEstado({
