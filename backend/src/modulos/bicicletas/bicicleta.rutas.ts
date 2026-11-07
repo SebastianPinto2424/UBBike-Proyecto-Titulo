@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { middlewareAutenticacion } from '../../comun/middlewares/autenticacion.middleware';
+import { autorizarRoles } from '../../comun/middlewares/autorizar-roles.middleware';
 import { validarCuerpo, validarParametros } from '../../comun/middlewares/validacion.middleware';
 import { esquemaParametroId } from '../../comun/utilidades/esquemas-comunes';
+import { rolesConFuncionesDeUsuario } from '../usuarios/permisos-rol';
 import {
   activar,
   actualizar,
@@ -15,7 +17,7 @@ import { esquemaActualizarBicicleta, esquemaCrearBicicleta } from './bicicleta.v
 
 const rutasBicicletas = Router();
 
-rutasBicicletas.use(middlewareAutenticacion);
+rutasBicicletas.use(middlewareAutenticacion, autorizarRoles(...rolesConFuncionesDeUsuario));
 rutasBicicletas.get('/', listar);
 rutasBicicletas.get('/activa', obtenerActiva);
 rutasBicicletas.post('/', validarCuerpo(esquemaCrearBicicleta), crear);
