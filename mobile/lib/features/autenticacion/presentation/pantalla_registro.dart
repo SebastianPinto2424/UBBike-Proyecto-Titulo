@@ -21,11 +21,11 @@ class PantallaRegistro extends ConsumerStatefulWidget {
 }
 
 class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
-  final formKey = GlobalKey<FormState>();
-  final nombreController = TextEditingController();
-  final rutController = TextEditingController();
-  final correoController = TextEditingController();
-  final contrasenaController = TextEditingController();
+  final claveFormulario = GlobalKey<FormState>();
+  final controladorNombre = TextEditingController();
+  final controladorRut = TextEditingController();
+  final controladorCorreo = TextEditingController();
+  final controladorContrasena = TextEditingController();
   final nombreFocusNode = FocusNode();
   final rutFocusNode = FocusNode();
   final correoFocusNode = FocusNode();
@@ -52,10 +52,10 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
     rutFocusNode.dispose();
     correoFocusNode.dispose();
     contrasenaFocusNode.dispose();
-    nombreController.dispose();
-    rutController.dispose();
-    correoController.dispose();
-    contrasenaController.dispose();
+    controladorNombre.dispose();
+    controladorRut.dispose();
+    controladorCorreo.dispose();
+    controladorContrasena.dispose();
     super.dispose();
   }
 
@@ -96,12 +96,12 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
             const SizedBox(height: 18),
             AutofillGroup(
               child: Form(
-                key: formKey,
+                key: claveFormulario,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextFormField(
-                      controller: nombreController,
+                      controller: controladorNombre,
                       focusNode: nombreFocusNode,
                       decoration: decoracionCampoAutenticacion(
                         labelText: 'Nombre completo',
@@ -120,7 +120,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: rutController,
+                      controller: controladorRut,
                       focusNode: rutFocusNode,
                       decoration: decoracionCampoAutenticacion(
                         labelText: 'RUT',
@@ -142,7 +142,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: correoController,
+                      controller: controladorCorreo,
                       focusNode: correoFocusNode,
                       decoration: decoracionCampoAutenticacion(
                         labelText: 'Correo institucional',
@@ -183,7 +183,7 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: contrasenaController,
+                      controller: controladorContrasena,
                       focusNode: contrasenaFocusNode,
                       decoration: decoracionCampoAutenticacion(
                         labelText: 'Contraseña',
@@ -245,20 +245,20 @@ class _PantallaRegistroState extends ConsumerState<PantallaRegistro> {
   }
 
   Future<void> _registrar() async {
-    if (formKey.currentState?.validate() != true) {
+    if (claveFormulario.currentState?.validate() != true) {
       return;
     }
 
     setState(() => cargando = true);
 
     try {
-      final correo = correoController.text.trim();
+      final correo = controladorCorreo.text.trim();
 
       await ref.read(autenticacionVmProvider).registrar(
-            nombre: nombreController.text.trim(),
-            rut: rutController.text.trim(),
+            nombre: controladorNombre.text.trim(),
+            rut: controladorRut.text.trim(),
             correo: correo,
-            contrasena: contrasenaController.text,
+            contrasena: controladorContrasena.text,
           );
 
       if (mounted) {
