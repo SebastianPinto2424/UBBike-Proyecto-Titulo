@@ -24,26 +24,26 @@ class TiempoRealServicio {
 
   static const intervaloVigilancia = Duration(seconds: 15);
 
-  final _notificacionesController = StreamController<void>.broadcast();
-  final _solicitudesController = StreamController<void>.broadcast();
-  final _incidenciasController = StreamController<void>.broadcast();
-  final _movimientosController = StreamController<void>.broadcast();
-  final _usuariosController = StreamController<void>.broadcast();
-  final _qrController = StreamController<Map<String, dynamic>>.broadcast();
-  final _sesionController = StreamController<String?>.broadcast();
-  final _bicicleterosController = StreamController<void>.broadcast();
-  final _rechazosController = StreamController<void>.broadcast();
+  final _controladorNotificaciones = StreamController<void>.broadcast();
+  final _controladorSolicitudes = StreamController<void>.broadcast();
+  final _controladorIncidencias = StreamController<void>.broadcast();
+  final _controladorMovimientos = StreamController<void>.broadcast();
+  final _controladorUsuarios = StreamController<void>.broadcast();
+  final _controladorQr = StreamController<Map<String, dynamic>>.broadcast();
+  final _controladorSesion = StreamController<String?>.broadcast();
+  final _controladorBicicleteros = StreamController<void>.broadcast();
+  final _controladorRechazos = StreamController<void>.broadcast();
 
-  Stream<void> get notificaciones => _notificacionesController.stream;
-  Stream<void> get solicitudes => _solicitudesController.stream;
-  Stream<void> get incidencias => _incidenciasController.stream;
-  Stream<void> get movimientos => _movimientosController.stream;
-  Stream<void> get usuarios => _usuariosController.stream;
-  Stream<String?> get sesionCerrada => _sesionController.stream;
-  Stream<void> get bicicleteros => _bicicleterosController.stream;
-  Stream<void> get rechazos => _rechazosController.stream;
+  Stream<void> get notificaciones => _controladorNotificaciones.stream;
+  Stream<void> get solicitudes => _controladorSolicitudes.stream;
+  Stream<void> get incidencias => _controladorIncidencias.stream;
+  Stream<void> get movimientos => _controladorMovimientos.stream;
+  Stream<void> get usuarios => _controladorUsuarios.stream;
+  Stream<String?> get sesionCerrada => _controladorSesion.stream;
+  Stream<void> get bicicleteros => _controladorBicicleteros.stream;
+  Stream<void> get rechazos => _controladorRechazos.stream;
 
-  Stream<Map<String, dynamic>> get qr => _qrController.stream;
+  Stream<Map<String, dynamic>> get qr => _controladorQr.stream;
 
   void conectar(String token) {
     final tokenLimpio = token.trim();
@@ -80,12 +80,12 @@ class TiempoRealServicio {
     socket.onConnect((_) {
       alCambiarConexion?.call(EstadoConexion.conectado);
       for (final controller in [
-        _notificacionesController,
-        _solicitudesController,
-        _incidenciasController,
-        _movimientosController,
-        _usuariosController,
-        _bicicleterosController,
+        _controladorNotificaciones,
+        _controladorSolicitudes,
+        _controladorIncidencias,
+        _controladorMovimientos,
+        _controladorUsuarios,
+        _controladorBicicleteros,
       ]) {
         if (!controller.isClosed) controller.add(null);
       }
@@ -99,43 +99,43 @@ class TiempoRealServicio {
       if (esRechazoDelServidor(error)) _avisarRechazo();
     });
     socket.on('notificacion', (_) {
-      if (!_notificacionesController.isClosed) {
-        _notificacionesController.add(null);
+      if (!_controladorNotificaciones.isClosed) {
+        _controladorNotificaciones.add(null);
       }
     });
     socket.on('solicitud', (_) {
-      if (!_solicitudesController.isClosed) {
-        _solicitudesController.add(null);
+      if (!_controladorSolicitudes.isClosed) {
+        _controladorSolicitudes.add(null);
       }
     });
     socket.on('incidencia', (_) {
-      if (!_incidenciasController.isClosed) {
-        _incidenciasController.add(null);
+      if (!_controladorIncidencias.isClosed) {
+        _controladorIncidencias.add(null);
       }
     });
     socket.on('movimiento', (_) {
-      if (!_movimientosController.isClosed) {
-        _movimientosController.add(null);
+      if (!_controladorMovimientos.isClosed) {
+        _controladorMovimientos.add(null);
       }
     });
     socket.on('usuario', (_) {
-      if (!_usuariosController.isClosed) {
-        _usuariosController.add(null);
+      if (!_controladorUsuarios.isClosed) {
+        _controladorUsuarios.add(null);
       }
     });
     socket.on('bicicleteros', (_) {
-      if (!_bicicleterosController.isClosed) {
-        _bicicleterosController.add(null);
+      if (!_controladorBicicleteros.isClosed) {
+        _controladorBicicleteros.add(null);
       }
     });
     socket.on('sesion', (datos) {
-      if (!_sesionController.isClosed) {
-        _sesionController.add(motivoCierreSesion(datos));
+      if (!_controladorSesion.isClosed) {
+        _controladorSesion.add(motivoCierreSesion(datos));
       }
     });
     socket.on('qr', (datos) {
-      if (datos is Map && !_qrController.isClosed) {
-        _qrController.add(Map<String, dynamic>.from(datos));
+      if (datos is Map && !_controladorQr.isClosed) {
+        _controladorQr.add(Map<String, dynamic>.from(datos));
       }
     });
 
@@ -147,7 +147,7 @@ class TiempoRealServicio {
   }
 
   void _avisarRechazo() {
-    if (!_rechazosController.isClosed) _rechazosController.add(null);
+    if (!_controladorRechazos.isClosed) _controladorRechazos.add(null);
   }
 
   void desconectar() {
@@ -165,14 +165,14 @@ class TiempoRealServicio {
 
   void dispose() {
     desconectar();
-    _notificacionesController.close();
-    _solicitudesController.close();
-    _incidenciasController.close();
-    _movimientosController.close();
-    _usuariosController.close();
-    _qrController.close();
-    _sesionController.close();
-    _bicicleterosController.close();
-    _rechazosController.close();
+    _controladorNotificaciones.close();
+    _controladorSolicitudes.close();
+    _controladorIncidencias.close();
+    _controladorMovimientos.close();
+    _controladorUsuarios.close();
+    _controladorQr.close();
+    _controladorSesion.close();
+    _controladorBicicleteros.close();
+    _controladorRechazos.close();
   }
 }
