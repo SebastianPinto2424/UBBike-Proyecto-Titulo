@@ -2,7 +2,7 @@ import { ErrorHttp } from '../../comun/errores/error-http';
 import type { ClientePrisma } from '../../configuracion/prisma';
 import { bloquearFila } from '../../comun/utilidades/bloqueos';
 import {
-  construirStatsBicicletero,
+  construirEstadisticasBicicletero,
   contarOcupadosBicicletero,
   contarOcupadosPorBicicletero
 } from './bicicletero.ocupacion';
@@ -33,7 +33,7 @@ export const listarBicicleteros = async (rol?: string) => {
   );
 
   return bicicleteros.map((bicicletero) => ({
-    ...construirStatsBicicletero(bicicletero, ocupadosPorId[bicicletero.id] ?? 0),
+    ...construirEstadisticasBicicletero(bicicletero, ocupadosPorId[bicicletero.id] ?? 0),
     ...(incluirGuardias ? { guardiaActivo: guardiaPorBicicletero.get(bicicletero.id) ?? null } : {})
   }));
 };
@@ -63,7 +63,7 @@ export const crearBicicletero = async (datos: DatosCrearBicicletero) => {
     });
 
     const ocupados = await bicicleteroRepositorio.contarOcupados(reactivado.id);
-    return avisarCambioBicicleteros(construirStatsBicicletero(reactivado, ocupados));
+    return avisarCambioBicicleteros(construirEstadisticasBicicletero(reactivado, ocupados));
   }
 
   const bicicletero = await bicicleteroRepositorio.crear({
@@ -74,7 +74,7 @@ export const crearBicicletero = async (datos: DatosCrearBicicletero) => {
     longitud: datos.longitud ?? null
   });
 
-  return avisarCambioBicicleteros(construirStatsBicicletero(bicicletero, 0));
+  return avisarCambioBicicleteros(construirEstadisticasBicicletero(bicicletero, 0));
 };
 
 const buscarBicicleteroExistente = async (bicicleteroId: string, db: ClientePrisma) => {
@@ -120,7 +120,7 @@ export const actualizarBicicletero = async (
         db
       );
 
-      return construirStatsBicicletero(bicicletero, ocupados);
+      return construirEstadisticasBicicletero(bicicletero, ocupados);
     })
     .then(avisarCambioBicicleteros);
 
