@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { ErrorHttp } from '../../comun/errores/error-http';
+import { alcancePropio, type AlcanceConsulta } from '../../comun/utilidades/esquemas-comunes';
 import { limitarPagina, validarCursor } from '../../comun/utilidades/paginacion';
 import type { ClientePrisma } from '../../configuracion/prisma';
 import { Prisma } from '../../generated/prisma/client';
@@ -47,6 +48,7 @@ type DatosListarIncidencias = {
   q?: string;
   cursor?: string;
   limite?: number;
+  alcance?: AlcanceConsulta;
 };
 
 const obtenerBicicleterosAsignadosGuardia = async (guardiaId: string, db?: ClientePrisma) => {
@@ -89,10 +91,12 @@ const asegurarBicicletaValida = async (
   return bicicleta;
 };
 
-const construirWhereIncidencias = async (filtros: DatosListarIncidencias) => {
+const construirFiltroIncidencias = async (filtros: DatosListarIncidencias) => {
   const condiciones: Prisma.IncidenciaWhereInput[] = [];
 
-  if (rolesCentral.includes(filtros.rol)) {
+  if (filtros.alcance === alcancePropio) {
+    condiciones.push({ reportadaPorUsuarioId: filtros.usuarioId });
+  } else if (rolesCentral.includes(filtros.rol)) {
   } else if (filtros.rol === RolUsuario.GUARDIA) {
     const asignados = await obtenerBicicleterosAsignadosGuardia(filtros.usuarioId);
     condiciones.push({
@@ -176,15 +180,20 @@ export const crearIncidencia = async (datos: DatosCrearIncidencia) => {
   try {
     const resultado = await incidenciaRepositorio.ejecutarEnTransaccion(async (db) => {
       const bicicletero = await asegurarBicicleteroExiste(datos.bicicleteroId, db);
-      if (datos.rol === RolUsuario.GUARDIA) {
+      const bicicleta = await asegurarBicicletaValida(datos, db);
+      const esBicicletaAjena = Boolean(bicicleta && bicicleta.usuarioId !== datos.usuarioId);
+
+      if (datos.rol === RolUsuario.GUARDIA && esBicicletaAjena) {
         const asignados = await obtenerBicicleterosAsignadosGuardia(datos.usuarioId, db);
 
         if (!asignados.includes(bicicletero.id)) {
-          throw new ErrorHttp(403, 'Solo puedes reportar incidencias de tu bicicletero asignado');
+          throw new ErrorHttp(
+            403,
+            'Solo puedes asociar bicicletas de otras personas en tu bicicletero asignado'
+          );
         }
       }
 
-      const bicicleta = await asegurarBicicletaValida(datos, db);
       const incidencia = await incidenciaRepositorio.crear(
         {
           reportadaPorUsuarioId: datos.usuarioId,
@@ -273,12 +282,16 @@ export const crearIncidencia = async (datos: DatosCrearIncidencia) => {
 };
 
 const LIMITE_MAX_INCIDENCIAS = 100;
-const LIMITE_DEFAULT_INCIDENCIAS = 20;
+const LIMITE_PREDETERMINADO_INCIDENCIAS = 20;
 
 export const listarIncidencias = async (filtros: DatosListarIncidencias) => {
-  const limite = limitarPagina(filtros.limite, LIMITE_DEFAULT_INCIDENCIAS, LIMITE_MAX_INCIDENCIAS);
+  const limite = limitarPagina(
+    filtros.limite,
+    LIMITE_PREDETERMINADO_INCIDENCIAS,
+    LIMITE_MAX_INCIDENCIAS
+  );
   validarCursor(filtros.cursor);
-  const where = await construirWhereIncidencias(filtros);
+  const where = await construirFiltroIncidencias(filtros);
 
   const incidencias = await incidenciaRepositorio.listar({
     where,
