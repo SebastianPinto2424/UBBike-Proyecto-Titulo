@@ -14,7 +14,7 @@ import { registrarRutasModulos } from './modulos/rutas';
 
 const aplicacion = express();
 
-aplicacion.set('trust proxy', entorno.servidor.trustProxy);
+aplicacion.set('trust proxy', entorno.servidor.confianzaProxy);
 aplicacion.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 aplicacion.use(restringirOrigen);
 aplicacion.use(cors({ origin: origenesNavegadorPermitidos() }));
