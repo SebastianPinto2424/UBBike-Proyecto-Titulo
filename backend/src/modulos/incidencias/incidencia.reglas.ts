@@ -1,3 +1,4 @@
+import { ErrorHttp } from '../../comun/errores/error-http';
 import { RolUsuario } from '../usuarios/rol-usuario';
 import { EstadoIncidencia } from './estado-incidencia';
 import type { IncidenciaCompleta } from './incidencia.repositorio';
@@ -8,6 +9,15 @@ export const estadosCerradosIncidencia: EstadoIncidencia[] = [
   EstadoIncidencia.DESCARTADA
 ];
 const segundosEsperaRecordatorioIncidencia = 300;
+
+export const impedirGestionPropia = (reportanteId: string, gestorId: string) => {
+  if (reportanteId === gestorId) {
+    throw new ErrorHttp(
+      403,
+      'No puedes gestionar una incidencia que reportaste. Debe revisarla otra persona de administración.'
+    );
+  }
+};
 
 export const calcularSegundosParaRecordatorioIncidencia = (incidencia: IncidenciaCompleta) => {
   if (estadosCerradosIncidencia.includes(incidencia.estado)) {
