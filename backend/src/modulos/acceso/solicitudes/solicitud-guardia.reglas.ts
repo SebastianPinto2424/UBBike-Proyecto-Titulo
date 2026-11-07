@@ -19,6 +19,15 @@ export const estadosSinRespuesta: EstadoSolicitudGuardia[] = [
   EstadoSolicitudGuardia.NOTIFICADA
 ];
 
+export const impedirAtencionPropia = (guardiaId: string | undefined, solicitanteId: string) => {
+  if (guardiaId === solicitanteId) {
+    throw new ErrorHttp(
+      403,
+      'No puedes pedir atención en el bicicletero que gestionas. Si necesitas apoyo, avisa a central.'
+    );
+  }
+};
+
 export const calcularSegundosParaRecordatorio = (solicitud: SolicitudCompleta) => {
   if (
     solicitud.respondidaPorGuardiaEn ||
