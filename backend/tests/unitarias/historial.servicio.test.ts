@@ -85,6 +85,20 @@ describe('listarMovimientos', () => {
     expect(whereUsado()).toEqual({});
   });
 
+  it('el alcance propio limita a guardias y central a sus bicicletas', async () => {
+    await listarMovimientos({ usuarioId: 'g1', rol: 'GUARDIA', alcance: 'PROPIO' });
+    expect(whereUsado()).toEqual({ AND: [{ usuarioId: 'g1' }] });
+
+    repo.contarMovimientos.mockClear();
+    await listarMovimientos({
+      usuarioId: 'a1',
+      rol: 'ADMIN_CENTRAL',
+      guardiaId: 'g2',
+      alcance: 'PROPIO'
+    });
+    expect(whereUsado()).toEqual({ AND: [{ usuarioId: 'a1' }] });
+  });
+
   it('combina busqueda y filtros', async () => {
     await listarMovimientos({
       usuarioId: 'a1',
