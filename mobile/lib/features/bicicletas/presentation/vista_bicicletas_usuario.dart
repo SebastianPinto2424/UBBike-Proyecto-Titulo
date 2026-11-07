@@ -22,10 +22,13 @@ class VistaBicicletas extends ConsumerStatefulWidget {
   const VistaBicicletas({
     super.key,
     required this.vistaMovimientos,
+    this.vistaQr,
     this.initialIndex = 0,
   });
 
   final Widget vistaMovimientos;
+
+  final Widget? vistaQr;
 
   final int initialIndex;
 
@@ -65,14 +68,18 @@ class _VistaBicicletasState extends ConsumerState<VistaBicicletas>
       if (mounted) _recargar();
     });
 
+    final vistaQr = widget.vistaQr;
+
     return VistaConPestanas(
       initialIndex: widget.initialIndex,
       pestanas: [
         pestanaCompacta(Icons.pedal_bike_outlined, 'Bicicletas'),
+        if (vistaQr != null) pestanaCompacta(Icons.qr_code_2, 'QR'),
         pestanaCompacta(Icons.manage_search_outlined, 'Movimientos'),
       ],
       vistas: [
         _vistaMisBicicletas(),
+        if (vistaQr != null) vistaQr,
         widget.vistaMovimientos,
       ],
     );
