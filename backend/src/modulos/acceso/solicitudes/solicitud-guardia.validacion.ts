@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import {
+  esquemaAlcanceConsulta,
   esquemaLimitePagina,
   esquemaTextoBusqueda
 } from '../../../comun/utilidades/esquemas-comunes';
@@ -38,5 +39,6 @@ export const esquemaCancelarSolicitudGuardia = Joi.object({
 export const esquemaConsultaSolicitudesGuardia = Joi.object({
   estado: Joi.string().valid(...Object.values(EstadoSolicitudGuardia), 'TODOS'),
   q: esquemaTextoBusqueda,
-  limite: esquemaLimitePagina
+  limite: esquemaLimitePagina,
+  alcance: esquemaAlcanceConsulta
 });
