@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import {
+  esquemaAlcanceConsulta,
   esquemaCursorPagina,
   esquemaIdentificador,
   esquemaLimitePagina,
@@ -55,5 +56,6 @@ export const esquemaConsultaIncidencias = Joi.object({
   bicicleteroId: esquemaIdentificador,
   q: esquemaTextoBusqueda,
   cursor: esquemaCursorPagina,
-  limite: esquemaLimitePagina
+  limite: esquemaLimitePagina,
+  alcance: esquemaAlcanceConsulta
 });
