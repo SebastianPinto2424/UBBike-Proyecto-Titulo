@@ -25,7 +25,7 @@ class VistaAlertasGuardia extends ConsumerStatefulWidget {
 
 class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
   SolicitudesGuardiaVm get vm => ref.read(solicitudesGuardiaVmProvider);
-  final busquedaController = TextEditingController();
+  final controladorBusqueda = TextEditingController();
   String estadoFiltro = 'TODOS';
   late Future<List<SolicitudGuardiaApp>> futuroSolicitudes;
   late final RefrescoCoalescido refrescoAlertas;
@@ -47,12 +47,12 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
   @override
   void dispose() {
     refrescoAlertas.detener();
-    busquedaController.dispose();
+    controladorBusqueda.dispose();
     super.dispose();
   }
 
   List<SolicitudGuardiaApp> _filtrar(List<SolicitudGuardiaApp> solicitudes) {
-    final consulta = busquedaController.text.trim().toLowerCase();
+    final consulta = controladorBusqueda.text.trim().toLowerCase();
     return solicitudes.where((solicitud) {
       final coincideEstado =
           estadoFiltro == 'TODOS' || solicitud.estado == estadoFiltro;
@@ -125,7 +125,7 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
   }
 
   List<FiltroActivo> _filtrosActivos() {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return [
       if (estadoFiltro != 'TODOS')
         FiltroActivo(
@@ -135,7 +135,7 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
       if (busqueda.isNotEmpty)
         FiltroActivo(
           etiqueta: 'Busca: $busqueda',
-          onQuitar: () => setState(busquedaController.clear),
+          onQuitar: () => setState(controladorBusqueda.clear),
         ),
     ];
   }
@@ -157,18 +157,18 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
               const TituloApartado(titulo: 'Alertas'),
               const SizedBox(height: 10),
               TextField(
-                controller: busquedaController,
+                controller: controladorBusqueda,
                 textInputAction: TextInputAction.search,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   labelText: 'Buscar por bicicletero o solicitante',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: busquedaController.text.isEmpty
+                  suffixIcon: controladorBusqueda.text.isEmpty
                       ? null
                       : IconButton(
                           tooltip: 'Limpiar búsqueda',
                           icon: const Icon(Icons.close),
-                          onPressed: () => setState(busquedaController.clear),
+                          onPressed: () => setState(controladorBusqueda.clear),
                         ),
                 ),
               ),
@@ -181,7 +181,7 @@ class _VistaAlertasGuardiaState extends ConsumerState<VistaAlertasGuardia> {
                     : etiquetaEstadoSolicitud(estadoFiltro),
                 onLimpiar: () => setState(() {
                   estadoFiltro = 'TODOS';
-                  busquedaController.clear();
+                  controladorBusqueda.clear();
                 }),
                 children: [
                   EtiquetaFiltro(
