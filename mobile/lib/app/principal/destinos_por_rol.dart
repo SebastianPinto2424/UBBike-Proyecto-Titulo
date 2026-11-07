@@ -3,66 +3,82 @@ import 'package:flutter/material.dart';
 import 'package:ubbike/core/modelos/rol_usuario.dart';
 import 'package:ubbike/core/tema/colores_ubb.dart';
 
+const indiceValidar = 2;
+const indiceGestionAdministrador = 3;
+const indicePerfil = 4;
+
+bool usaDestinoMiCuenta(RolUsuario rol) => !rol.esUsuarioRegular;
+
+int indiceSoportePorRol(RolUsuario rol) =>
+    rol == RolUsuario.administrador ? 1 : 3;
+
+const _destinoInicio = NavigationDestination(
+  icon: Icon(Icons.home_outlined),
+  selectedIcon: Icon(Icons.home),
+  label: 'Inicio',
+);
+
+const _destinoSoporte = NavigationDestination(
+  icon: Icon(Icons.support_agent_outlined),
+  selectedIcon: Icon(Icons.support_agent),
+  label: 'Soporte',
+);
+
+const _destinoPerfil = NavigationDestination(
+  icon: Icon(Icons.person_outline),
+  selectedIcon: Icon(Icons.person),
+  label: 'Perfil',
+);
+
+const _destinoMiCuenta = NavigationDestination(
+  icon: Icon(Icons.person_outline),
+  selectedIcon: Icon(Icons.person),
+  label: 'Mi cuenta',
+);
+
+Widget _iconoCentral(IconData icono, double tamano, double relleno) {
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: relleno, vertical: 6),
+    decoration: BoxDecoration(
+      color: ColoresUbb.azulApp,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: ColoresUbb.azulApp.withValues(alpha: 0.3),
+          blurRadius: 6,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Icon(icono, color: Colors.white, size: tamano),
+  );
+}
+
+NavigationDestination _destinoValidar() {
+  final icono = _iconoCentral(Icons.qr_code_scanner, 28, 22);
+  return NavigationDestination(
+    icon: icono,
+    selectedIcon: icono,
+    label: 'Validar',
+  );
+}
+
 List<NavigationDestination> destinosPorRol(RolUsuario rol) {
-  final iconoQrGuardia = Container(
-    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 6),
-    decoration: BoxDecoration(
-      color: ColoresUbb.azulApp,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: ColoresUbb.azulApp.withValues(alpha: 0.3),
-          blurRadius: 6,
-          offset: const Offset(0, 3),
-        ),
-      ],
-    ),
-    child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 28),
-  );
-
-  final iconoQrUsuario = Container(
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-    decoration: BoxDecoration(
-      color: ColoresUbb.azulApp,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: ColoresUbb.azulApp.withValues(alpha: 0.3),
-          blurRadius: 6,
-          offset: const Offset(0, 3),
-        ),
-      ],
-    ),
-    child: const Icon(Icons.qr_code_2, color: Colors.white, size: 30),
-  );
-
   if (rol == RolUsuario.guardia) {
     return [
-      const NavigationDestination(
-        icon: Icon(Icons.home_outlined),
-        selectedIcon: Icon(Icons.home),
-        label: 'Inicio',
-      ),
+      _destinoInicio,
       const NavigationDestination(
         icon: Icon(Icons.history_outlined),
         selectedIcon: Icon(Icons.history),
         label: 'Historial',
       ),
-      NavigationDestination(
-        icon: iconoQrGuardia,
-        selectedIcon: iconoQrGuardia,
-        label: 'Validar',
-      ),
+      _destinoValidar(),
       const NavigationDestination(
         icon: Icon(Icons.support_agent_outlined),
         selectedIcon: Icon(Icons.support_agent),
         label: 'Avisos',
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.person_outline),
-        selectedIcon: Icon(Icons.person),
-        label: 'Perfil',
-      ),
+      _destinoMiCuenta,
     ];
   }
 
@@ -83,60 +99,28 @@ List<NavigationDestination> destinosPorRol(RolUsuario rol) {
         selectedIcon: Icon(Icons.security),
         label: 'Guardias',
       ),
-      NavigationDestination(
-        icon: Icon(Icons.support_agent_outlined),
-        selectedIcon: Icon(Icons.support_agent),
-        label: 'Soporte',
-      ),
-      NavigationDestination(
-        icon: Icon(Icons.person_outline),
-        selectedIcon: Icon(Icons.person),
-        label: 'Perfil',
-      ),
+      _destinoSoporte,
+      _destinoMiCuenta,
     ];
   }
 
   if (rol == RolUsuario.administrador) {
     return [
-      const NavigationDestination(
-        icon: Icon(Icons.home_outlined),
-        selectedIcon: Icon(Icons.home),
-        label: 'Inicio',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.pedal_bike_outlined),
-        selectedIcon: Icon(Icons.pedal_bike),
-        label: 'Bicicletas',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.qr_code_scanner_outlined),
-        selectedIcon: Icon(Icons.qr_code_scanner),
-        label: 'Validar',
-      ),
-      const NavigationDestination(
-        icon: Icon(Icons.support_agent_outlined),
-        selectedIcon: Icon(Icons.support_agent),
-        label: 'Soporte',
-      ),
+      _destinoInicio,
+      _destinoSoporte,
+      _destinoValidar(),
       const NavigationDestination(
         icon: Icon(Icons.tune_outlined),
         selectedIcon: Icon(Icons.tune),
         label: 'Gestión',
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.person_outline),
-        selectedIcon: Icon(Icons.person),
-        label: 'Perfil',
-      ),
+      _destinoMiCuenta,
     ];
   }
 
+  final iconoQrUsuario = _iconoCentral(Icons.qr_code_2, 30, 24);
   return [
-    const NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home),
-      label: 'Inicio',
-    ),
+    _destinoInicio,
     const NavigationDestination(
       icon: Icon(Icons.pedal_bike_outlined),
       selectedIcon: Icon(Icons.pedal_bike),
@@ -147,16 +131,8 @@ List<NavigationDestination> destinosPorRol(RolUsuario rol) {
       selectedIcon: iconoQrUsuario,
       label: 'QR',
     ),
-    const NavigationDestination(
-      icon: Icon(Icons.support_agent_outlined),
-      selectedIcon: Icon(Icons.support_agent),
-      label: 'Soporte',
-    ),
-    const NavigationDestination(
-      icon: Icon(Icons.person_outline),
-      selectedIcon: Icon(Icons.person),
-      label: 'Perfil',
-    ),
+    _destinoSoporte,
+    _destinoPerfil,
   ];
 }
 
@@ -167,7 +143,7 @@ List<(IconData, String)> titulosPorRol(RolUsuario rol) {
       (Icons.history_outlined, 'Historial'),
       (Icons.qr_code_scanner, 'Validar'),
       (Icons.support_agent_outlined, 'Avisos'),
-      (Icons.person_outline, 'Perfil'),
+      (Icons.person_outline, 'Mi cuenta'),
     ];
   }
   if (rol == RolUsuario.adminCentral) {
@@ -176,17 +152,16 @@ List<(IconData, String)> titulosPorRol(RolUsuario rol) {
       (Icons.manage_search_outlined, 'Movimientos'),
       (Icons.security_outlined, 'Guardias'),
       (Icons.support_agent_outlined, 'Soporte'),
-      (Icons.person_outline, 'Perfil'),
+      (Icons.person_outline, 'Mi cuenta'),
     ];
   }
   if (rol == RolUsuario.administrador) {
     return const [
       (Icons.home_outlined, 'Inicio'),
-      (Icons.pedal_bike_outlined, 'Bicicletas'),
-      (Icons.qr_code_scanner, 'Validar'),
       (Icons.support_agent_outlined, 'Soporte'),
+      (Icons.qr_code_scanner, 'Validar'),
       (Icons.tune_outlined, 'Gestión'),
-      (Icons.person_outline, 'Perfil'),
+      (Icons.person_outline, 'Mi cuenta'),
     ];
   }
   return const [
