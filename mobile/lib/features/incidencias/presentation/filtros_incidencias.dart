@@ -10,7 +10,7 @@ class PanelFiltrosIncidencias extends StatelessWidget {
     super.key,
     required this.estado,
     required this.tipo,
-    required this.busquedaController,
+    required this.controladorBusqueda,
     required this.onLimpiar,
     required this.onEstado,
     required this.onTipo,
@@ -20,7 +20,7 @@ class PanelFiltrosIncidencias extends StatelessWidget {
 
   final String estado;
   final String tipo;
-  final TextEditingController busquedaController;
+  final TextEditingController controladorBusqueda;
   final VoidCallback onLimpiar;
   final ValueChanged<String> onEstado;
   final ValueChanged<String> onTipo;
@@ -28,7 +28,7 @@ class PanelFiltrosIncidencias extends StatelessWidget {
   final VoidCallback? onRegistrar;
 
   List<FiltroActivo> _filtrosActivos() {
-    final busqueda = busquedaController.text.trim();
+    final busqueda = controladorBusqueda.text.trim();
     return [
       if (estado != 'TODOS')
         FiltroActivo(
@@ -44,7 +44,7 @@ class PanelFiltrosIncidencias extends StatelessWidget {
         FiltroActivo(
           etiqueta: 'Busca: $busqueda',
           onQuitar: () {
-            busquedaController.clear();
+            controladorBusqueda.clear();
             onBuscar();
           },
         ),
@@ -79,20 +79,20 @@ class PanelFiltrosIncidencias extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         TextField(
-          controller: busquedaController,
+          controller: controladorBusqueda,
           textInputAction: TextInputAction.search,
           onChanged: (_) => onBuscar(),
           onSubmitted: (_) => onBuscar(),
           decoration: InputDecoration(
             labelText: 'Buscar incidencia, bicicletero o descripción',
             prefixIcon: const Icon(Icons.search),
-            suffixIcon: busquedaController.text.isEmpty
+            suffixIcon: controladorBusqueda.text.isEmpty
                 ? null
                 : IconButton(
                     tooltip: 'Limpiar búsqueda',
                     icon: const Icon(Icons.close),
                     onPressed: () {
-                      busquedaController.clear();
+                      controladorBusqueda.clear();
                       onBuscar();
                     },
                   ),
