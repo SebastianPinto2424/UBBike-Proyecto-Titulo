@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
-    container_name: ubbike_taller_db
+    container_name: ubbike_tesis_db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-ubbike}
@@ -24,7 +24,7 @@ services:
 
   redis:
     image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
-    container_name: ubbike_taller_redis
+    container_name: ubbike_tesis_redis
     restart: unless-stopped
     user: "999:1000"
     command: ["redis-server", "--save", "", "--appendonly", "yes", "--appendfsync", "everysec"]
@@ -50,7 +50,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ubbike_taller_backend
+    container_name: ubbike_tesis_backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -120,7 +120,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
-    container_name: ubbike_taller_cloudflared
+    container_name: ubbike_tesis_cloudflared
     profiles: ["cloudflare"]
     restart: unless-stopped
     command: ["tunnel", "--no-autoupdate", "run"]
@@ -139,13 +139,13 @@ services:
 
 volumes:
   postgres_data:
-    name: ubbike_taller_postgres_data
+    name: ubbike_tesis_postgres_data
   redis_data:
-    name: ubbike_taller_redis_data
+    name: ubbike_tesis_redis_data
   uploads_data:
-    name: ubbike_taller_uploads_data
+    name: ubbike_tesis_uploads_data
 
 networks:
   backend_network:
-    name: ubbike_taller_backend_network
+    name: ubbike_tesis_backend_network
     driver: bridge
