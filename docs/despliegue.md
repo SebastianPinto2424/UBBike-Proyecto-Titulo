@@ -238,13 +238,13 @@ La dirección del backend queda dentro de la APK. Si cambia el subdominio, hay q
 | Actualizar a una versión nueva | `git pull && docker compose up -d --build` |
 | Respaldar la base de datos | `docker compose exec -T db pg_dump -U ubbike ubbike > respaldo-$(date +%F).sql` |
 | Restaurar la base de datos | `docker compose exec -T db psql -U ubbike -d ubbike < respaldo.sql` |
-| Respaldar las fotos | `docker run --rm -v ubbike_taller_uploads_data:/datos -v "$PWD":/respaldo alpine tar czf /respaldo/fotos-$(date +%F).tgz -C /datos .` |
+| Respaldar las fotos | `docker run --rm -v ubbike_tesis_uploads_data:/datos -v "$PWD":/respaldo alpine tar czf /respaldo/fotos-$(date +%F).tgz -C /datos .` |
 | Detener | `docker compose down` (los datos quedan en los volúmenes) |
 
 Los datos viven en tres volúmenes de Docker:
-- `ubbike_taller_postgres_data`: la base de datos;
-- `ubbike_taller_uploads_data`: las fotos;
-- `ubbike_taller_redis_data`: las sesiones y los límites de intentos.
+- `ubbike_tesis_postgres_data`: la base de datos;
+- `ubbike_tesis_uploads_data`: las fotos;
+- `ubbike_tesis_redis_data`: las sesiones y los límites de intentos.
 
 Gracias a ese último, las sesiones se conservan al reiniciar.
 
