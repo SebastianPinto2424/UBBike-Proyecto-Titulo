@@ -1,0 +1,66 @@
+name: iOS para Appetize
+
+# Compila la app para el simulador de iPhone en un Mac de GitHub y entrega el
+# .zip que se sube a Appetize. Corre solo cuando cambia la app movil en
+# rama-dev3. El .zip queda en la ejecucion, en la seccion Artifacts.
+on:
+  push:
+    branches: [rama-dev3]
+    paths:
+      - 'mobile/lib/**'
+      - 'mobile/ios/**'
+      - 'mobile/assets/**'
+      - 'mobile/pubspec.yaml'
+      - 'mobile/pubspec.lock'
+      - '.github/workflows/ios-appetize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-appetize-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulador:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Usar Xcode 16.4, el mismo del Mac
+        run: |
+          if [ -d /Applications/Xcode_16.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app
+          else
+            echo "::warning::Xcode 16.4 no esta en este runner; se usa el predeterminado"
+          fi
+          xcodebuild -version
+          pod --version
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.41.9'
+          cache: true
+      - run: flutter pub get
+      - name: Compilar para el simulador de iPhone
+        run: flutter build ios --simulator --dart-define=API_BASE_URL=https://api.ubbike.me
+      - name: Revisar la compilacion
+        working-directory: mobile/build/ios/iphonesimulator
+        run: |
+          ARQUITECTURAS=$(lipo -archs Runner.app/Runner)
+          echo "Arquitecturas: $ARQUITECTURAS"
+          echo "$ARQUITECTURAS" | grep -qw x86_64
+          grep -q 'https://api.ubbike.me' Runner.app/Frameworks/App.framework/flutter_assets/kernel_blob.bin
+      - name: Empaquetar para Appetize
+        working-directory: mobile/build/ios/iphonesimulator
+        run: ditto -c -k --sequesterRsrc --keepParent Runner.app "$GITHUB_WORKSPACE/UBBike-ios.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UBBike-ios-${{ github.run_number }}
+          path: UBBike-ios.zip
+          compression-level: 0
+          retention-days: 90
