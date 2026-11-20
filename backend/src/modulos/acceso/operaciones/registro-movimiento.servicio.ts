@@ -81,6 +81,7 @@ export const registrarMovimiento = async ({
   bicicleta,
   bicicletero,
   guardiaId,
+  rol,
   tipo,
   estado,
   origen,
@@ -92,6 +93,7 @@ export const registrarMovimiento = async ({
   bicicleta: BicicletaOperacion;
   bicicletero: BicicleteroOperacion;
   guardiaId: string;
+  rol: string;
   tipo: TipoMovimiento;
   estado: EstadoMovimiento;
   origen: 'QR' | 'MANUAL';
@@ -99,7 +101,7 @@ export const registrarMovimiento = async ({
   comentario?: string | null;
   db: ClientePrisma;
 }) => {
-  impedirAutovalidacion(usuario.id, guardiaId);
+  impedirAutovalidacion(usuario.id, guardiaId, rol);
   const comentarioGuardia = comentario?.trim() || null;
   const movimiento = await accesoRepositorio.crearMovimiento(
     {

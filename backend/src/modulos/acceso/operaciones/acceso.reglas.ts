@@ -1,16 +1,21 @@
 import { ErrorHttp } from '../../../comun/errores/error-http';
 import { TipoMovimiento } from '../../historial/tipo-movimiento';
+import { RolUsuario } from '../../usuarios/rol-usuario';
 
 type BicicletaConEstado = {
   dentroBicicletero: boolean;
   bicicleteroActualId?: string | null;
 };
 
-export const impedirAutovalidacion = (propietarioId: string, validadorId: string) => {
-  if (propietarioId === validadorId) {
+export const impedirAutovalidacion = (
+  propietarioId: string,
+  validadorId: string,
+  rolValidador: string
+) => {
+  if (propietarioId === validadorId && rolValidador !== RolUsuario.GUARDIA) {
     throw new ErrorHttp(
       403,
-      'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.'
+      'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a un guardia.'
     );
   }
 };

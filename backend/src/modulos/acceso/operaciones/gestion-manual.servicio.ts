@@ -52,6 +52,7 @@ type DatosGestionManual = {
 
 type DatosBuscarGestionManual = {
   guardiaId: string;
+  rol: string;
   correo?: string;
   rut?: string;
 };
@@ -201,7 +202,7 @@ export const buscarCoincidenciaGestionManual = async (datos: DatosBuscarGestionM
     return null;
   }
 
-  impedirAutovalidacion(usuario.id, datos.guardiaId);
+  impedirAutovalidacion(usuario.id, datos.guardiaId, datos.rol);
 
   return {
     usuario: {
@@ -232,7 +233,7 @@ export const registrarGestionManual = async (datos: DatosGestionManual) => {
     let usuario = await accesoRepositorio.buscarUsuarioPorCriterios(criteriosUsuario, db);
 
     if (usuario) {
-      impedirAutovalidacion(usuario.id, datos.guardiaId);
+      impedirAutovalidacion(usuario.id, datos.guardiaId, datos.rol);
     }
 
     if (!usuario) {
@@ -344,6 +345,7 @@ export const registrarGestionManual = async (datos: DatosGestionManual) => {
       bicicleta,
       bicicletero,
       guardiaId: datos.guardiaId,
+      rol: datos.rol,
       tipo: datos.tipo,
       estado,
       origen: 'MANUAL',

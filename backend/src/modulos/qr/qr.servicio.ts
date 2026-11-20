@@ -174,7 +174,7 @@ const validarBicicleteroGuardia = async (
 export const validarQrTemporal = async (token: string, contexto?: ContextoValidacionQr) => {
   const codigo = await obtenerCodigoQrValido(token);
   if (contexto) {
-    impedirAutovalidacion(codigo.usuario.id, contexto.validadorUsuarioId);
+    impedirAutovalidacion(codigo.usuario.id, contexto.validadorUsuarioId, contexto.rol);
   }
   await validarBicicleteroGuardia(codigo, contexto);
 
@@ -314,7 +314,7 @@ export const obtenerCodigoQrEscaneadoParaMovimiento = async (
     throw new ErrorHttp(409, 'Otro guardia ya está revisando este QR');
   }
 
-  impedirAutovalidacion(codigo.usuario.id, contexto.validadorUsuarioId);
+  impedirAutovalidacion(codigo.usuario.id, contexto.validadorUsuarioId, contexto.rol);
   await validarBicicleteroGuardia(codigo, contexto);
 
   return codigo;

@@ -56,6 +56,7 @@ export const registrarManual = controladorAsync<SolicitudAutenticada>(async (req
 export const buscarManual = controladorAsync<SolicitudAutenticada>(async (req, res) => {
   const coincidencia = await buscarCoincidenciaGestionManual({
     guardiaId: req.usuario!.usuarioId,
+    rol: req.usuario!.rol,
     correo: req.query.correo?.toString(),
     rut: req.query.rut?.toString()
   });
