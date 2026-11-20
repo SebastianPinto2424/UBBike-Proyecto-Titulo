@@ -6,13 +6,19 @@ jest.mock('../../src/modulos/acceso/operaciones/acceso.repositorio', () => ({
 
 import * as accesoRepositorio from '../../src/modulos/acceso/operaciones/acceso.repositorio';
 import { buscarCoincidenciaGestionManual } from '../../src/modulos/acceso/operaciones/gestion-manual.servicio';
+import { RolUsuario } from '../../src/modulos/usuarios/rol-usuario';
 
 const repo = accesoRepositorio as jest.Mocked<typeof accesoRepositorio>;
 
 describe('buscarCoincidenciaGestionManual', () => {
   it('exige correo o RUT', async () => {
     await expect(
-      buscarCoincidenciaGestionManual({ guardiaId: 'guardia-1', correo: ' ', rut: '' })
+      buscarCoincidenciaGestionManual({
+        guardiaId: 'guardia-1',
+        rol: RolUsuario.GUARDIA,
+        correo: ' ',
+        rut: ''
+      })
     ).rejects.toMatchObject({
       statusCode: 400
     });
@@ -25,6 +31,7 @@ describe('buscarCoincidenciaGestionManual', () => {
     await expect(
       buscarCoincidenciaGestionManual({
         guardiaId: 'guardia-1',
+        rol: RolUsuario.GUARDIA,
         correo: ' Ana@Alumnos.UBiobio.cl ',
         rut: '11111111-1'
       })
@@ -66,6 +73,7 @@ describe('buscarCoincidenciaGestionManual', () => {
 
     const resultado = await buscarCoincidenciaGestionManual({
       guardiaId: 'guardia-1',
+      rol: RolUsuario.GUARDIA,
       correo: 'ana@alumnos.ubiobio.cl'
     });
 
@@ -78,7 +86,7 @@ describe('buscarCoincidenciaGestionManual', () => {
     });
   });
 
-  it('quien opera no puede buscarse a sí mismo para registrar su propia bicicleta', async () => {
+  it('un administrador no puede buscarse a sí mismo para registrar su propia bicicleta', async () => {
     repo.buscarUsuarioGestionManual.mockResolvedValue({
       id: 'admin-1',
       nombre: 'Administración UBBike',
@@ -87,7 +95,33 @@ describe('buscarCoincidenciaGestionManual', () => {
     } as never);
 
     await expect(
-      buscarCoincidenciaGestionManual({ guardiaId: 'admin-1', correo: 'admin@ubiobio.cl' })
+      buscarCoincidenciaGestionManual({
+        guardiaId: 'admin-1',
+        rol: RolUsuario.ADMINISTRADOR,
+        correo: 'admin@ubiobio.cl'
+      })
     ).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it('el guardia sí puede buscarse a sí mismo para registrar su propia bicicleta', async () => {
+    repo.buscarUsuarioGestionManual.mockResolvedValue({
+      id: 'guardia-1',
+      nombre: 'Guardia Bicicletero',
+      correo: 'guardia@ubiobio.cl',
+      rut: '13.333.333-3',
+      rol: 'GUARDIA',
+      correoVerificado: true,
+      registroParcial: false,
+      cuentaActiva: true,
+      bicicletas: []
+    } as never);
+
+    const resultado = await buscarCoincidenciaGestionManual({
+      guardiaId: 'guardia-1',
+      rol: RolUsuario.GUARDIA,
+      correo: 'guardia@ubiobio.cl'
+    });
+
+    expect(resultado?.usuario.id).toBe('guardia-1');
   });
 });

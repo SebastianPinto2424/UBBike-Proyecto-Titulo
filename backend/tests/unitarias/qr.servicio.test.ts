@@ -248,7 +248,48 @@ describe('validarQrTemporal', () => {
     expect(emitirMock).not.toHaveBeenCalled();
   });
 
-  it('nadie puede validar el QR de su propia bicicleta, ni siendo administrador', async () => {
+  it('el guardia valida el QR de su propia bicicleta en el bicicletero de su turno', async () => {
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
+      ...codigoQrBase,
+      usuarioId: 'guardia-uuid-1',
+      bicicleteroId: bicicleteroBase.id,
+      usuario: { ...codigoQrBase.usuario, id: 'guardia-uuid-1' },
+      bicicletero: bicicleteroBase
+    } as any);
+    prismaSimulado.asignacionGuardia.findFirst.mockResolvedValue({ id: 'asignacion-1' } as any);
+    prismaSimulado.codigoQrTemporal.updateMany.mockResolvedValue({ count: 1 });
+
+    const resultado = await validarQrTemporal('UBBIKE-tokenValido', {
+      validadorUsuarioId: 'guardia-uuid-1',
+      rol: 'GUARDIA'
+    });
+
+    expect(resultado.usuario.id).toBe('guardia-uuid-1');
+    expect(prismaSimulado.asignacionGuardia.findFirst).toHaveBeenCalledWith({
+      where: { guardiaId: 'guardia-uuid-1', bicicleteroId: bicicleteroBase.id, activa: true }
+    });
+  });
+
+  it('el guardia no valida el QR de su propia bicicleta fuera de su turno', async () => {
+    prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue({
+      ...codigoQrBase,
+      usuarioId: 'guardia-uuid-1',
+      bicicleteroId: bicicleteroBase.id,
+      usuario: { ...codigoQrBase.usuario, id: 'guardia-uuid-1' },
+      bicicletero: bicicleteroBase
+    } as any);
+    prismaSimulado.asignacionGuardia.findFirst.mockResolvedValue(null);
+
+    await expect(
+      validarQrTemporal('UBBIKE-tokenValido', {
+        validadorUsuarioId: 'guardia-uuid-1',
+        rol: 'GUARDIA'
+      })
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(prismaSimulado.codigoQrTemporal.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('un administrador no puede validar el QR de su propia bicicleta', async () => {
     prismaSimulado.codigoQrTemporal.findFirst.mockResolvedValue(codigoQrBase as any);
 
     await expect(

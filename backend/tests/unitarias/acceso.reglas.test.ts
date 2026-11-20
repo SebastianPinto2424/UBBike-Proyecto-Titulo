@@ -5,20 +5,29 @@ import {
   validarReglaMovimiento
 } from '../../src/modulos/acceso/operaciones/acceso.reglas';
 import { TipoMovimiento } from '../../src/modulos/historial/tipo-movimiento';
+import { RolUsuario } from '../../src/modulos/usuarios/rol-usuario';
 
 describe('impedirAutovalidacion', () => {
-  it('nadie registra ni valida movimientos de su propia bicicleta', () => {
-    expect(() => impedirAutovalidacion('admin-1', 'admin-1')).toThrow(
-      expect.objectContaining({
-        statusCode: 403,
-        message:
-          'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.'
-      })
-    );
+  it('los administradores no registran ni validan movimientos de su propia bicicleta', () => {
+    for (const rol of [RolUsuario.ADMINISTRADOR, RolUsuario.ADMIN_CENTRAL]) {
+      expect(() => impedirAutovalidacion('admin-1', 'admin-1', rol)).toThrow(
+        expect.objectContaining({
+          statusCode: 403,
+          message:
+            'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a un guardia.'
+        })
+      );
+    }
+  });
+
+  it('el guardia sí registra los movimientos de su propia bicicleta', () => {
+    expect(() => impedirAutovalidacion('guardia-1', 'guardia-1', RolUsuario.GUARDIA)).not.toThrow();
   });
 
   it('otra persona sí puede validar la bicicleta', () => {
-    expect(() => impedirAutovalidacion('estudiante-1', 'guardia-1')).not.toThrow();
+    expect(() =>
+      impedirAutovalidacion('estudiante-1', 'guardia-1', RolUsuario.GUARDIA)
+    ).not.toThrow();
   });
 });
 

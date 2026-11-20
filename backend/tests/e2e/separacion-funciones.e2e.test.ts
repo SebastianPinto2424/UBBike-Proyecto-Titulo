@@ -36,7 +36,7 @@ const crearUsuario = (rol: RolUsuario, correo: string, rut: string) =>
 const sesion = (usuario: { id: string; rol: RolUsuario; versionSesion: number }) =>
   `Bearer ${crearTokenSesion(usuario.id, usuario.rol, usuario.versionSesion)}`;
 
-describe('separación de funciones: nadie se valida a sí mismo', () => {
+describe('separación de funciones: solo el guardia registra su propia bicicleta', () => {
   it('un administrador no valida ni registra a mano su propia bicicleta, pero un guardia sí puede', async () => {
     const administrador = await crearUsuario(
       RolUsuario.ADMINISTRADOR,
@@ -75,7 +75,7 @@ describe('separación de funciones: nadie se valida a sí mismo', () => {
       .send({ token });
     expect(validacionPropia.status).toBe(403);
     expect(validacionPropia.body.message).toBe(
-      'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.'
+      'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a un guardia.'
     );
 
     const busquedaPropia = await request(aplicacion)
@@ -157,15 +157,6 @@ describe('separación de funciones: nadie se valida a sí mismo', () => {
     expect(qrGuardia.status).toBe(201);
     const tokenGuardia = qrGuardia.body.qr.token as string;
 
-    const autovalidacion = await request(aplicacion)
-      .post('/qr/validar')
-      .set('Authorization', sesion(guardiaDueno))
-      .send({ token: tokenGuardia });
-    expect(autovalidacion.status).toBe(403);
-    expect(autovalidacion.body.message).toBe(
-      'No puedes registrar ni validar movimientos de tu propia bicicleta. Pídeselo a otro guardia.'
-    );
-
     const liberacion = await request(aplicacion)
       .delete('/guardias/me/bicicletero')
       .set('Authorization', sesion(guardiaDueno));
@@ -228,6 +219,72 @@ describe('separación de funciones: nadie se valida a sí mismo', () => {
       .set('Authorization', sesion(central));
     expect(historialCentralPropio.status).toBe(200);
     expect(historialCentralPropio.body.datos).toEqual([]);
+  });
+
+  it('el guardia registra a mano el ingreso y el retiro de su propia bicicleta solo en su turno', async () => {
+    const guardia = await crearUsuario(
+      RolUsuario.GUARDIA,
+      'guardia.propia@gmail.com',
+      '11.111.111-1'
+    );
+    const [propio, otro] = await Promise.all([
+      prisma.bicicletero.create({
+        data: { nombre: 'Rack del turno', ubicacion: 'Laboratorio aislado', capacidad: 5 }
+      }),
+      prisma.bicicletero.create({
+        data: { nombre: 'Rack de otro sector', ubicacion: 'Laboratorio aislado', capacidad: 5 }
+      })
+    ]);
+    const bicicleta = await prisma.bicicleta.create({
+      data: { usuarioId: guardia.id, descripcion: 'Bicicleta del guardia', activa: true }
+    });
+
+    await request(aplicacion)
+      .patch('/guardias/me/bicicletero')
+      .set('Authorization', sesion(guardia))
+      .send({ bicicleteroId: propio.id })
+      .expect(200);
+
+    const busquedaPropia = await request(aplicacion)
+      .get('/accesos/manual/buscar')
+      .query({ correo: guardia.correo })
+      .set('Authorization', sesion(guardia));
+    expect(busquedaPropia.status).toBe(200);
+    expect(busquedaPropia.body.coincidencia.usuario.id).toBe(guardia.id);
+
+    const ingresoEnOtroSector = await request(aplicacion)
+      .post('/accesos/manual')
+      .set('Authorization', sesion(guardia))
+      .send({
+        correo: guardia.correo,
+        bicicletaId: bicicleta.id,
+        bicicleteroId: otro.id,
+        tipo: 'INGRESO'
+      });
+    expect(ingresoEnOtroSector.status).toBe(403);
+
+    const ingreso = await request(aplicacion)
+      .post('/accesos/manual')
+      .set('Authorization', sesion(guardia))
+      .send({ correo: guardia.correo, bicicletaId: bicicleta.id, tipo: 'INGRESO' });
+    expect(ingreso.status).toBe(201);
+
+    const retiro = await request(aplicacion)
+      .post('/accesos/manual')
+      .set('Authorization', sesion(guardia))
+      .send({ correo: guardia.correo, bicicletaId: bicicleta.id, tipo: 'RETIRO' });
+    expect(retiro.status).toBe(201);
+
+    const movimientos = await prisma.movimiento.findMany({ orderBy: { creadoEn: 'asc' } });
+    expect(
+      movimientos.map((m) => [m.tipo, m.bicicleteroId, m.usuarioId, m.validadoPorGuardiaId])
+    ).toEqual([
+      ['INGRESO', propio.id, guardia.id, guardia.id],
+      ['RETIRO', propio.id, guardia.id, guardia.id]
+    ]);
+    expect(
+      (await prisma.bicicleta.findUniqueOrThrow({ where: { id: bicicleta.id } })).dentroBicicletero
+    ).toBe(false);
   });
 
   it('el personal pide atención y reporta incidencias, pero nunca atiende lo propio', async () => {

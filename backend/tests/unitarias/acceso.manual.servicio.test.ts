@@ -49,7 +49,7 @@ describe('registrarGestionManual', () => {
     expect(prismaSimulado.movimiento.create).not.toHaveBeenCalled();
   });
 
-  it('nadie registra a mano un movimiento de su propia bicicleta, ni siendo administrador', async () => {
+  it('un administrador no registra a mano un movimiento de su propia bicicleta', async () => {
     prismaSimulado.usuario.findFirst.mockResolvedValue({
       id: 'admin-uuid-1',
       correo: 'admin@ubiobio.cl',
